@@ -1,71 +1,74 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
 
 export default function NewDealPage() {
-  const router = useRouter();
-
   const [acv, setAcv] = useState<number>(25000);
   const [termMonths, setTermMonths] = useState<number>(12);
   const [insuranceCover, setInsuranceCover] = useState<number>(100000);
-  const [dataType, setDataType] = useState<string>("standard");
-
-  const onContinue = () => {
-    const params = new URLSearchParams({
-      acv: String(acv),
-      termMonths: String(termMonths),
-      insuranceCover: String(insuranceCover),
-      dataType,
-    });
-    router.push(`/review/lol?${params.toString()}`);
-  };
+  const [dataType, setDataType] = useState<string>('standard');
 
   return (
-    <main className="min-h-screen bg-black text-white px-6 py-16">
-      <div className="max-w-xl mx-auto">
-        <h1 className="text-3xl font-semibold mb-2">New Deal</h1>
-        <p className="text-zinc-400 mb-10">
+    <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <div className="mx-auto max-w-xl">
+        <h1 className="mb-2 text-3xl font-semibold">New Deal</h1>
+        <p className="mb-10 text-zinc-400">
           Set deal context so Pactora can score clause risk against commercial reality.
         </p>
 
-        <div className="space-y-6">
+        <form action="/review/lol" method="GET" className="space-y-6">
           <div>
-            <label className="block text-sm text-zinc-300 mb-2">ACV (£)</label>
+            <label htmlFor="acv" className="mb-2 block text-sm text-zinc-300">
+              ACV (£)
+            </label>
             <input
+              id="acv"
+              name="acv"
               type="number"
               value={acv}
               onChange={(e) => setAcv(Number(e.target.value))}
-              className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-4 py-3"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-zinc-300 mb-2">Term (months)</label>
+            <label htmlFor="termMonths" className="mb-2 block text-sm text-zinc-300">
+              Term (months)
+            </label>
             <input
+              id="termMonths"
+              name="termMonths"
               type="number"
               value={termMonths}
               onChange={(e) => setTermMonths(Number(e.target.value))}
-              className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-4 py-3"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-zinc-300 mb-2">Insurance cover (£)</label>
+            <label htmlFor="insuranceCover" className="mb-2 block text-sm text-zinc-300">
+              Insurance cover (£)
+            </label>
             <input
+              id="insuranceCover"
+              name="insuranceCover"
               type="number"
               value={insuranceCover}
               onChange={(e) => setInsuranceCover(Number(e.target.value))}
-              className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-4 py-3"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-zinc-300 mb-2">Data type</label>
+            <label htmlFor="dataType" className="mb-2 block text-sm text-zinc-300">
+              Data type
+            </label>
             <select
+              id="dataType"
+              name="dataType"
               value={dataType}
               onChange={(e) => setDataType(e.target.value)}
-              className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-4 py-3"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3"
             >
               <option value="standard">Standard personal data</option>
               <option value="special">Special category data</option>
@@ -74,12 +77,12 @@ export default function NewDealPage() {
           </div>
 
           <button
-            onClick={onContinue}
-            className="w-full bg-white text-black px-6 py-3 rounded-lg font-semibold hover:bg-zinc-200 transition"
+            type="submit"
+            className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200"
           >
             Continue → Review Limitation of Liability
           </button>
-        </div>
+        </form>
       </div>
     </main>
   );
