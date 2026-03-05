@@ -56,19 +56,10 @@ export default function NewDealPage() {
               value={insuranceCover}
               onChange={(e) => setInsuranceCover(Number(e.target.value))}
               className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3"
-=======
-            <label className="block text-sm text-zinc-300">Insurance cover (£)</label>
-            <input
-              name="insuranceCover"
-              type="number"
-              defaultValue={1000000}
-              className="mt-2 w-full rounded-lg border border-zinc-800 bg-black/40 px-3 py-2 text-white"
->>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
             />
           </div>
 
           <div>
-<<<<<<< HEAD
             <label htmlFor="dataType" className="mb-2 block text-sm text-zinc-300">
               Data type
             </label>
@@ -78,13 +69,6 @@ export default function NewDealPage() {
               value={dataType}
               onChange={(e) => setDataType(e.target.value)}
               className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3"
-=======
-            <label className="block text-sm text-zinc-300">Data type</label>
-            <select
-              name="dataType"
-              defaultValue="standard"
-              className="mt-2 w-full rounded-lg border border-zinc-800 bg-black/40 px-3 py-2 text-white"
->>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
             >
               <option value="standard">Standard</option>
               <option value="personal">Personal data</option>
@@ -94,11 +78,7 @@ export default function NewDealPage() {
 
           <button
             type="submit"
-<<<<<<< HEAD
             className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200"
-=======
-            className="mt-2 w-full rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
->>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
           >
             Start LoL Review
           </button>
