@@ -70,6 +70,7 @@ function money(n: number) {
   }).format(n);
 }
 
+<<<<<<< HEAD
 function normalizeWhitespace(input: string) {
   return input.toLowerCase().replace(/\s+/g, ' ').trim();
 }
@@ -351,6 +352,22 @@ function LolReviewContent() {
   const hasNarrowingItem = parsedResult.carveoutsFound.some((x) =>
     ['data_protection', 'ip', 'confidentiality'].includes(x),
   );
+=======
+export default function LolReviewPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
+  const sp = searchParams ?? {};
+
+  const acv = num(sp.acv, 25000);
+  const termMonths = num(sp.termMonths, 12);
+  const insuranceCover = num(sp.insuranceCover, 1000000);
+  const dataType = str(sp.dataType, "standard");
+
+  const cap = acv;
+  const capMultiple = acv > 0 ? (cap / acv).toFixed(1) : "—";
+>>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black text-white">
@@ -359,12 +376,30 @@ function LolReviewContent() {
           <Link href="/" className="text-sm text-zinc-300 hover:text-white">
             Pactora
           </Link>
+<<<<<<< HEAD
           <Link
             href="/deals/new"
             className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
           >
             New Deal
           </Link>
+=======
+
+          <div className="flex gap-3">
+            <Link
+              href="/deals/new"
+              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
+            >
+              New Deal
+            </Link>
+            <Link
+              href="/"
+              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
+            >
+              Landing
+            </Link>
+          </div>
+>>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
         </div>
 
         <div className="mt-10">
@@ -440,8 +475,15 @@ function LolReviewContent() {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
+<<<<<<< HEAD
                 <h2 className="text-lg font-semibold">Detected from your clause</h2>
                 <p className="mt-1 text-sm text-zinc-400">Derived from deterministic parsing and deal math.</p>
+=======
+                <h2 className="text-lg font-semibold">Overall view</h2>
+                <p className="mt-1 text-sm text-zinc-400">
+                  Demo output (we’ll wire extraction later).
+                </p>
+>>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
               </div>
               <span className={`rounded-full px-3 py-1 text-xs ${badgeClass(derived.badge)}`}>{derived.badge}</span>
             </div>
@@ -486,6 +528,7 @@ function LolReviewContent() {
             <h2 className="text-lg font-semibold">Carve-outs to watch</h2>
             <p className="mt-1 text-sm text-zinc-400">Detected only from override context in your clause text.</p>
 
+<<<<<<< HEAD
             {parsedResult.carveoutsFound.length > 0 ? (
               <ul className="mt-4 space-y-3 text-sm">
                 {parsedResult.carveoutsFound.map((x) => (
@@ -500,11 +543,32 @@ function LolReviewContent() {
                 No carve-out overrides detected from the current clause text.
               </div>
             )}
+=======
+            <ul className="mt-4 space-y-3 text-sm">
+              {[
+                "Data protection / GDPR indemnities (often uncapped)",
+                "Confidentiality breaches (sometimes uncapped)",
+                "IP infringement (may sit outside cap)",
+                "Gross negligence / wilful misconduct (broad definitions)",
+              ].map((x) => (
+                <li
+                  key={x}
+                  className="flex gap-3 rounded-lg border border-zinc-800 bg-black/30 p-3"
+                >
+                  <span className="mt-0.5 text-amber-300">⚠</span>
+                  <span>{x}</span>
+                </li>
+              ))}
+            </ul>
+>>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5 md:col-span-2">
             <h2 className="text-lg font-semibold">Negotiation fallbacks</h2>
+<<<<<<< HEAD
             <p className="mt-1 text-sm text-zinc-400">A practical ladder based on what was detected.</p>
+=======
+>>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
 
             <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
               <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
@@ -519,6 +583,7 @@ function LolReviewContent() {
                 <div className="mt-2 text-zinc-300">“If needed, we can stretch to {money(Math.round(acv * 1.5))}.”</div>
               </div>
 
+<<<<<<< HEAD
               {hasNarrowingItem ? (
                 <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
                   <div className="text-xs text-zinc-400">Narrowing</div>
@@ -526,6 +591,14 @@ function LolReviewContent() {
                   <div className="mt-2 text-zinc-300">
                     “We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”
                   </div>
+=======
+              <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
+                <div className="text-xs text-zinc-400">Structure</div>
+                <div className="mt-1 font-medium">Carve-outs must be narrow</div>
+                <div className="mt-2 text-zinc-300">
+                  “We’ll accept carve-outs only for fraud and deliberate
+                  misconduct.”
+>>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
                 </div>
               ) : (
                 <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
@@ -555,6 +628,7 @@ function LolReviewContent() {
       </div>
     </main>
   );
+<<<<<<< HEAD
 }
 
 export default function LolReviewPage() {
@@ -564,3 +638,6 @@ export default function LolReviewPage() {
     </Suspense>
   );
 }
+=======
+}
+>>>>>>> d787cbf (MVP: New Deal intake + LoL review flow working and deployed)
