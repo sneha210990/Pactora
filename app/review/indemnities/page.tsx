@@ -178,6 +178,10 @@ function IndemnitiesReviewContent() {
   const insuranceCover = searchParams.get('insuranceCover');
   const dataType = searchParams.get('dataType');
   const lolCap = num(searchParams.get('lolCap'));
+  const acvAmount = num(acv);
+
+  const ladderBaseCap = lolCap !== null && lolCap > 0 ? lolCap : acvAmount !== null && acvAmount > 0 ? acvAmount : null;
+  const ladderStretchCap = acvAmount !== null && acvAmount > 0 ? Math.round(acvAmount * 1.5) : null;
 
   const [clause, setClause] = useState(() => {
     if (typeof window === 'undefined') return DEFAULT_CLAUSE;
@@ -235,7 +239,9 @@ function IndemnitiesReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {acv && <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(Number(acv))}</span>}
+            {acvAmount !== null && acvAmount > 0 && (
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acvAmount)}</span>
+            )}
             {termMonths && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {termMonths} months</span>
             )}
@@ -246,7 +252,7 @@ function IndemnitiesReviewContent() {
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
             )}
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              {lolCap !== null ? `LoL cap: ${money(lolCap)}` : 'LoL cap: not provided'}
+              {ladderBaseCap !== null ? `LoL cap: ${money(ladderBaseCap)}` : 'LoL cap: not provided'}
             </span>
           </div>
         </section>
@@ -356,8 +362,14 @@ function IndemnitiesReviewContent() {
                 },
                 {
                   label: 'Fallback',
-                  title: 'Keep indemnity inside the liability cap',
-                  script: '“If broader language is required, this indemnity must still sit inside the agreed liability cap.”',
+                  title:
+                    ladderBaseCap !== null
+                      ? `Keep indemnity inside a ${money(ladderBaseCap)} cap`
+                      : 'Keep indemnity inside the liability cap',
+                  script:
+                    ladderBaseCap !== null
+                      ? `“If broader language is required, this indemnity must stay inside a ${money(ladderBaseCap)} cap.${ladderStretchCap !== null ? ` If needed, we can stretch to ${money(ladderStretchCap)}.` : ''}”`
+                      : '“If broader language is required, this indemnity must still sit inside the agreed liability cap.”',
                 },
               ]}
             />
