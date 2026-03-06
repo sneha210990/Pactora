@@ -43,15 +43,8 @@ type DerivedResult = {
 };
 
 const CLAUSE_STORAGE_KEY = 'pactora.lolClause';
-
-const TEST_CLAUSES: Record<string, string> = {
-  fixedWithCarveouts:
-    'Supplier\'s total aggregate liability under this Agreement shall not exceed £100,000. The foregoing cap shall not apply to confidentiality obligations, data protection obligations under UK GDPR, or breaches involving personal data.',
-  feesPaid12Months:
-    'Each party\'s total liability in aggregate shall be limited to the fees paid by Customer in the 12 months preceding the event giving rise to the claim. Neither party shall be liable for indirect or consequential damages, including loss of profits.',
-  twoXFraudOnly:
-    'Provider\'s total liability shall be limited to two (2) times the fees payable under this Agreement. This limitation shall not apply to fraud.',
-};
+const DEMO_LOL_CLAUSE =
+  "Supplier's total aggregate liability under this Agreement shall not exceed the fees paid by Customer in the 12 months preceding the event giving rise to the claim. The foregoing cap shall not apply to fraud or wilful misconduct.";
 
 function num(value: string | null, fallback = 0) {
   const n = Number(value);
@@ -234,9 +227,11 @@ function parseClause(clause: string): ParsedClauseResult {
   result.carveoutsFound = Array.from(carveoutSet);
 
   const paragraph = normalizedClause;
-  const limitsVendor = /supplier|vendor|provider/.test(paragraph) &&
+  const limitsVendor =
+    /supplier|vendor|provider/.test(paragraph) &&
     /limited to|liability shall be limited|liability is limited/.test(paragraph);
-  const limitsCustomer = /customer/.test(paragraph) &&
+  const limitsCustomer =
+    /customer/.test(paragraph) &&
     /customer[^.]{0,120}(?:limited to|liability shall be limited|liability is limited)/.test(paragraph);
   result.asymmetric = limitsVendor && !limitsCustomer;
 
@@ -318,34 +313,36 @@ function LolReviewContent() {
   const termMonths = num(searchParams.get('termMonths'), 12);
   const insuranceCover = num(searchParams.get('insuranceCover'), 1000000);
   const dataType = str(searchParams.get('dataType'), 'standard');
+  const queryClause = str(searchParams.get('lolClause'));
 
-  const [clause, setClause] = useState('');
-  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(''));
+  const [clause, setClause] = useState(DEMO_LOL_CLAUSE);
+  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(DEMO_LOL_CLAUSE));
 
   useEffect(() => {
-    const savedClause = window.localStorage.getItem(CLAUSE_STORAGE_KEY) ?? '';
-    setClause(savedClause);
-  }, []);
+    const savedClause = window.localStorage.getItem(CLAUSE_STORAGE_KEY);
+    const initialClause = savedClause || queryClause || DEMO_LOL_CLAUSE;
+    setClause(initialClause);
+    setParsedResult(parseClause(initialClause));
+  }, [queryClause]);
 
-  const derived = useMemo(() => deriveFromDeal(parsedResult, acv, termMonths), [parsedResult, acv, termMonths]);
+  useEffect(() => {
+    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
+  }, [clause]);
+
+  const derived = useMemo(
+    () => deriveFromDeal(parsedResult, acv, termMonths),
+    [parsedResult, acv, termMonths],
+  );
 
   function runReview() {
-    const parsed = parseClause(clause);
-    setParsedResult(parsed);
+    setParsedResult(parseClause(clause));
     window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
   }
 
   function resetClause() {
     window.localStorage.removeItem(CLAUSE_STORAGE_KEY);
-    setClause('');
-    setParsedResult(parseClause(''));
-  }
-
-  function loadTestClause(testClause: string) {
-    setClause(testClause);
-    const parsed = parseClause(testClause);
-    setParsedResult(parsed);
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, testClause);
+    setClause(DEMO_LOL_CLAUSE);
+    setParsedResult(parseClause(DEMO_LOL_CLAUSE));
   }
 
   const hasNarrowingItem = parsedResult.carveoutsFound.some((x) =>
@@ -370,7 +367,7 @@ function LolReviewContent() {
         <div className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Limitation of Liability Review</h1>
           <p className="mt-2 text-zinc-400">
-            Paste the clause below and run deterministic lawyer-logic against your deal context.
+            Standard clause module pattern: exact detected clause text, editable review, deterministic analysis.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
@@ -386,17 +383,21 @@ function LolReviewContent() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold">Clause text panel</h2>
+            <p className="text-xs text-zinc-400">Reusable for Indemnities, IP Ownership, Data Protection, and Termination.</p>
+          </div>
           <label htmlFor="lolClause" className="text-base font-semibold">
-            Paste the Limitation of Liability clause
+            Detected clause text
           </label>
           <textarea
             id="lolClause"
             value={clause}
             onChange={(e) => setClause(e.target.value)}
             rows={8}
-            placeholder="Paste full Limitation of Liability clause text here..."
             className="mt-3 w-full rounded-lg border border-zinc-700 bg-black/40 p-3 text-sm text-zinc-100 placeholder:text-zinc-500"
           />
+          <p className="mt-2 text-xs text-zinc-400">You can edit the extracted clause if needed.</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -408,148 +409,128 @@ function LolReviewContent() {
             <button
               type="button"
               onClick={resetClause}
-              className="text-sm text-zinc-300 underline-offset-2 hover:text-white hover:underline"
+              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
             >
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={() => loadTestClause(TEST_CLAUSES.fixedWithCarveouts)}
-              className="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-900"
-            >
-              Test clause: £ cap + GDPR/confidentiality
-            </button>
-            <button
-              type="button"
-              onClick={() => loadTestClause(TEST_CLAUSES.feesPaid12Months)}
-              className="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-900"
-            >
-              Test clause: fees paid (12 months)
-            </button>
-            <button
-              type="button"
-              onClick={() => loadTestClause(TEST_CLAUSES.twoXFraudOnly)}
-              className="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-900"
-            >
-              Test clause: 2x fees + fraud
+              Reset clause
             </button>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Detected from your clause</h2>
-                <p className="mt-1 text-sm text-zinc-400">Derived from deterministic parsing and deal math.</p>
+        <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
+          <h2 className="text-lg font-semibold">Analysis panel</h2>
+          <p className="mt-1 text-sm text-zinc-400">Results are always tied to the exact text currently in the textarea.</p>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:col-span-2">
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-base font-semibold">Overall commercial reasonableness</h3>
+                <span className={`rounded-full px-3 py-1 text-xs ${badgeClass(derived.badge)}`}>{derived.badge}</span>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs ${badgeClass(derived.badge)}`}>{derived.badge}</span>
             </div>
 
-            <div className="mt-4 space-y-3 text-sm">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Cap type</span>
-                <span className="font-medium">{labelForCapType(parsedResult.capType)}</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Estimated cap</span>
-                <span className="font-medium">
-                  {derived.impliedCapAmountGBP !== null ? money(derived.impliedCapAmountGBP) : 'Not estimated'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Cap multiple vs ACV</span>
-                <span className="font-medium">
-                  {derived.capMultipleVsACV !== null ? `${derived.capMultipleVsACV.toFixed(2)}×` : 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Scope</span>
-                <span className="font-medium">{parsedResult.capScope ?? 'unknown'}</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Asymmetric</span>
-                <span className="font-medium">{parsedResult.asymmetric ? 'Yes' : 'No'}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Exclusions</span>
-                <span className="font-medium">
-                  {parsedResult.exclusions && parsedResult.exclusions.length > 0
-                    ? parsedResult.exclusions.join(', ')
-                    : 'None detected'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
-            <h2 className="text-lg font-semibold">Carve-outs to watch</h2>
-            <p className="mt-1 text-sm text-zinc-400">Detected only from override context in your clause text.</p>
-
-            {parsedResult.carveoutsFound.length > 0 ? (
-              <ul className="mt-4 space-y-3 text-sm">
-                {parsedResult.carveoutsFound.map((x) => (
-                  <li key={x} className="flex gap-3 rounded-lg border border-zinc-800 bg-black/30 p-3">
-                    <span className="mt-0.5 text-amber-300">⚠</span>
-                    <span>{x}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="mt-4 rounded-lg border border-zinc-800 bg-black/30 p-3 text-sm text-zinc-300">
-                No carve-out overrides detected from the current clause text.
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5 md:col-span-2">
-            <h2 className="text-lg font-semibold">Negotiation fallbacks</h2>
-            <p className="mt-1 text-sm text-zinc-400">A practical ladder based on what was detected.</p>
-
-            <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
-              <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                <div className="text-xs text-zinc-400">Ask</div>
-                <div className="mt-1 font-medium">Cap at 1× ACV</div>
-                <div className="mt-2 text-zinc-300">“We can do a cap of {money(acv)}.”</div>
-              </div>
-
-              <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                <div className="text-xs text-zinc-400">Fallback</div>
-                <div className="mt-1 font-medium">Cap at 1.5× ACV</div>
-                <div className="mt-2 text-zinc-300">“If needed, we can stretch to {money(Math.round(acv * 1.5))}.”</div>
-              </div>
-
-              {hasNarrowingItem ? (
-                <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                  <div className="text-xs text-zinc-400">Narrowing</div>
-                  <div className="mt-1 font-medium">Cap applies to carve-outs except fraud/wilful misconduct</div>
-                  <div className="mt-2 text-zinc-300">
-                    “We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”
-                  </div>
+            <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
+              <h3 className="text-base font-semibold">Detected from your clause</h3>
+              <div className="mt-3 space-y-3 text-sm">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Cap type</span>
+                  <span className="font-medium">{labelForCapType(parsedResult.capType)}</span>
                 </div>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Estimated cap</span>
+                  <span className="font-medium">
+                    {derived.impliedCapAmountGBP !== null ? money(derived.impliedCapAmountGBP) : 'Not estimated'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Cap multiple vs ACV</span>
+                  <span className="font-medium">
+                    {derived.capMultipleVsACV !== null ? `${derived.capMultipleVsACV.toFixed(2)}×` : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Scope</span>
+                  <span className="font-medium">{parsedResult.capScope ?? 'unknown'}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Asymmetric</span>
+                  <span className="font-medium">{parsedResult.asymmetric ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Exclusions</span>
+                  <span className="font-medium">
+                    {parsedResult.exclusions && parsedResult.exclusions.length > 0
+                      ? parsedResult.exclusions.join(', ')
+                      : 'None detected'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
+              <h3 className="text-base font-semibold">Carve-outs to watch</h3>
+              {parsedResult.carveoutsFound.length > 0 ? (
+                <ul className="mt-3 space-y-3 text-sm">
+                  {parsedResult.carveoutsFound.map((x) => (
+                    <li key={x} className="flex gap-3 rounded-lg border border-zinc-800 bg-black/30 p-3">
+                      <span className="mt-0.5 text-amber-300">⚠</span>
+                      <span>{x}</span>
+                    </li>
+                  ))}
+                </ul>
               ) : (
-                <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                  <div className="text-xs text-zinc-400">Fallback</div>
-                  <div className="mt-1 font-medium">Cap at 2× ACV</div>
-                  <div className="mt-2 text-zinc-300">“Final position is {money(acv * 2)}.”</div>
+                <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 p-3 text-sm text-zinc-300">
+                  No carve-out overrides detected from the current clause text.
                 </div>
               )}
             </div>
 
-            <div className="mt-4 flex gap-3">
-              <Link
-                href="/deals/new"
-                className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
-              >
-                Back to New Deal
-              </Link>
-              <Link
-                href="/"
-                className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
-              >
-                Back to Landing
-              </Link>
+            <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:col-span-2">
+              <h3 className="text-base font-semibold">Negotiation fallback ladder</h3>
+              <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+                <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
+                  <div className="text-xs text-zinc-400">Ask</div>
+                  <div className="mt-1 font-medium">Cap at 1× ACV</div>
+                  <div className="mt-2 text-zinc-300">“We can do a cap of {money(acv)}.”</div>
+                </div>
+
+                <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
+                  <div className="text-xs text-zinc-400">Fallback</div>
+                  <div className="mt-1 font-medium">Cap at 1.5× ACV</div>
+                  <div className="mt-2 text-zinc-300">“If needed, we can stretch to {money(Math.round(acv * 1.5))}.”</div>
+                </div>
+
+                {hasNarrowingItem ? (
+                  <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
+                    <div className="text-xs text-zinc-400">Narrowing</div>
+                    <div className="mt-1 font-medium">Cap applies to carve-outs except fraud/wilful misconduct</div>
+                    <div className="mt-2 text-zinc-300">
+                      “We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
+                    <div className="text-xs text-zinc-400">Fallback</div>
+                    <div className="mt-1 font-medium">Cap at 2× ACV</div>
+                    <div className="mt-2 text-zinc-300">“Final position is {money(acv * 2)}.”</div>
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
+
+          <div className="mt-4 flex gap-3">
+            <Link
+              href="/deals/new"
+              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+            >
+              Back to New Deal
+            </Link>
+            <Link
+              href="/"
+              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
+            >
+              Back to Landing
+            </Link>
           </div>
         </div>
       </div>
