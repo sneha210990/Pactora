@@ -334,6 +334,23 @@ function LolReviewContent() {
     [parsedResult, acv, termMonths],
   );
 
+  const reviewQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('acv', String(acv));
+    params.set('termMonths', String(termMonths));
+    params.set('insuranceCover', String(insuranceCover));
+    params.set('dataType', dataType);
+
+    const explicitLolCap = searchParams.get('lolCap');
+    if (explicitLolCap) {
+      params.set('lolCap', explicitLolCap);
+    } else if (derived.impliedCapAmountGBP !== null) {
+      params.set('lolCap', String(derived.impliedCapAmountGBP));
+    }
+
+    return params.toString();
+  }, [acv, termMonths, insuranceCover, dataType, searchParams, derived.impliedCapAmountGBP]);
+
   function runReview() {
     setParsedResult(parseClause(clause));
     window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
@@ -519,6 +536,12 @@ function LolReviewContent() {
           </div>
 
           <div className="mt-4 flex gap-3">
+            <Link
+              href={`/review/indemnities?${reviewQuery}`}
+              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
+            >
+              Continue to Indemnities
+            </Link>
             <Link
               href="/deals/new"
               className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
