@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { NegotiationLadder } from '../components/negotiation-ladder';
 
 type CapType =
   | 'fixed_amount'
@@ -501,38 +502,34 @@ function LolReviewContent() {
               )}
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:col-span-2">
-              <h3 className="text-base font-semibold">Negotiation fallback ladder</h3>
-              <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
-                <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                  <div className="text-xs text-zinc-400">Ask</div>
-                  <div className="mt-1 font-medium">Cap at 1× ACV</div>
-                  <div className="mt-2 text-zinc-300">“We can do a cap of {money(acv)}.”</div>
-                </div>
-
-                <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                  <div className="text-xs text-zinc-400">Fallback</div>
-                  <div className="mt-1 font-medium">Cap at 1.5× ACV</div>
-                  <div className="mt-2 text-zinc-300">“If needed, we can stretch to {money(Math.round(acv * 1.5))}.”</div>
-                </div>
-
-                {hasNarrowingItem ? (
-                  <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                    <div className="text-xs text-zinc-400">Narrowing</div>
-                    <div className="mt-1 font-medium">Cap applies to carve-outs except fraud/wilful misconduct</div>
-                    <div className="mt-2 text-zinc-300">
-                      “We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-                    <div className="text-xs text-zinc-400">Fallback</div>
-                    <div className="mt-1 font-medium">Cap at 2× ACV</div>
-                    <div className="mt-2 text-zinc-300">“Final position is {money(acv * 2)}.”</div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <NegotiationLadder
+              className="md:col-span-2"
+              title="Negotiation fallback ladder"
+              items={[
+                {
+                  label: 'Ask',
+                  title: 'Cap at 1× ACV',
+                  script: `“We can do a cap of ${money(acv)}.”`,
+                },
+                {
+                  label: 'Fallback',
+                  title: 'Cap at 1.5× ACV',
+                  script: `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
+                },
+                hasNarrowingItem
+                  ? {
+                      label: 'Narrowing',
+                      title: 'Cap applies to carve-outs except fraud/wilful misconduct',
+                      script:
+                        '“We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
+                    }
+                  : {
+                      label: 'Fallback',
+                      title: 'Cap at 2× ACV',
+                      script: `“Final position is ${money(acv * 2)}.”`,
+                    },
+              ]}
+            />
           </div>
 
           <div className="mt-4 flex gap-3">
