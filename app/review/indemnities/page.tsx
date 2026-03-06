@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { NegotiationLadder } from '../components/negotiation-ladder';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
 type TriggerScope = 'IP' | 'Data' | 'Third-party claims' | 'Broad breach' | 'Unknown';
@@ -340,15 +341,26 @@ function IndemnitiesReviewContent() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
-              <h3 className="text-base font-semibold">Negotiation ladder</h3>
-              <ul className="mt-3 space-y-2 text-sm text-zinc-200">
-                <li className="rounded-lg border border-zinc-800 bg-black/30 p-3">Ask for mutual indemnities for IP infringement</li>
-                <li className="rounded-lg border border-zinc-800 bg-black/30 p-3">Narrow broad indemnity triggers</li>
-                <li className="rounded-lg border border-zinc-800 bg-black/30 p-3">Ensure indemnity sits inside the liability cap</li>
-                <li className="rounded-lg border border-zinc-800 bg-black/30 p-3">If vendor resists, cap indemnity at contract value</li>
-              </ul>
-            </div>
+            <NegotiationLadder
+              title="Negotiation ladder"
+              items={[
+                {
+                  label: 'Ask',
+                  title: 'Mutual indemnities for IP infringement',
+                  script: '“For IP infringement risk, we need this to be mutual so each side stands behind its own materials.”',
+                },
+                {
+                  label: 'Narrowing',
+                  title: 'Narrow broad indemnity triggers',
+                  script: '“Let’s limit this to specific third-party IP and data claims, not all losses from any breach.”',
+                },
+                {
+                  label: 'Fallback',
+                  title: 'Keep indemnity inside the liability cap',
+                  script: '“If broader language is required, this indemnity must still sit inside the agreed liability cap.”',
+                },
+              ]}
+            />
           </section>
         )}
 
