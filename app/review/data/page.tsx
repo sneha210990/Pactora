@@ -5,20 +5,24 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 
-type OwnershipStructure = 'Vendor owns' | 'Customer owns' | 'Shared/retained ownership' | 'Unknown';
-type LicenceModel = 'Limited licence' | 'Perpetual/Broad licence' | 'Broad licence' | 'Unknown';
-type StrategicRisk = 'Low' | 'Medium' | 'High';
+type DataRole = 'Controller' | 'Processor' | 'Joint' | 'Unknown';
+type NotificationWindow = '24h' | '48h' | '72h' | 'Unknown';
+type SubProcessorRisk = 'Low' | 'Medium' | 'High';
+type CapInteraction = 'Outside cap' | 'Inside cap' | 'Unclear';
+type SecurityScope = 'Reasonable' | 'Broad' | 'Unclear';
 type RiskRating = 'Low' | 'Medium' | 'High';
 
 type ReviewResult = {
-  ownershipStructure: OwnershipStructure;
-  licenceModel: LicenceModel;
-  strategicRisk: StrategicRisk;
+  dataRole: DataRole;
+  notificationWindow: NotificationWindow;
+  subProcessorRisk: SubProcessorRisk;
+  capInteraction: CapInteraction;
+  securityScope: SecurityScope;
   riskRating: RiskRating;
   redFlags: string[];
 };
 
-const CLAUSE_STORAGE_KEY = 'pactora.ipClause';
+const CLAUSE_STORAGE_KEY = 'pactora.dataClause';
 
 function normalize(input: string) {
   return input.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -37,100 +41,148 @@ function num(value: string | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function parseOwnershipStructure(text: string): OwnershipStructure {
-  const hasVestLanguage = text.includes('all intellectual property rights shall vest in');
+function parseDataRole(text: string): DataRole {
+  if (text.includes('joint controller')) return 'Joint';
+  if (text.includes('processor')) return 'Processor';
+  if (text.includes('controller')) return 'Controller';
+  return 'Unknown';
+}
 
-  if (hasVestLanguage && /(vendor|provider|supplier)/.test(text)) {
-    return 'Vendor owns';
-  }
-
-  if (hasVestLanguage && /(customer|client)/.test(text)) {
-    return 'Customer owns';
-  }
-
-  if (text.includes('each party retains ownership') || text.includes('retains all right, title and interest')) {
-    return 'Shared/retained ownership';
+function parseNotificationWindow(text: string): NotificationWindow {
+  if (text.includes('within 24 hours') || text.includes('24 hours')) return '24h';
+  if (text.includes('within 48 hours') || text.includes('48 hours')) return '48h';
+  if (
+    text.includes('without undue delay and where feasible within 72 hours') ||
+    text.includes('within 72 hours') ||
+    text.includes('72 hours')
+  ) {
+    return '72h';
   }
 
   return 'Unknown';
 }
 
-function parseLicenceModel(text: string): LicenceModel {
-  if (/(perpetual|irrevocable|worldwide)/.test(text)) {
-    return 'Perpetual/Broad licence';
+function parseSubProcessorRisk(text: string): SubProcessorRisk {
+  const hasUnlimitedStyle =
+    text.includes('fully liable for sub-processors') || text.includes('responsible for acts and omissions of sub-processors');
+
+  const hasLimitation = /subject to|limited to|within the liability cap|up to/.test(text);
+  if (hasUnlimitedStyle && !hasLimitation) return 'High';
+
+  if (/sub-processor(s)?/.test(text) && /(prior notice|prior written notice|approval|consent)/.test(text)) {
+    return 'Medium';
   }
 
-  if (/(sublicensable|transferable|assignable)/.test(text)) {
-    return 'Broad licence';
-  }
-
-  if (/(non-exclusive|limited|for internal business purposes)/.test(text)) {
-    return 'Limited licence';
-  }
-
-  return 'Unknown';
-}
-
-function deriveStrategicRisk(ownershipStructure: OwnershipStructure, licenceModel: LicenceModel): StrategicRisk {
-  const ownershipTransferBroadly = ownershipStructure === 'Vendor owns' || ownershipStructure === 'Customer owns';
-  const perpetualOrBroad = licenceModel === 'Perpetual/Broad licence' || licenceModel === 'Broad licence';
-
-  if (ownershipTransferBroadly || perpetualOrBroad) {
-    return 'High';
-  }
-
-  if (ownershipStructure === 'Shared/retained ownership' && licenceModel === 'Limited licence') {
+  if (
+    /sub-processor(s)?/.test(text) &&
+    /(reasonable controls|appropriate safeguards|industry standard|limited responsibility|commercially reasonable)/.test(text)
+  ) {
     return 'Low';
   }
 
   return 'Medium';
 }
 
-function deriveRiskRating(ownershipStructure: OwnershipStructure, licenceModel: LicenceModel): RiskRating {
-  const broadAssignment = ownershipStructure === 'Vendor owns' || ownershipStructure === 'Customer owns';
-  const broadOrPerpetualLicence = licenceModel === 'Perpetual/Broad licence' || licenceModel === 'Broad licence';
-
-  if (broadAssignment || broadOrPerpetualLicence) {
-    return 'High';
+function parseCapInteraction(text: string): CapInteraction {
+  if (
+    text.includes('not subject to the liability cap') ||
+    text.includes('cap shall not apply') ||
+    text.includes('outside the limitation of liability') ||
+    text.includes('unlimited liability for data protection')
+  ) {
+    return 'Outside cap';
   }
 
-  if (ownershipStructure === 'Shared/retained ownership' && licenceModel === 'Limited licence') {
-    return 'Low';
+  if (text.includes('subject to the limitations of liability') || text.includes('within the liability cap')) {
+    return 'Inside cap';
   }
 
-  return 'Medium';
+  return 'Unclear';
 }
 
-function deriveRedFlags(text: string, ownershipStructure: OwnershipStructure, licenceModel: LicenceModel): string[] {
+function parseSecurityScope(text: string): SecurityScope {
+  if (
+    text.includes('industry standard security measures') ||
+    text.includes('reasonable technical and organisational measures')
+  ) {
+    return 'Reasonable';
+  }
+
+  if (
+    text.includes('best possible security') ||
+    text.includes('all necessary security') ||
+    text.includes('absolute security')
+  ) {
+    return 'Broad';
+  }
+
+  return 'Unclear';
+}
+
+function deriveRedFlags(
+  notificationWindow: NotificationWindow,
+  subProcessorRisk: SubProcessorRisk,
+  capInteraction: CapInteraction,
+  securityScope: SecurityScope,
+): string[] {
   const flags: string[] = [];
 
-  if (ownershipStructure === 'Vendor owns' || ownershipStructure === 'Customer owns') {
-    flags.push('Broad IP ownership assignment language detected.');
+  if (notificationWindow === '24h') {
+    flags.push('Very short 24-hour breach notification window detected.');
   }
 
-  if (licenceModel === 'Perpetual/Broad licence' || /perpetual|irrevocable/.test(text)) {
-    flags.push('Perpetual or hard-to-terminate licence rights detected.');
+  if (subProcessorRisk === 'High') {
+    flags.push('Broad sub-processor liability exposure detected.');
   }
 
-  if (licenceModel === 'Broad licence' || /(sublicensable|transferable|assignable|worldwide)/.test(text)) {
-    flags.push('Broad usage rights extend beyond a narrow service purpose.');
+  if (capInteraction === 'Outside cap') {
+    flags.push('Data protection liability appears to sit outside the liability cap.');
+  }
+
+  if (securityScope === 'Broad') {
+    flags.push('Security commitments appear broad or potentially unlimited.');
   }
 
   return flags;
 }
 
+function deriveRiskRating(
+  notificationWindow: NotificationWindow,
+  subProcessorRisk: SubProcessorRisk,
+  capInteraction: CapInteraction,
+  securityScope: SecurityScope,
+): RiskRating {
+  if (notificationWindow === '24h' || subProcessorRisk === 'High' || capInteraction === 'Outside cap') {
+    return 'High';
+  }
+
+  if (securityScope === 'Broad' || securityScope === 'Unclear' || notificationWindow === 'Unknown' || capInteraction === 'Unclear') {
+    return 'Medium';
+  }
+
+  if (subProcessorRisk === 'Low' && capInteraction === 'Inside cap' && securityScope === 'Reasonable') {
+    return 'Low';
+  }
+
+  return 'Medium';
+}
+
 function parseClause(clause: string): ReviewResult {
   const text = normalize(clause);
-  const ownershipStructure = parseOwnershipStructure(text);
-  const licenceModel = parseLicenceModel(text);
-  const strategicRisk = deriveStrategicRisk(ownershipStructure, licenceModel);
-  const riskRating = deriveRiskRating(ownershipStructure, licenceModel);
-  const redFlags = deriveRedFlags(text, ownershipStructure, licenceModel);
+  const dataRole = parseDataRole(text);
+  const notificationWindow = parseNotificationWindow(text);
+  const subProcessorRisk = parseSubProcessorRisk(text);
+  const capInteraction = parseCapInteraction(text);
+  const securityScope = parseSecurityScope(text);
+  const riskRating = deriveRiskRating(notificationWindow, subProcessorRisk, capInteraction, securityScope);
+  const redFlags = deriveRedFlags(notificationWindow, subProcessorRisk, capInteraction, securityScope);
 
   return {
-    ownershipStructure,
-    licenceModel,
-    strategicRisk,
+    dataRole,
+    notificationWindow,
+    subProcessorRisk,
+    capInteraction,
+    securityScope,
     riskRating,
     redFlags,
   };
@@ -151,7 +203,7 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function IpOwnershipReviewContent() {
+function DataProtectionReviewContent() {
   const searchParams = useSearchParams();
 
   const acv = searchParams.get('acv');
@@ -197,10 +249,10 @@ function IpOwnershipReviewContent() {
 
   const showWarning =
     result &&
-    (result.ownershipStructure === 'Vendor owns' ||
-      result.ownershipStructure === 'Customer owns' ||
-      result.licenceModel === 'Perpetual/Broad licence' ||
-      result.licenceModel === 'Broad licence');
+    (result.notificationWindow === '24h' ||
+      result.subProcessorRisk === 'High' ||
+      result.capInteraction === 'Outside cap' ||
+      result.securityScope === 'Broad');
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black text-white">
@@ -218,9 +270,9 @@ function IpOwnershipReviewContent() {
         </div>
 
         <section className="mt-10">
-          <h1 className="text-4xl font-semibold tracking-tight">IP Ownership Review</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">Data Protection Review</h1>
           <p className="mt-2 text-zinc-400">
-            Assess whether ownership, licensing, and usage rights create commercial or strategic risk.
+            Assess whether GDPR, security, and data-processing obligations create disproportionate risk.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
@@ -246,19 +298,20 @@ function IpOwnershipReviewContent() {
           <div className="mb-3">
             <h2 className="text-lg font-semibold">Clause input</h2>
             <p className="text-xs text-zinc-400">
-              Paste the IP / ownership wording here to assess assignment risk, licence scope, and vendor/customer rights.
+              Paste the DPA / GDPR / data-processing wording here to assess breach notification, sub-processor exposure, and
+              liability carve-outs.
             </p>
           </div>
-          <label htmlFor="ipClause" className="text-base font-semibold">
-            Paste the IP ownership clause
+          <label htmlFor="dataClause" className="text-base font-semibold">
+            Paste the data protection clause
           </label>
           <textarea
-            id="ipClause"
+            id="dataClause"
             rows={8}
             value={clause}
             onChange={(event) => setClause(event.target.value)}
             className="mt-2 w-full rounded-xl border border-zinc-700 bg-black/40 p-4 text-sm text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-zinc-500"
-            placeholder="Paste IP ownership wording..."
+            placeholder="Paste data protection wording..."
           />
 
           <div className="mt-4 flex flex-wrap gap-3">
@@ -282,9 +335,9 @@ function IpOwnershipReviewContent() {
         {result && (
           <section className="mt-8 space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <ReviewCard label="Ownership structure" value={result.ownershipStructure} />
-              <ReviewCard label="Licence model" value={result.licenceModel} />
-              <ReviewCard label="Strategic risk" value={result.strategicRisk} />
+              <ReviewCard label="Data role" value={result.dataRole} />
+              <ReviewCard label="Notification window" value={result.notificationWindow} />
+              <ReviewCard label="Sub-processor risk" value={result.subProcessorRisk} />
               <div className={`rounded-xl border p-4 ${riskClass(result.riskRating)}`}>
                 <div className="text-xs uppercase tracking-wide">Risk rating</div>
                 <div className="mt-2 text-base font-semibold">{result.riskRating}</div>
@@ -293,9 +346,9 @@ function IpOwnershipReviewContent() {
 
             {showWarning && (
               <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">
-                <div className="text-sm font-semibold">IP ownership warning</div>
+                <div className="text-sm font-semibold">Data protection warning</div>
                 <p className="mt-1 text-sm">
-                  This clause may transfer ownership or grant broader usage rights than expected.
+                  This clause may create GDPR or processor exposure beyond what most SaaS companies accept.
                 </p>
               </div>
             )}
@@ -304,16 +357,20 @@ function IpOwnershipReviewContent() {
               <h3 className="text-base font-semibold">Detected from your clause</h3>
               <div className="mt-3 space-y-3 text-sm">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Ownership structure</span>
-                  <span className="font-medium">{result.ownershipStructure}</span>
+                  <span className="text-zinc-400">Data role</span>
+                  <span className="font-medium">{result.dataRole}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Licence model</span>
-                  <span className="font-medium">{result.licenceModel}</span>
+                  <span className="text-zinc-400">Notification window</span>
+                  <span className="font-medium">{result.notificationWindow}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Strategic risk</span>
-                  <span className="font-medium">{result.strategicRisk}</span>
+                  <span className="text-zinc-400">Sub-processor risk</span>
+                  <span className="font-medium">{result.subProcessorRisk}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Cap interaction</span>
+                  <span className="font-medium">{result.capInteraction}</span>
                 </div>
                 <div>
                   <div className="mb-2 text-zinc-400">Extracted red flags</div>
@@ -337,27 +394,27 @@ function IpOwnershipReviewContent() {
               items={[
                 {
                   label: 'Position 1',
-                  title: 'Retain ownership of pre-existing IP',
+                  title: 'Align notification windows with operational reality',
                   script:
-                    '“Each party should retain ownership of its pre-existing IP and materials created independently of this agreement.”',
+                    '“We can commit to prompt notification, but breach notification timelines should reflect practical incident triage and customer comms.”',
                 },
                 {
                   label: 'Position 2',
-                  title: 'Narrow licence scope to service use only',
+                  title: 'Ensure sub-processor liability is proportionate',
                   script:
-                    '“Any licence should be limited to using the service for contract purposes, not for unrelated exploitation.”',
+                    '“Sub-processor responsibility should be proportionate and tied to reasonable oversight, not open-ended strict liability.”',
                 },
                 {
                   label: 'Position 3',
-                  title: 'Avoid broad perpetual or sublicensable rights unless necessary',
+                  title: 'Keep data liabilities within the liability cap where possible',
                   script:
-                    '“Perpetual, sublicensable, or transferable rights should be removed unless there is a specific operational need.”',
+                    '“Data protection liabilities should be addressed under the agreed liability framework unless law requires otherwise.”',
                 },
                 {
                   label: 'Position 4',
-                  title: 'If customer insists, keep rights limited and revocable',
+                  title: 'Narrow vague security duties to industry-standard measures',
                   script:
-                    '“If extended rights are required, they should be limited, revocable, and expressly tied to the contract purpose.”',
+                    '“Security language should reference reasonable, industry-standard technical and organisational measures rather than absolute outcomes.”',
                 },
               ]}
             />
@@ -366,16 +423,16 @@ function IpOwnershipReviewContent() {
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href={`/review/indemnities${queryString ? `?${queryString}` : ''}`}
+            href={`/review/ip${queryString ? `?${queryString}` : ''}`}
             className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
           >
             Back
           </Link>
           <Link
-            href={`/review/data${queryString ? `?${queryString}` : ''}`}
+            href={`/review/termination${queryString ? `?${queryString}` : ''}`}
             className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
           >
-            Continue to Data Protection
+            Continue
           </Link>
         </div>
       </div>
@@ -383,10 +440,10 @@ function IpOwnershipReviewContent() {
   );
 }
 
-export default function IpOwnershipReviewPage() {
+export default function DataProtectionReviewPage() {
   return (
     <Suspense fallback={<main className="min-h-screen bg-black p-6 text-white">Loading review…</main>}>
-      <IpOwnershipReviewContent />
+      <DataProtectionReviewContent />
     </Suspense>
   );
 }
