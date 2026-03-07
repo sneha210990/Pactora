@@ -25,24 +25,24 @@ export default function RootLayout({
 
               <nav className="flex items-center gap-3">
                 <Link
-                  href="/deals/new"
-                  className="rounded-lg border border-zinc-800 px-3 py-2 text-sm transition hover:bg-zinc-900"
-                >
-                  New Deal
-                </Link>
-
-                <Link
                   href="/"
                   className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
                 >
-                  Landing
+                  Product
                 </Link>
 
                 <Link
-                  href="/feedback"
+                  href="/security"
                   className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
                 >
-                  Feedback
+                  Security
+                </Link>
+
+                <Link
+                  href="/login"
+                  className="rounded-lg border border-zinc-800 px-3 py-2 text-sm transition hover:bg-zinc-900"
+                >
+                  Sign in
                 </Link>
 
                 <BetaNav />
