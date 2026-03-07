@@ -1,0 +1,35 @@
+import { NextResponse } from 'next/server';
+import { getCurrentSessionUser } from '@/lib/auth';
+import { BetaEventType, createEvent } from '@/lib/beta-store';
+
+const allowedEventTypes = new Set<BetaEventType>([
+  'contract_upload_started',
+  'contract_uploaded',
+  'analysis_started',
+  'analysis_completed',
+]);
+
+export async function POST(request: Request) {
+  const sessionData = await getCurrentSessionUser();
+
+  if (!sessionData) {
+    return NextResponse.json({ error: 'Login required' }, { status: 401 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const event_type = typeof body?.event_type === 'string' ? body.event_type : '';
+  const page_context = typeof body?.page_context === 'string' ? body.page_context : 'unknown';
+
+  if (!allowedEventTypes.has(event_type as BetaEventType)) {
+    return NextResponse.json({ error: 'Invalid event type' }, { status: 400 });
+  }
+
+  await createEvent({
+    event_type: event_type as BetaEventType,
+    user_id: sessionData.user.id,
+    email: sessionData.user.email,
+    page_context,
+  });
+
+  return NextResponse.json({ ok: true });
+}

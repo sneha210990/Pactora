@@ -19,11 +19,11 @@ const sections = [
   },
   {
     title: '3. Personal data collected',
-    body: 'This may include account/contact details you provide directly, uploaded documents, personal data contained in uploaded documents, extracted contract metadata, and technical/usage/security information (such as logs and device/browser events).',
+    body: 'This may include account details (required email, and optional full name, company, role, and use case), uploaded documents, personal data contained in uploaded documents, extracted contract metadata, feedback submissions, and technical/usage/security event data (such as login, upload, analysis, and session activity logs).',
   },
   {
     title: '4. How personal data is used',
-    body: 'Personal data may be used to provide the service, process and analyse uploads, generate outputs, secure and monitor the service, troubleshoot issues, support users, and operate/improve the product.',
+    body: 'Personal data may be used to operate the beta service, process and analyse uploads, generate outputs, understand product usage and churn, respond to support/feedback, maintain security, troubleshoot issues, and improve Pactora.',
   },
   {
     title: '5. Lawful bases',
@@ -67,7 +67,7 @@ const sections = [
   },
   {
     title: '15. Cookies and similar technologies',
-    body: 'Pactora may use essential cookies and similar technologies for session management, security, and service performance. Additional analytics tooling may be introduced as beta evolves.',
+    body: 'Pactora uses essential cookies/similar technologies for lightweight login sessions, security, and service performance. Pactora does not use this beta telemetry for advertising.',
   },
   {
     title: '16. Your rights',

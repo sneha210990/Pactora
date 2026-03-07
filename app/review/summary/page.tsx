@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { FeedbackForm } from '@/components/feedback-form';
+import { trackEvent } from '@/components/track-event';
 import { useSearchParams } from 'next/navigation';
 
 function money(n: number) {
@@ -19,6 +21,15 @@ function num(value: string | null): number | null {
 
 function SummaryContent() {
   const searchParams = useSearchParams();
+
+  const [user, setUser] = useState<{ email: string } | null>(null);
+
+  useEffect(() => {
+    trackEvent('analysis_completed', '/review/summary');
+    fetch('/api/me')
+      .then((response) => response.json())
+      .then((data: { user: { email: string } | null }) => setUser(data.user));
+  }, []);
 
   const acv = searchParams.get('acv');
   const termMonths = searchParams.get('termMonths');
@@ -78,6 +89,10 @@ function SummaryContent() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Next: consolidated negotiation email</h2>
             <p className="mt-2 text-zinc-200">Coming soon: generate a founder-ready negotiation email that consolidates major asks.</p>
           </div>
+        </section>
+
+        <section className="mt-10">
+          <FeedbackForm user={user} compact />
         </section>
 
         <div className="mt-8">

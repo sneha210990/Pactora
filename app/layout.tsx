@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import './globals.css';
+import { BetaNav } from '@/components/beta-nav';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -36,6 +37,15 @@ export default function RootLayout({
                 >
                   Landing
                 </Link>
+
+                <Link
+                  href="/feedback"
+                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
+                >
+                  Feedback
+                </Link>
+
+                <BetaNav />
               </nav>
             </div>
           </header>
@@ -56,6 +66,9 @@ export default function RootLayout({
                 </Link>
                 <Link href="/subprocessors" className="hover:text-white">
                   Subprocessors
+                </Link>
+                <Link href="/feedback" className="hover:text-white">
+                  Feedback
                 </Link>
               </div>
               <div className="space-y-1 text-zinc-500 md:text-right">
