@@ -3,6 +3,12 @@
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 
+const ERROR_MESSAGES: Record<string, string> = {
+  google_auth_failed: 'Google sign-in could not be completed.',
+  invalid_credentials: 'Invalid email or password.',
+  signup_failed: 'Account creation could not be completed.',
+};
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +19,12 @@ export default function LoginPage() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    return params.get('error') ?? '';
+    const errorCode = params.get('error');
+    if (!errorCode) {
+      return '';
+    }
+
+    return ERROR_MESSAGES[errorCode] ?? errorCode;
   });
   const [loading, setLoading] = useState(false);
   const [nextPath] = useState(() => {
