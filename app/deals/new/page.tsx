@@ -57,13 +57,10 @@ export default function NewDealPage() {
             Upload your draft contract, confirm the extracted commercial context, then continue to
             Letter of Liability review.
           </p>
-          {!userEmail ? (
-            <p className="text-sm text-amber-300">
-              You are not logged in. <Link href="/login" className="underline">Log in</Link> to continue.
-            </p>
-          ) : (
+          <p className="text-xs uppercase tracking-wide text-amber-300">Demo mode: authentication is bypassed</p>
+          {userEmail ? (
             <p className="text-sm text-zinc-500">Signed in as {userEmail}</p>
-          )}
+          ) : null}
         </header>
 
         <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">

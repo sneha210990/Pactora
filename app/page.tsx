@@ -1,13 +1,10 @@
 import Link from 'next/link';
 import { FeedbackForm } from '@/components/feedback-form';
-import { getCurrentSessionUser } from '@/lib/auth';
 
 const sampleReviewHref =
   '/review/lol?sample=true&acv=25000&termMonths=12&insuranceCover=1000000&dataType=standard';
 
-export default async function Home() {
-  const sessionData = await getCurrentSessionUser();
-
+export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
       <section className="border-b border-zinc-800 px-6 py-20 md:py-24">
@@ -34,6 +31,8 @@ export default async function Home() {
                 See sample review
               </Link>
             </div>
+
+            <p className="mt-5 text-xs uppercase tracking-wide text-amber-300">Demo mode: sign-in is temporarily disabled</p>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5 shadow-2xl shadow-black/30">
@@ -187,7 +186,7 @@ export default async function Home() {
 
       <section className="border-t border-zinc-800 px-6 py-16">
         <div className="mx-auto max-w-3xl">
-          <FeedbackForm user={sessionData?.user ?? null} compact />
+          <FeedbackForm user={null} compact />
         </div>
       </section>
     </main>
