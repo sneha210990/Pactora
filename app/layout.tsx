@@ -58,7 +58,10 @@ export default function RootLayout({
                   Subprocessors
                 </Link>
               </div>
-              <p className="text-zinc-500">Support: hello@pactora.co</p>
+              <div className="space-y-1 text-zinc-500 md:text-right">
+                <p>Pactora is currently operated by Sneha Sindhu Ganapavarapu.</p>
+                <p>Contact: snehasindhu2109@gmail.com</p>
+              </div>
             </div>
           </footer>
         </div>
