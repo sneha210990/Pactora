@@ -3,7 +3,7 @@ import { FeedbackForm } from '@/components/feedback-form';
 import { getCurrentSessionUser } from '@/lib/auth';
 
 const sampleReviewHref =
-  '/review/lol?acv=25000&termMonths=12&insuranceCover=1000000&dataType=standard';
+  '/review/lol?sample=true&acv=25000&termMonths=12&insuranceCover=1000000&dataType=standard';
 
 export default async function Home() {
   const sessionData = await getCurrentSessionUser();
