@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { FeedbackForm } from '@/components/feedback-form';
 
-const sampleReviewHref =
-  '/review/lol?sample=true&acv=25000&termMonths=12&insuranceCover=1000000&dataType=standard';
 
 export default function Home() {
   return (
@@ -24,15 +22,8 @@ export default function Home() {
               >
                 Start review
               </Link>
-              <Link
-                href={sampleReviewHref}
-                className="inline-block rounded-lg border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-900"
-              >
-                See sample review
-              </Link>
             </div>
 
-            <p className="mt-5 text-xs uppercase tracking-wide text-amber-300">Demo mode: sign-in is temporarily disabled</p>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5 shadow-2xl shadow-black/30">
@@ -166,19 +157,13 @@ export default function Home() {
       <section className="border-b border-zinc-800 px-6 py-20">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="mb-5 text-3xl font-semibold">Ready to review your next contract?</h2>
-          <p className="mb-8 text-zinc-400">Start with deal context or explore a sample limitation-of-liability review.</p>
+          <p className="mb-8 text-zinc-400">Start with deal context and move through Pactora’s structured contract review workflow.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/deals/new"
               className="inline-block rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200"
             >
               Start review
-            </Link>
-            <Link
-              href={sampleReviewHref}
-              className="inline-block rounded-lg border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-900"
-            >
-              See sample review
             </Link>
           </div>
         </div>

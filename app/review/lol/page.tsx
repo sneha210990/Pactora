@@ -320,7 +320,6 @@ function LolReviewContent() {
   const insuranceCover = num(searchParams.get('insuranceCover'), 1000000);
   const dataType = str(searchParams.get('dataType'), 'standard');
   const queryClause = str(searchParams.get('lolClause'));
-  const isSampleMode = searchParams.get('sample') === 'true';
 
   const [clause, setClause] = useState(DEMO_LOL_CLAUSE);
   const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(DEMO_LOL_CLAUSE));
@@ -384,7 +383,7 @@ function LolReviewContent() {
             href="/deals/new"
             className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
           >
-            {isSampleMode ? 'Start review' : 'New Deal'}
+            New Deal
           </Link>
         </div>
 
@@ -394,14 +393,6 @@ function LolReviewContent() {
             Standard clause module pattern: exact detected clause text, editable review, deterministic analysis.
           </p>
 
-          {isSampleMode ? (
-            <div className="mt-4 rounded-lg border border-violet-500/40 bg-violet-500/10 px-4 py-3">
-              <p className="text-sm font-semibold text-violet-100">Sample review</p>
-              <p className="mt-1 text-sm text-violet-200">
-                This is a public demo of Pactora’s review output.
-              </p>
-            </div>
-          ) : null}
 
           <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
             Pactora provides decision-support for internal commercial review. Outputs may be incomplete
@@ -554,29 +545,18 @@ function LolReviewContent() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
-            {isSampleMode ? (
-              <Link
-                href="/deals/new"
-                className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
-              >
-                Start review
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href={`/review/indemnities?${reviewQuery}`}
-                  className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
-                >
-                  Continue to Indemnities
-                </Link>
-                <Link
-                  href="/deals/new"
-                  className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
-                >
-                  Back to New Deal
-                </Link>
-              </>
-            )}
+            <Link
+              href={`/review/indemnities?${reviewQuery}`}
+              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
+            >
+              Continue to Indemnities
+            </Link>
+            <Link
+              href="/deals/new"
+              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+            >
+              Back to New Deal
+            </Link>
             <Link
               href="/"
               className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
