@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <div className="min-h-screen bg-black text-white">
+        <div className="flex min-h-screen flex-col bg-black text-white">
           <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/70 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
               <Link href="/" className="font-semibold tracking-tight">
@@ -40,7 +40,27 @@ export default function RootLayout({
             </div>
           </header>
 
-          <main>{children}</main>
+          <div className="flex-1">{children}</div>
+
+          <footer className="border-t border-zinc-800 bg-zinc-950/60">
+            <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-6 text-sm text-zinc-400 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap items-center gap-4">
+                <Link href="/terms" className="hover:text-white">
+                  Terms
+                </Link>
+                <Link href="/privacy" className="hover:text-white">
+                  Privacy
+                </Link>
+                <Link href="/security" className="hover:text-white">
+                  Security
+                </Link>
+                <Link href="/subprocessors" className="hover:text-white">
+                  Subprocessors
+                </Link>
+              </div>
+              <p className="text-zinc-500">Support: hello@pactora.co</p>
+            </div>
+          </footer>
         </div>
       </body>
     </html>

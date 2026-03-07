@@ -388,6 +388,12 @@ function LolReviewContent() {
             Standard clause module pattern: exact detected clause text, editable review, deterministic analysis.
           </p>
 
+          <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
+            Pactora provides decision-support for internal commercial review. Outputs may be incomplete
+            or inaccurate and should be reviewed by a qualified human before material decisions are
+            made.
+          </div>
+
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acv)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
