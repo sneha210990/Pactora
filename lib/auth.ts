@@ -1,18 +1,42 @@
 import { cookies } from 'next/headers';
-import { getUserFromAccessToken, parseSession, SESSION_COOKIE_NAME } from './supabase-auth';
+import { authCookieOptions, getUserFromAccessToken, parseSession, refreshSession, SESSION_COOKIE_NAME, serializeSession } from './supabase-auth';
 import { createOrUpdateUserByIdentity } from './beta-store';
 
 export { SESSION_COOKIE_NAME } from './supabase-auth';
 
 export async function getCurrentSessionUser() {
   const cookieStore = await cookies();
-  const session = parseSession(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  let session = parseSession(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 
   if (!session) {
     return null;
   }
 
-  const userResponse = await getUserFromAccessToken(session.access_token);
+  let userResponse = await getUserFromAccessToken(session.access_token);
+
+  if (!userResponse.ok) {
+    const refreshResponse = await refreshSession(session.refresh_token);
+    if (!refreshResponse.ok) {
+      return null;
+    }
+
+    const refreshed = (await refreshResponse.json()) as {
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+      user: { id: string; email: string };
+    };
+
+    session = {
+      access_token: refreshed.access_token,
+      refresh_token: refreshed.refresh_token,
+      expires_at: Date.now() + refreshed.expires_in * 1000,
+      user: refreshed.user,
+    };
+
+    cookieStore.set(SESSION_COOKIE_NAME, serializeSession(session), authCookieOptions());
+    userResponse = await getUserFromAccessToken(session.access_token);
+  }
 
   if (!userResponse.ok) {
     return null;
