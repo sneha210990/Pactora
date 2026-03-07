@@ -42,3 +42,7 @@ next-env.d.ts
 
 # local beta telemetry store
 data/beta-store.json
+
+# playwright
+/playwright-report/
+/test-results/

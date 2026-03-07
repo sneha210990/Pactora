@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## QA workflow tests (Playwright)
+
+Run the Pactora workflow QA suite:
+
+```bash
+npm run qa
+```
+
+This command builds and serves the Next.js app, then runs the first 8 Playwright workflow tests.
+
+### HTML report
+
+After a run, open the human-readable Playwright HTML report:
+
+```bash
+npm run qa:report
+```
+
+Artifacts for failed tests are stored automatically:
+- screenshots (`screenshot: only-on-failure`)
+- trace files
+- video recordings

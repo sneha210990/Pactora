@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "qa": "playwright test",
+    "qa:report": "playwright show-report"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
