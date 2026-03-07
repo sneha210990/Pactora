@@ -1,7 +1,25 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createEvent, createOrUpdateUserByIdentity } from '@/lib/beta-store';
-import { authCookieOptions, SESSION_COOKIE_NAME, serializeSession, signInWithEmail, signUpWithEmail } from '@/lib/supabase-auth';
+import {
+  authCookieOptions,
+  buildSessionPayload,
+  SESSION_COOKIE_NAME,
+  serializeSession,
+  signInWithEmail,
+  signUpWithEmail,
+} from '@/lib/supabase-auth';
+
+type SupabaseAuthError = {
+  msg?: string;
+  message?: string;
+  error_description?: string;
+  error?: string;
+};
+
+function parseSupabaseError(err: SupabaseAuthError | null, fallback: string) {
+  return err?.error_description ?? err?.message ?? err?.msg ?? err?.error ?? fallback;
+}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -21,16 +39,22 @@ export async function POST(request: Request) {
   if (mode === 'signup') {
     const signupResponse = await signUpWithEmail(email, password);
     if (!signupResponse.ok) {
-      const err = await signupResponse.json().catch(() => null) as { msg?: string; message?: string; error_description?: string; error?: string } | null;
-      return NextResponse.json({ error: err?.error_description ?? err?.message ?? err?.msg ?? err?.error ?? 'Unable to sign up right now.' }, { status: 400 });
+      const err = (await signupResponse.json().catch(() => null)) as SupabaseAuthError | null;
+      return NextResponse.json(
+        { error: parseSupabaseError(err, 'Unable to sign up right now.') },
+        { status: 400 },
+      );
     }
   }
 
   const signInResponse = await signInWithEmail(email, password);
 
   if (!signInResponse.ok) {
-    const err = await signInResponse.json().catch(() => null) as { error_description?: string; msg?: string; message?: string; error?: string } | null;
-    return NextResponse.json({ error: err?.error_description ?? err?.message ?? err?.msg ?? err?.error ?? 'Unable to log in right now.' }, { status: 400 });
+    const err = (await signInResponse.json().catch(() => null)) as SupabaseAuthError | null;
+    return NextResponse.json(
+      { error: parseSupabaseError(err, 'Unable to log in right now.') },
+      { status: 400 },
+    );
   }
 
   const data = (await signInResponse.json()) as {
@@ -49,15 +73,7 @@ export async function POST(request: Request) {
   const cookieStore = await cookies();
   cookieStore.set(
     SESSION_COOKIE_NAME,
-    serializeSession({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_at: Date.now() + data.expires_in * 1000,
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-      },
-    }),
+    serializeSession(buildSessionPayload(data)),
     authCookieOptions(),
   );
 
