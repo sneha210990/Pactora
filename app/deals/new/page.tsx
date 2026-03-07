@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 
 export default function NewDealPage() {
@@ -9,23 +9,11 @@ export default function NewDealPage() {
   const [hasDetectedValues, setHasDetectedValues] = useState<boolean>(false);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
-  const [userEmail, setUserEmail] = useState<string>('');
-
   const [acv, setAcv] = useState<number>(0);
   const [termMonths, setTermMonths] = useState<number>(0);
   const [insuranceCover, setInsuranceCover] = useState<number>(0);
   const [dataType, setDataType] = useState<string>('standard');
 
-
-  useEffect(() => {
-    fetch('/api/me')
-      .then((response) => response.json())
-      .then((data: { user: { email: string } | null }) => {
-        if (data.user?.email) {
-          setUserEmail(data.user.email);
-        }
-      });
-  }, []);
 
   const handleContractUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -57,10 +45,6 @@ export default function NewDealPage() {
             Upload your draft contract, confirm the extracted commercial context, then continue to
             Letter of Liability review.
           </p>
-          <p className="text-xs uppercase tracking-wide text-amber-300">Demo mode: authentication is bypassed</p>
-          {userEmail ? (
-            <p className="text-sm text-zinc-500">Signed in as {userEmail}</p>
-          ) : null}
         </header>
 
         <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
