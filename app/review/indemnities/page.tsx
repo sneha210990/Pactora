@@ -387,7 +387,7 @@ function IndemnitiesReviewContent() {
             href={`/review/ip${queryString ? `?${queryString}` : ''}`}
             className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
           >
-            Continue
+            Continue to IP Ownership
           </Link>
         </div>
       </div>
