@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { ChangeEvent, useState } from 'react';
 
 export default function NewDealPage() {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [hasDetectedValues, setHasDetectedValues] = useState<boolean>(false);
+  const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
 
   const [acv, setAcv] = useState<number>(0);
   const [termMonths, setTermMonths] = useState<number>(0);
@@ -148,9 +150,56 @@ export default function NewDealPage() {
               </select>
             </div>
 
+            <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
+                <li>Pactora provides decision-support only and is not legal advice.</li>
+                <li>No solicitor-client or lawyer-client relationship is created through use of the service.</li>
+                <li>
+                  Outputs may be incomplete or inaccurate and should be reviewed by a qualified human
+                  before material decisions are made.
+                </li>
+                <li>You confirm that you are authorised to upload the document.</li>
+                <li>
+                  Please avoid uploading unnecessary personal data or special-category data where
+                  possible.
+                </li>
+              </ul>
+              <p className="mt-4 text-zinc-300">
+                Read our{' '}
+                <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
+                  Terms
+                </Link>{' '}
+                ,{' '}
+                <Link href="/privacy" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
+                  Privacy Notice
+                </Link>{' '}
+                and{' '}
+                <Link href="/security" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
+                  Security page
+                </Link>
+                .
+              </p>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
+              <input
+                type="checkbox"
+                required
+                checked={hasAcceptedLegalNotice}
+                onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
+              />
+              <span>
+                I confirm I am authorised to upload this document and understand Pactora provides
+                decision-support only, not legal advice.
+              </span>
+            </label>
+
             <button
               type="submit"
-              className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200"
+              disabled={!hasAcceptedLegalNotice}
+              className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
             >
               Continue to LoL Review
             </button>
