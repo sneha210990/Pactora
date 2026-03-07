@@ -432,7 +432,7 @@ function DataProtectionReviewContent() {
             href={`/review/termination${queryString ? `?${queryString}` : ''}`}
             className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
           >
-            Continue
+            Continue to Termination
           </Link>
         </div>
       </div>
