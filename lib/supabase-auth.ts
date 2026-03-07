@@ -1,12 +1,22 @@
 export const SESSION_COOKIE_NAME = 'pactora_session';
 
-type SessionPayload = {
+export type SessionPayload = {
   access_token: string;
   refresh_token: string;
   expires_at: number;
   user: {
     id: string;
     email: string;
+  };
+};
+
+type AuthTokenResponse = {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  user?: {
+    id: string;
+    email?: string | null;
   };
 };
 
@@ -41,6 +51,28 @@ function encode(data: string) {
 
 function decode(data: string) {
   return decodeURIComponent(data);
+}
+
+export function buildSessionPayload(
+  auth: AuthTokenResponse,
+  fallbackUser?: { id: string; email: string },
+): SessionPayload {
+  const userId = auth.user?.id ?? fallbackUser?.id;
+  const userEmail = auth.user?.email ?? fallbackUser?.email;
+
+  if (!userId || !userEmail) {
+    throw new Error('Missing authenticated user identity when creating session.');
+  }
+
+  return {
+    access_token: auth.access_token,
+    refresh_token: auth.refresh_token,
+    expires_at: Date.now() + auth.expires_in * 1000,
+    user: {
+      id: userId,
+      email: userEmail,
+    },
+  };
 }
 
 export function serializeSession(payload: SessionPayload) {
