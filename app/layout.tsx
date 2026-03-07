@@ -5,7 +5,7 @@ import { BetaNav } from '@/components/beta-nav';
 
 export const metadata: Metadata = {
   title: 'Pactora',
-  description: 'Risk-weighted contract intelligence for SaaS teams',
+  description: 'Structured contract review platform for SaaS teams to understand commercial risk before legal review.',
 };
 
 export default function RootLayout({
