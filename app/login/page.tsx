@@ -7,7 +7,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    return params.get('error') ?? '';
+  });
   const [loading, setLoading] = useState(false);
   const [nextPath] = useState(() => {
     if (typeof window === 'undefined') {
@@ -31,8 +38,24 @@ export default function LoginPage() {
     });
 
     if (!response.ok) {
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
-      setStatus(data?.error ?? 'Unable to continue right now.');
+      const fallback = await response.text().catch(() => '');
+      const data = (() => {
+        if (!fallback) {
+          return null;
+        }
+
+        try {
+          return JSON.parse(fallback) as {
+            error?: string;
+            message?: string;
+            error_description?: string;
+          };
+        } catch {
+          return null;
+        }
+      })();
+
+      setStatus(data?.error ?? data?.message ?? data?.error_description ?? (fallback || 'Unable to continue right now.'));
       setLoading(false);
       return;
     }

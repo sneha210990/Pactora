@@ -21,16 +21,16 @@ export async function POST(request: Request) {
   if (mode === 'signup') {
     const signupResponse = await signUpWithEmail(email, password);
     if (!signupResponse.ok) {
-      const err = await signupResponse.json().catch(() => null) as { msg?: string } | null;
-      return NextResponse.json({ error: err?.msg ?? 'Unable to sign up right now.' }, { status: 400 });
+      const err = await signupResponse.json().catch(() => null) as { msg?: string; message?: string; error_description?: string; error?: string } | null;
+      return NextResponse.json({ error: err?.error_description ?? err?.message ?? err?.msg ?? err?.error ?? 'Unable to sign up right now.' }, { status: 400 });
     }
   }
 
   const signInResponse = await signInWithEmail(email, password);
 
   if (!signInResponse.ok) {
-    const err = await signInResponse.json().catch(() => null) as { error_description?: string; msg?: string } | null;
-    return NextResponse.json({ error: err?.error_description ?? err?.msg ?? 'Unable to log in right now.' }, { status: 400 });
+    const err = await signInResponse.json().catch(() => null) as { error_description?: string; msg?: string; message?: string; error?: string } | null;
+    return NextResponse.json({ error: err?.error_description ?? err?.message ?? err?.msg ?? err?.error ?? 'Unable to log in right now.' }, { status: 400 });
   }
 
   const data = (await signInResponse.json()) as {

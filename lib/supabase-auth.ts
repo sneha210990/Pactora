@@ -22,6 +22,15 @@ export function getSupabaseUrl() {
   return requiredEnv('NEXT_PUBLIC_SUPABASE_URL');
 }
 
+export function getAppUrl() {
+  const value = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL;
+  if (!value) {
+    return null;
+  }
+
+  return value.endsWith('/') ? value.slice(0, -1) : value;
+}
+
 function getAnonKey() {
   return requiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
