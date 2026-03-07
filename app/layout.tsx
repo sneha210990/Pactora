@@ -25,10 +25,28 @@ export default function RootLayout({
 
               <nav className="flex items-center gap-3">
                 <Link
+                  href="/"
+                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
+                >
+                  Product
+                </Link>
+                <Link
+                  href="/about"
+                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
+                >
+                  About
+                </Link>
+                <Link
                   href="/security"
                   className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
                 >
                   Security
+                </Link>
+                <Link
+                  href="/feedback"
+                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
+                >
+                  Feedback
                 </Link>
 
                 <BetaNav />
@@ -46,6 +64,9 @@ export default function RootLayout({
                 </Link>
                 <Link href="/privacy" className="hover:text-white">
                   Privacy
+                </Link>
+                <Link href="/about" className="hover:text-white">
+                  About
                 </Link>
                 <Link href="/security" className="hover:text-white">
                   Security
