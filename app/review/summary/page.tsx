@@ -49,7 +49,7 @@ function SummaryContent() {
             Pactora
           </Link>
           <Link href="/deals/new" className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900">
-            New Deal
+            New review
           </Link>
         </div>
 
@@ -71,7 +71,7 @@ function SummaryContent() {
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
             )}
             {lolCap !== null && lolCap > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">LoL cap: {money(lolCap)}</span>
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}
           </div>
         </section>
@@ -79,7 +79,7 @@ function SummaryContent() {
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Overall risk</h2>
-            <p className="mt-2 text-zinc-200">Placeholder: consolidated risk score across LoL, indemnities, IP, data protection, and termination.</p>
+            <p className="mt-2 text-zinc-200">Placeholder: consolidated risk score across liability, indemnities, IP, data protection, and termination.</p>
           </div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Key negotiation priorities</h2>

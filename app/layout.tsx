@@ -57,16 +57,19 @@ export default function RootLayout({
           <div className="flex-1">{children}</div>
 
           <footer className="border-t border-zinc-800 bg-zinc-950/60">
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-6 text-sm text-zinc-400 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap items-center gap-4">
+            <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-8 text-sm text-zinc-400 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-base font-semibold text-zinc-100">Pactora</p>
+                <p className="mt-1 max-w-md text-zinc-500">
+                  Structured commercial contract review for SaaS teams.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 md:justify-end">
                 <Link href="/terms" className="hover:text-white">
                   Terms
                 </Link>
                 <Link href="/privacy" className="hover:text-white">
                   Privacy
-                </Link>
-                <Link href="/about" className="hover:text-white">
-                  About
                 </Link>
                 <Link href="/security" className="hover:text-white">
                   Security
@@ -77,10 +80,9 @@ export default function RootLayout({
                 <Link href="/feedback" className="hover:text-white">
                   Feedback
                 </Link>
-              </div>
-              <div className="space-y-1 text-zinc-500 md:text-right">
-                <p>Pactora is currently operated by Sneha Sindhu Ganapavarapu.</p>
-                <p>Contact: snehasindhu2109@gmail.com</p>
+                <Link href="mailto:contact@pactora.com" className="hover:text-white">
+                  Contact
+                </Link>
               </div>
             </div>
           </footer>

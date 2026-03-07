@@ -263,7 +263,7 @@ function TerminationReviewContent() {
             Pactora
           </Link>
           <Link href="/deals/new" className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900">
-            New Deal
+            New review
           </Link>
         </div>
 
@@ -287,7 +287,7 @@ function TerminationReviewContent() {
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
             )}
             {lolCap !== null && lolCap > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">LoL cap: {money(lolCap)}</span>
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}
           </div>
         </section>

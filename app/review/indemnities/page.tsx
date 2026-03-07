@@ -228,7 +228,7 @@ function IndemnitiesReviewContent() {
             href="/deals/new"
             className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
           >
-            New Deal
+            New review
           </Link>
         </div>
 
@@ -252,7 +252,7 @@ function IndemnitiesReviewContent() {
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
             )}
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              {ladderBaseCap !== null ? `LoL cap: ${money(ladderBaseCap)}` : 'LoL cap: not provided'}
+              {ladderBaseCap !== null ? `Liability cap: ${money(ladderBaseCap)}` : 'Liability cap: not provided'}
             </span>
           </div>
         </section>

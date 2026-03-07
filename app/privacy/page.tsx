@@ -9,7 +9,7 @@ const sections = [
     title: '2. Who is responsible for your data',
     body: (
       <>
-        <p>Pactora is currently operated by Sneha Sindhu Ganapavarapu. Contact: snehasindhu2109@gmail.com.</p>
+        <p>Contact: contact@pactora.com.</p>
         <p className="mt-2">
           Pactora is currently an independently operated beta product and is not presently offered
           through a separate incorporated company entity.
@@ -75,7 +75,7 @@ const sections = [
   },
   {
     title: '17. Complaints',
-    body: 'If you have concerns, contact snehasindhu2109@gmail.com first. You may also complain to the UK Information Commissioner’s Office (ICO) if you believe data protection law has been breached.',
+    body: 'If you have concerns, contact contact@pactora.com first. You may also complain to the UK Information Commissioner’s Office (ICO) if you believe data protection law has been breached.',
   },
   {
     title: '18. Changes to this Privacy Notice',

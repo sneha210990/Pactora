@@ -47,7 +47,7 @@ const sections = [
   },
   {
     title: '12. Security contact',
-    body: 'Security questions or reports can be sent to snehasindhu2109@gmail.com.',
+    body: 'Security questions or reports can be sent to contact@pactora.com.',
   },
 ] as const;
 
@@ -58,8 +58,7 @@ export default function SecurityPage() {
         <header className="space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight">Security</h1>
           <p className="text-sm text-zinc-300">
-            Pactora is a beta-stage contract review and decision-support product operated by Sneha
-            Sindhu Ganapavarapu.
+            Pactora is a beta-stage contract review and decision-support product.
           </p>
           <p className="text-sm text-zinc-400">Effective date: 7 March 2026</p>
           <p className="text-sm text-zinc-400">Last updated: 7 March 2026</p>
