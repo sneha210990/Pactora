@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { trackEvent } from '@/components/track-event';
 import { useSearchParams } from 'next/navigation';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 
@@ -309,6 +310,10 @@ function labelForCapType(capType: CapType) {
 
 function LolReviewContent() {
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    trackEvent('analysis_started', '/review/lol');
+  }, []);
 
   const acv = num(searchParams.get('acv'), 25000);
   const termMonths = num(searchParams.get('termMonths'), 12);

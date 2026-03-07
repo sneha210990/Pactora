@@ -1,18 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
+import { trackEvent } from '@/components/track-event';
 
 export default function NewDealPage() {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [hasDetectedValues, setHasDetectedValues] = useState<boolean>(false);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string>('');
 
   const [acv, setAcv] = useState<number>(0);
   const [termMonths, setTermMonths] = useState<number>(0);
   const [insuranceCover, setInsuranceCover] = useState<number>(0);
   const [dataType, setDataType] = useState<string>('standard');
+
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then((response) => response.json())
+      .then((data: { user: { email: string } | null }) => {
+        if (data.user?.email) {
+          setUserEmail(data.user.email);
+        }
+      });
+  }, []);
 
   const handleContractUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -24,6 +37,7 @@ export default function NewDealPage() {
     }
 
     setSelectedFileName(file.name);
+    trackEvent('contract_upload_started', '/deals/new');
 
     // Simulated contract extraction (v0)
     setAcv(25000);
@@ -31,6 +45,7 @@ export default function NewDealPage() {
     setInsuranceCover(1000000);
     setDataType('standard');
     setHasDetectedValues(true);
+    trackEvent('contract_uploaded', '/deals/new');
   };
 
   return (
@@ -42,6 +57,13 @@ export default function NewDealPage() {
             Upload your draft contract, confirm the extracted commercial context, then continue to
             Letter of Liability review.
           </p>
+          {!userEmail ? (
+            <p className="text-sm text-amber-300">
+              You are not logged in. <Link href="/login" className="underline">Beta login</Link> helps us track your review progress and support requests.
+            </p>
+          ) : (
+            <p className="text-sm text-zinc-500">Signed in as {userEmail}</p>
+          )}
         </header>
 
         <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
@@ -216,6 +238,7 @@ export default function NewDealPage() {
 
             <button
               type="submit"
+              onClick={() => trackEvent('analysis_started', '/review/lol')}
               disabled={!hasAcceptedLegalNotice || !hasConfirmedDataCaution}
               className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
             >
