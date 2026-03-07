@@ -85,6 +85,13 @@ export async function refreshSession(refreshToken: string) {
   });
 }
 
+export async function exchangeAuthCodeForSession(code: string, redirectTo: string) {
+  return supabaseFetch('/auth/v1/token?grant_type=authorization_code', {
+    method: 'POST',
+    body: JSON.stringify({ code, redirect_to: redirectTo }),
+  });
+}
+
 export async function getUserFromAccessToken(accessToken: string) {
   return supabaseFetch('/auth/v1/user', {
     headers: {

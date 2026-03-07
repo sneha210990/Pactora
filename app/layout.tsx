@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import './globals.css';
 import { BetaNav } from '@/components/beta-nav';
-import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -79,7 +78,6 @@ export default function RootLayout({
             </div>
           </footer>
         </div>
-        <Analytics />
       </body>
     </html>
   );
