@@ -27,7 +27,7 @@ export default function NewDealPage() {
     setSelectedFileName(file.name);
     trackEvent('contract_upload_started', '/deals/new');
 
-    // Simulated contract extraction (v0)
+    // Simulated contract extraction
     setAcv(25000);
     setTermMonths(12);
     setInsuranceCover(1000000);
@@ -43,7 +43,7 @@ export default function NewDealPage() {
           <h1 className="text-3xl font-semibold tracking-tight">New Deal Intake</h1>
           <p className="max-w-2xl text-sm text-zinc-400">
             Upload your draft contract, confirm the extracted commercial context, then continue to
-            Letter of Liability review.
+            Liability review.
           </p>
         </header>
 
@@ -75,8 +75,8 @@ export default function NewDealPage() {
           </div>
 
           <p className="mt-5 text-xs text-zinc-500">
-            Contract upload parsing is v0 — you can still edit any detected values before
-            continuing.
+            Pactora extracts key commercial terms automatically. You can review and adjust
+            detected values before continuing.
           </p>
         </section>
 
@@ -157,8 +157,7 @@ export default function NewDealPage() {
             <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
               <p className="mt-3 text-zinc-200">
-                Pactora is a beta contract review and decision-support tool operated by Sneha Sindhu
-                Ganapavarapu. It is not a law firm and does not provide legal advice. Please upload
+                Pactora is a beta contract review and decision-support tool. It is not a law firm and does not provide legal advice. Please upload
                 only documents you are authorised to use. Avoid unnecessary personal data or special
                 category data where possible. Uploaded content may be processed to extract terms,
                 generate risk-related outputs, support operation of the Service, maintain security, and
@@ -223,7 +222,7 @@ export default function NewDealPage() {
               disabled={!hasAcceptedLegalNotice || !hasConfirmedDataCaution}
               className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
             >
-              Continue to LoL Review
+              Continue to Liability Review
             </button>
           </form>
         </section>

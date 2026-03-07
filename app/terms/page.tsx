@@ -6,8 +6,7 @@ const sections = [
     body: (
       <>
         <p>
-          Pactora is currently operated by Sneha Sindhu Ganapavarapu. Contact:
-          snehasindhu2109@gmail.com.
+          Contact: contact@pactora.com.
         </p>
         <p className="mt-2">
           Pactora is currently an independently operated beta product and is not presently offered
@@ -118,7 +117,7 @@ const sections = [
   },
   {
     title: '27. Contact',
-    body: 'Questions about these Terms can be sent to snehasindhu2109@gmail.com.',
+    body: 'Questions about these Terms can be sent to contact@pactora.com.',
   },
 ] as const;
 

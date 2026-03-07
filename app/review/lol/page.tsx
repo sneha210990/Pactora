@@ -383,7 +383,7 @@ function LolReviewContent() {
             href="/deals/new"
             className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
           >
-            New Deal
+            New review
           </Link>
         </div>
 
@@ -555,13 +555,13 @@ function LolReviewContent() {
               href="/deals/new"
               className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
             >
-              Back to New Deal
+              Back to New review
             </Link>
             <Link
               href="/"
               className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
             >
-              Back to Landing
+              Back to Product
             </Link>
           </div>
         </div>
