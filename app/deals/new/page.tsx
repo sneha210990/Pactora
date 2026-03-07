@@ -59,7 +59,7 @@ export default function NewDealPage() {
           </p>
           {!userEmail ? (
             <p className="text-sm text-amber-300">
-              You are not logged in. <Link href="/login" className="underline">Beta login</Link> helps us track your review progress and support requests.
+              You are not logged in. <Link href="/login" className="underline">Log in</Link> to continue.
             </p>
           ) : (
             <p className="text-sm text-zinc-500">Signed in as {userEmail}</p>

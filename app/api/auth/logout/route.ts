@@ -1,22 +1,18 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createEvent, deleteSession } from '@/lib/beta-store';
-import { SESSION_COOKIE_NAME } from '@/lib/auth';
+import { createEvent } from '@/lib/beta-store';
+import { getCurrentSessionUser } from '@/lib/auth';
+import { SESSION_COOKIE_NAME } from '@/lib/supabase-auth';
 
 export async function POST() {
+  const sessionData = await getCurrentSessionUser();
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-
-  if (token) {
-    await deleteSession(token);
-  }
-
   cookieStore.delete(SESSION_COOKIE_NAME);
 
   await createEvent({
     event_type: 'logout',
-    user_id: null,
-    email: null,
+    user_id: sessionData?.user.id ?? null,
+    email: sessionData?.user.email ?? null,
     page_context: '/logout',
   });
 

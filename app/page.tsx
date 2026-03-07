@@ -20,7 +20,7 @@ export default async function Home() {
               href={sessionData ? '/deals/new' : '/login'}
               className="inline-block rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200"
             >
-              {sessionData ? 'Start Contract Review' : 'Beta Login'}
+              {sessionData ? 'Start Contract Review' : 'Log in / Sign up'}
             </Link>
             <Link
               href="/deals/new"

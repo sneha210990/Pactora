@@ -4,6 +4,8 @@ import path from 'path';
 export type BetaUser = {
   id: string;
   email: string;
+  auth_provider?: string;
+  auth_user_id?: string;
   full_name?: string;
   company?: string;
   role?: string;
@@ -128,6 +130,55 @@ export async function getUserBySessionToken(token: string) {
   return { user, session };
 }
 
+
+export async function createOrUpdateUserByIdentity(params: {
+  provider: string;
+  auth_user_id: string;
+  email: string;
+}) {
+  const now = new Date().toISOString();
+  const store = await readStore();
+  const normalizedEmail = params.email.trim().toLowerCase();
+
+  const byIdentity = store.users.find(
+    (user) => user.auth_provider === params.provider && user.auth_user_id === params.auth_user_id,
+  );
+
+  if (byIdentity) {
+    byIdentity.email = normalizedEmail;
+    byIdentity.updated_at = now;
+    byIdentity.last_active_at = now;
+    await writeStore(store);
+    return byIdentity;
+  }
+
+  const byEmail = store.users.find((user) => user.email === normalizedEmail);
+
+  if (byEmail) {
+    byEmail.auth_provider = params.provider;
+    byEmail.auth_user_id = params.auth_user_id;
+    byEmail.updated_at = now;
+    byEmail.last_active_at = now;
+    await writeStore(store);
+    return byEmail;
+  }
+
+  const user: BetaUser = {
+    id: id('usr'),
+    email: normalizedEmail,
+    auth_provider: params.provider,
+    auth_user_id: params.auth_user_id,
+    created_at: now,
+    updated_at: now,
+    last_active_at: now,
+    first_upload_at: null,
+    first_feedback_at: null,
+  };
+
+  store.users.push(user);
+  await writeStore(store);
+  return user;
+}
 export async function createOrUpdateUser(params: {
   email: string;
   full_name?: string;
