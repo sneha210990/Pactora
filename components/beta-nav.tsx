@@ -25,13 +25,13 @@ export function BetaNav() {
   };
 
   if (loading) {
-    return <span className="px-3 py-2 text-sm text-zinc-500">Beta</span>;
+    return <span className="text-sm text-zinc-500">…</span>;
   }
 
   if (!user) {
     return (
       <Link href="/login" className="rounded-lg border border-zinc-700 px-3 py-2 text-sm hover:bg-zinc-900">
-        Beta login
+        Log in
       </Link>
     );
   }
@@ -44,7 +44,7 @@ export function BetaNav() {
         onClick={handleLogout}
         className="rounded-lg border border-zinc-700 px-3 py-2 text-sm hover:bg-zinc-900"
       >
-        Logout
+        Log out
       </button>
     </div>
   );

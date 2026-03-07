@@ -1,15 +1,23 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [company, setCompany] = useState('');
-  const [role, setRole] = useState('');
-  const [useCase, setUseCase] = useState('');
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [nextPath] = useState(() => {
+    if (typeof window === 'undefined') {
+      return '/deals/new';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
+    return next?.startsWith('/') ? next : '/deals/new';
+  });
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -19,103 +27,92 @@ export default function LoginPage() {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        full_name: fullName,
-        company,
-        role,
-        use_case: useCase,
-      }),
+      body: JSON.stringify({ email, password, mode }),
     });
 
     if (!response.ok) {
       const data = (await response.json().catch(() => null)) as { error?: string } | null;
-      setStatus(data?.error ?? 'Unable to log in right now.');
+      setStatus(data?.error ?? 'Unable to continue right now.');
       setLoading(false);
       return;
     }
 
-    window.location.href = '/deals/new';
+    window.location.href = nextPath;
   };
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-2xl space-y-6">
         <header className="space-y-2">
-          <p className="text-xs uppercase tracking-wide text-amber-300">Pactora Beta Access</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Lightweight beta login</h1>
-          <p className="text-sm text-zinc-400">
-            Use your work email to continue. Optional profile details help us understand who Pactora is useful for.
-          </p>
+          <p className="text-xs uppercase tracking-wide text-amber-300">Pactora</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{mode === 'login' ? 'Log in' : 'Sign up'}</h1>
+          <p className="text-sm text-zinc-400">Use your account to continue to your deal workspace.</p>
         </header>
 
-        <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-950 p-6">
-          <div>
-            <label className="mb-2 block text-sm text-zinc-300">Email (required)</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-            />
+        <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+          <a
+            href={`/api/auth/google?next=${encodeURIComponent(nextPath)}`}
+            className="block rounded-lg border border-zinc-700 px-4 py-2 text-center text-sm font-medium hover:bg-zinc-900"
+          >
+            Continue with Google
+          </a>
+
+          <div className="relative py-1 text-center text-xs uppercase tracking-wide text-zinc-500">
+            <span className="bg-zinc-950 px-2">or continue with email</span>
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm text-zinc-300">Full name (optional)</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
+          <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm text-zinc-300">Company (optional)</label>
+              <label className="mb-2 block text-sm text-zinc-300">Email</label>
               <input
-                type="text"
-                value={company}
-                onChange={(event) => setCompany(event.target.value)}
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
               />
             </div>
+
             <div>
-              <label className="mb-2 block text-sm text-zinc-300">Role (optional)</label>
+              <label className="mb-2 block text-sm text-zinc-300">Password</label>
               <input
-                type="text"
-                value={role}
-                onChange={(event) => setRole(event.target.value)}
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                minLength={8}
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="mb-2 block text-sm text-zinc-300">Use case (optional)</label>
-            <textarea
-              value={useCase}
-              onChange={(event) => setUseCase(event.target.value)}
-              rows={3}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2"
-              placeholder="What contracts or decisions are you reviewing with Pactora?"
-            />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-white px-4 py-2 font-semibold text-black hover:bg-zinc-200 disabled:bg-zinc-700 disabled:text-zinc-300"
+            >
+              {loading ? 'Please wait…' : mode === 'login' ? 'Continue with email' : 'Sign up with email'}
+            </button>
 
-          <p className="text-xs text-zinc-500">
-            By continuing, you understand that Pactora will use your account details, usage data, and any feedback you submit to operate the beta, improve the product, provide support, and maintain security. See the Privacy Notice for more information.
+            {status ? <p className="text-sm text-amber-200">{status}</p> : null}
+          </form>
+
+          <p className="text-sm text-zinc-400">
+            {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+            <button
+              type="button"
+              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+              className="text-zinc-100 underline"
+            >
+              {mode === 'login' ? 'Sign up' : 'Log in'}
+            </button>
           </p>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-lg bg-white px-4 py-2 font-semibold text-black hover:bg-zinc-200 disabled:bg-zinc-700 disabled:text-zinc-300"
-          >
-            {loading ? 'Signing in…' : 'Continue'}
-          </button>
-          {status ? <p className="text-sm text-amber-200">{status}</p> : null}
-        </form>
+          <p className="text-xs text-zinc-500">
+            By continuing, you understand that Pactora will use your account details, usage data, and any feedback you submit to operate the service, improve the product, provide support, and maintain security. See the{' '}
+            <Link href="/privacy" className="underline">Privacy Notice</Link>
+            {' '}for more information.
+          </p>
+        </div>
       </div>
     </main>
   );
