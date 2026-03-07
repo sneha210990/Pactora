@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const authUrl = new URL('/auth/v1/authorize', getSupabaseUrl());
   authUrl.searchParams.set('provider', 'google');
   authUrl.searchParams.set('redirect_to', redirectTo);
+  authUrl.searchParams.set('response_type', 'code');
 
   return NextResponse.redirect(authUrl);
 }
