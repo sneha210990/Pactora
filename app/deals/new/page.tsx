@@ -4,18 +4,35 @@ import Link from 'next/link';
 import { ChangeEvent, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 
+const DEFAULT_ACV = 25000;
+const DEFAULT_TERM_MONTHS = 12;
+const DEFAULT_INSURANCE_COVER = 1000000;
+
+type DetectedContractValues = {
+  acv: number | null;
+  termMonths: number | null;
+  insuranceCover: number | null;
+  dataType: 'standard' | 'personal' | 'sensitive';
+};
+
 export default function NewDealPage() {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [hasDetectedValues, setHasDetectedValues] = useState<boolean>(false);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
-  const [acv, setAcv] = useState<number>(0);
-  const [termMonths, setTermMonths] = useState<number>(0);
-  const [insuranceCover, setInsuranceCover] = useState<number>(0);
-  const [dataType, setDataType] = useState<string>('standard');
+  const [acv, setAcv] = useState<number>(DEFAULT_ACV);
+  const [termMonths, setTermMonths] = useState<number>(DEFAULT_TERM_MONTHS);
+  const [insuranceCover, setInsuranceCover] = useState<number>(DEFAULT_INSURANCE_COVER);
+  const [dataType, setDataType] = useState<DetectedContractValues['dataType']>('standard');
 
+  const applyDetectedValues = (detectedValues: DetectedContractValues) => {
+    setAcv(detectedValues.acv ?? DEFAULT_ACV);
+    setTermMonths(detectedValues.termMonths ?? DEFAULT_TERM_MONTHS);
+    setInsuranceCover(detectedValues.insuranceCover ?? DEFAULT_INSURANCE_COVER);
+    setDataType(detectedValues.dataType);
+  };
 
-  const handleContractUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleContractUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -27,13 +44,32 @@ export default function NewDealPage() {
     setSelectedFileName(file.name);
     trackEvent('contract_upload_started', '/deals/new');
 
-    // Simulated contract extraction
-    setAcv(25000);
-    setTermMonths(12);
-    setInsuranceCover(1000000);
-    setDataType('standard');
-    setHasDetectedValues(true);
-    trackEvent('contract_uploaded', '/deals/new');
+    try {
+      const formData = new FormData();
+      formData.append('contract', file);
+
+      const response = await fetch('/api/contracts/extract', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not extract contract values.');
+      }
+
+      const payload: { detectedValues: DetectedContractValues } = await response.json();
+      applyDetectedValues(payload.detectedValues);
+      setHasDetectedValues(true);
+      trackEvent('contract_uploaded', '/deals/new');
+    } catch {
+      applyDetectedValues({
+        acv: null,
+        termMonths: null,
+        insuranceCover: null,
+        dataType: 'standard',
+      });
+      setHasDetectedValues(false);
+    }
   };
 
   return (
@@ -101,9 +137,7 @@ export default function NewDealPage() {
               Please avoid uploading unnecessary personal data or special category data where
               possible.
             </p>
-            <p>
-              Detected values are editable before you continue to the review workflow.
-            </p>
+            <p>Detected values are suggestions and can be edited.</p>
             <p>
               In this beta, uploaded content is not used to train public foundation models.
             </p>
@@ -178,7 +212,7 @@ export default function NewDealPage() {
                 id="dataType"
                 name="dataType"
                 value={dataType}
-                onChange={(event) => setDataType(event.target.value)}
+                onChange={(event) => setDataType(event.target.value as DetectedContractValues['dataType'])}
                 className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
               >
                 <option value="standard">Standard</option>
