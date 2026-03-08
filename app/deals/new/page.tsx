@@ -47,7 +47,29 @@ export default function NewDealPage() {
           </p>
         </header>
 
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+          <ol className="grid gap-3 text-sm text-zinc-300 md:grid-cols-4">
+            <li className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Stage 1</p>
+              <p className="mt-1 font-medium text-white">Upload contract</p>
+            </li>
+            <li className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Stage 2</p>
+              <p className="mt-1 font-medium text-white">Confirm deal context</p>
+            </li>
+            <li className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Stage 3</p>
+              <p className="mt-1 font-medium text-white">Acknowledgement</p>
+            </li>
+            <li className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Stage 4</p>
+              <p className="mt-1 font-medium text-white">Continue to liability review</p>
+            </li>
+          </ol>
+        </section>
+
         <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+          <p className="text-xs uppercase tracking-wide text-zinc-500">Stage 1</p>
           <h2 className="text-lg font-medium text-white">Upload contract</h2>
           <p className="mt-2 text-sm text-zinc-400">
             Upload your contract and Pactora will process it to extract key commercial terms and generate structured review outputs.
@@ -90,7 +112,10 @@ export default function NewDealPage() {
 
         <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
           <div className="mb-6 flex items-center justify-between gap-4">
-            <h2 className="text-lg font-medium text-white">Deal context</h2>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Stage 2</p>
+              <h2 className="text-lg font-medium text-white">Confirm deal context</h2>
+            </div>
             {hasDetectedValues ? (
               <span className="rounded-full border border-emerald-700/70 bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-300">
                 Detected from contract (editable)
@@ -162,65 +187,72 @@ export default function NewDealPage() {
               </select>
             </div>
 
-            <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
-              <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
-                <li>Pactora provides decision-support software for commercial contract review.</li>
-                <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
-                <li>Outputs may be incomplete or inaccurate and should be validated.</li>
-                <li>Use qualified human and legal review where appropriate before material decisions.</li>
-                <li>You must be authorised to upload the document and its contents.</li>
-              </ul>
-              <p className="mt-4 text-zinc-300">
-                Read our{' '}
-                <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Terms
-                </Link>{' '}
-                ,{' '}
-                <Link href="/privacy" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Privacy Notice
-                </Link>{' '}
-                ,{' '}
-                <Link href="/security" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Security
-                </Link>{' '}
-                and{' '}
-                <Link href="/subprocessors" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Subprocessors
-                </Link>
-                .
-              </p>
+            <div className="rounded-xl border border-amber-700/50 bg-amber-950/20 p-4">
+              <p className="text-xs uppercase tracking-wide text-amber-300">Stage 3</p>
+              <h3 className="mt-1 text-sm font-semibold uppercase tracking-wide text-amber-200">Acknowledgement</h3>
+
+              <div className="mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
+                <h4 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h4>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
+                  <li>Pactora provides decision-support software for commercial contract review.</li>
+                  <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
+                  <li>Outputs may be incomplete or inaccurate and should be validated.</li>
+                  <li>Use qualified human and legal review where appropriate before material decisions.</li>
+                  <li>You must be authorised to upload the document and its contents.</li>
+                </ul>
+                <p className="mt-4 text-zinc-300">
+                  Read our{' '}
+                  <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
+                    Terms
+                  </Link>{' '}
+                  ,{' '}
+                  <Link href="/privacy" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
+                    Privacy Notice
+                  </Link>{' '}
+                  ,{' '}
+                  <Link href="/security" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
+                    Security
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/subprocessors" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
+                    Subprocessors
+                  </Link>
+                  .
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={hasAcceptedLegalNotice}
+                    onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
+                  />
+                  <span>
+                    I confirm that I am authorised to upload this material, that I understand Pactora is
+                    decision-support software and not legal advice, and that outputs may be incomplete or
+                    inaccurate and require appropriate human/legal review.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={hasConfirmedDataCaution}
+                    onChange={(event) => setHasConfirmedDataCaution(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
+                  />
+                  <span>
+                    I confirm that, to the best of my knowledge, this upload does not include unnecessary
+                    personal data or special category data, and that any such data included is being
+                    uploaded lawfully and with appropriate authority.
+                  </span>
+                </label>
+              </div>
             </div>
-
-            <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-              <input
-                type="checkbox"
-                required
-                checked={hasAcceptedLegalNotice}
-                onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
-              />
-              <span>
-                I confirm that I am authorised to upload this material, that I understand Pactora is
-                decision-support software and not legal advice, and that outputs may be incomplete or
-                inaccurate and require appropriate human/legal review.
-              </span>
-            </label>
-
-            <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-              <input
-                type="checkbox"
-                required
-                checked={hasConfirmedDataCaution}
-                onChange={(event) => setHasConfirmedDataCaution(event.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
-              />
-              <span>
-                I confirm that, to the best of my knowledge, this upload does not include unnecessary
-                personal data or special category data, and that any such data included is being
-                uploaded lawfully and with appropriate authority.
-              </span>
-            </label>
 
             <button
               type="submit"
@@ -228,6 +260,7 @@ export default function NewDealPage() {
               disabled={!hasAcceptedLegalNotice || !hasConfirmedDataCaution}
               className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
             >
+              <span className="mr-2 text-xs uppercase tracking-wide text-zinc-700">Stage 4</span>
               Continue to Liability Review
             </button>
           </form>

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { FeedbackForm } from '@/components/feedback-form';
 
 const riskAreas = [
   'Limitation of liability',
@@ -26,6 +25,10 @@ const reviewFindings = [
     note: 'Clarify scope and retention timelines before signature.',
   },
 ];
+
+const extractedClauses = ['Limitation of Liability', 'Indemnities', 'IP ownership'];
+
+const riskIndicators = ['Liability cap: 1× ACV', 'Indemnity exposure: elevated'];
 
 export default function Home() {
   return (
@@ -124,6 +127,50 @@ export default function Home() {
       <section className="border-b border-zinc-800 px-6 py-20">
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-4 text-3xl font-semibold">Product preview</h2>
+          <p className="max-w-3xl text-zinc-400">
+            A clear view of how Pactora takes an uploaded contract from clause extraction to a prioritised review outcome.
+          </p>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] md:items-center">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Contract uploaded</p>
+              <p className="mt-2 text-sm font-medium text-zinc-100">Customer MSA.pdf</p>
+              <p className="mt-2 text-xs text-zinc-400">32 pages · Draft v4</p>
+            </div>
+            <p className="hidden text-center text-zinc-500 md:block">↓</p>
+
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Extracted clauses</p>
+              <ul className="mt-2 space-y-1 text-sm text-zinc-300">
+                {extractedClauses.map((clause) => (
+                  <li key={clause}>• {clause}</li>
+                ))}
+              </ul>
+            </div>
+            <p className="hidden text-center text-zinc-500 md:block">↓</p>
+
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Risk indicators</p>
+              <ul className="mt-2 space-y-1 text-sm text-zinc-300">
+                {riskIndicators.map((indicator) => (
+                  <li key={indicator}>{indicator}</li>
+                ))}
+              </ul>
+            </div>
+            <p className="hidden text-center text-zinc-500 md:block">↓</p>
+
+            <div className="rounded-xl border border-amber-600/40 bg-amber-950/30 p-5">
+              <p className="text-xs uppercase tracking-wide text-amber-200">Overall review summary</p>
+              <p className="mt-2 text-lg font-semibold text-amber-100">Priority: Elevated</p>
+              <p className="mt-2 text-sm text-zinc-200">Escalate indemnity and liability terms before signature.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-zinc-800 px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="mb-4 text-3xl font-semibold">How it works</h2>
           <p className="max-w-3xl text-zinc-400">
             Pactora turns long contracts into a structured first-pass review so commercial teams can escalate cleaner,
             faster, and with clearer priorities.
@@ -242,8 +289,13 @@ export default function Home() {
       </section>
 
       <section className="border-t border-zinc-800 px-6 py-16">
-        <div className="mx-auto max-w-3xl">
-          <FeedbackForm user={null} compact />
+        <div className="mx-auto max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
+          <p className="text-lg text-zinc-200">
+            Using Pactora in beta?{' '}
+            <Link href="/feedback" className="font-semibold text-white underline underline-offset-4 hover:text-zinc-200">
+              Send feedback →
+            </Link>
+          </p>
         </div>
       </section>
     </main>
