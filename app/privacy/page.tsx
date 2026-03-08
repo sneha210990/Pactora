@@ -3,7 +3,7 @@ import Link from 'next/link';
 const sections = [
   {
     title: '1. Introduction',
-    body: 'This Privacy Notice explains how Pactora handles personal data when you use the beta service, including website use, uploads, and generated outputs.',
+    body: 'Pactora processes uploaded documents to extract contract terms and generate structured review outputs. This Privacy Notice explains how personal data is handled when you use the beta service, including website use, uploads, and generated outputs.',
   },
   {
     title: '2. Who is responsible for your data',
@@ -19,15 +19,15 @@ const sections = [
   },
   {
     title: '3. Personal data collected',
-    body: 'This may include account details (required email, and optional full name, company, role, and use case), uploaded documents, personal data contained in uploaded documents, extracted contract metadata, feedback submissions, and technical/usage/security event data (such as login, upload, analysis, and session activity logs).',
+    body: 'Pactora collects account details (required email, and optional full name, company, role, and use case), uploaded documents, personal data contained in uploaded documents, extracted contract metadata, feedback submissions, and technical/usage/security event data (such as login, upload, analysis, and session activity logs).',
   },
   {
     title: '4. How personal data is used',
-    body: 'Personal data may be used to operate the beta service, process and analyse uploads, generate outputs, understand product usage and churn, respond to support/feedback, maintain security, troubleshoot issues, and improve Pactora.',
+    body: 'Pactora uses personal data to operate the beta service, process and analyse uploads, generate outputs, understand product usage and churn, respond to support/feedback, maintain security, troubleshoot issues, and improve Pactora.',
   },
   {
     title: '5. Lawful bases',
-    body: 'Depending on context, processing may rely on contractual necessity, legitimate interests (such as operating and securing Pactora), legal obligations, and where required, consent.',
+    body: 'Depending on context, Pactora relies on contractual necessity, legitimate interests (such as operating and securing Pactora), legal obligations, and where required, consent.',
   },
   {
     title: '6. Special category data',
@@ -35,11 +35,11 @@ const sections = [
   },
   {
     title: '7. Controller and processor roles',
-    body: 'Role allocation may vary by context. Pactora may act as an independent controller for certain operational data and as a processor/service provider for customer-uploaded content processed on customer instructions.',
+    body: 'Role allocation varies by context. Pactora acts as an independent controller for certain operational data and acts as a processor/service provider for customer-uploaded content processed on customer instructions.',
   },
   {
     title: '8. Sharing personal data',
-    body: 'Pactora may share personal data with infrastructure and service providers where needed to operate, secure, and support the service, and where required by law. Pactora does not sell personal data.',
+    body: 'Pactora shares personal data with infrastructure and service providers where needed to operate, secure, and support the service, and where required by law. Pactora does not sell personal data.',
   },
   {
     title: '9. AI use and product improvement',
@@ -47,19 +47,19 @@ const sections = [
   },
   {
     title: '10. Subprocessors and service providers',
-    body: 'Pactora uses third-party subprocessors/service providers. Current information is available on the Subprocessors page and may change as beta infrastructure evolves.',
+    body: 'Pactora uses third-party subprocessors/service providers. Current provider information is available on the Subprocessors page and is updated as beta infrastructure evolves.',
   },
   {
     title: '11. International transfers',
-    body: 'Personal data may be processed in jurisdictions outside your own depending on hosting/provider setup. Pactora aims to use appropriate transfer safeguards where required under applicable law.',
+    body: 'Personal data is processed in jurisdictions outside your own depending on hosting/provider setup. Pactora uses appropriate transfer safeguards where required under applicable law.',
   },
   {
     title: '12. Retention',
-    body: 'Pactora retains personal data only for as long as reasonably necessary for service operation, security, legal obligations, and dispute handling. Exact retention periods may vary by data type and use case during beta.',
+    body: 'Pactora retains personal data only for as long as reasonably necessary for service operation, security, legal obligations, and dispute handling. Retention periods vary by data type and use case during beta.',
   },
   {
     title: '13. Deletion',
-    body: 'You may request deletion of personal data, subject to legal, security, and operational constraints. Some data may be retained where required for compliance, fraud prevention, or system integrity.',
+    body: 'You can request deletion of personal data, subject to legal, security, and operational constraints. Some data is retained where required for compliance, fraud prevention, or system integrity.',
   },
   {
     title: '14. Security',
@@ -71,7 +71,7 @@ const sections = [
   },
   {
     title: '16. Your rights',
-    body: 'Depending on applicable law, you may have rights to access, rectify, erase, restrict, object, data portability, and withdraw consent where consent is used.',
+    body: 'Depending on applicable law, you have rights to access, rectify, erase, restrict, object, data portability, and withdraw consent where consent is used.',
   },
   {
     title: '17. Complaints',

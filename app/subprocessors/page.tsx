@@ -1,25 +1,25 @@
 import Link from 'next/link';
 
-const subprocessorCategories = [
+const subprocessors = [
   {
-    category: 'Hosting and storage infrastructure',
+    vendor: 'Vercel',
+    category: 'Hosting and web delivery',
     purpose: 'Running the web application, storing uploaded files/data, and supporting availability and backup operations.',
   },
   {
-    category: 'Analytics and monitoring',
-    purpose: 'Observability, performance tracking, error monitoring, and security/event diagnostics.',
+    vendor: 'Supabase',
+    category: 'Database and storage',
+    purpose: 'Storing application data, document metadata, and supporting authenticated product workflows.',
   },
   {
-    category: 'Communications and email',
-    purpose: 'Operational communications, support responses, and product notifications where enabled.',
+    vendor: 'Google (OAuth)',
+    category: 'Authentication',
+    purpose: 'Supporting Google sign-in for account authentication and session access.',
   },
   {
-    category: 'Authentication and security tooling',
-    purpose: 'Identity/access management, abuse prevention, and related security controls.',
-  },
-  {
-    category: 'AI-assisted processing',
-    purpose: 'Contract text analysis and generation of structured review outputs used for decision-support workflows. Pactora does not intend to use customer content to train public foundation models in beta.',
+    vendor: 'Pactora-operated processing services',
+    category: 'Application processing',
+    purpose: 'Processing uploaded documents to extract contract terms and generate structured review outputs.',
   },
 ] as const;
 
@@ -39,9 +39,8 @@ export default function SubprocessorsPage() {
 
         <section className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-sm text-zinc-300">
           <p>
-            Pactora is currently in beta and provider infrastructure may evolve. The categories below
-            describe the types of subprocessors/service providers that may process data on Pactora’s
-            behalf and why they are used.
+            Pactora uses the subprocessors below to operate, secure, and support the service. Pactora does not use
+            customer content to train public foundation models during beta.
           </p>
         </section>
 
@@ -49,13 +48,15 @@ export default function SubprocessorsPage() {
           <table className="w-full text-left text-sm text-zinc-300">
             <thead className="bg-zinc-900/60 text-xs uppercase tracking-wide text-zinc-400">
               <tr>
+                <th className="px-4 py-3">Vendor</th>
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Purpose</th>
               </tr>
             </thead>
             <tbody>
-              {subprocessorCategories.map((item) => (
-                <tr key={item.category} className="border-t border-zinc-800 align-top">
+              {subprocessors.map((item) => (
+                <tr key={item.vendor} className="border-t border-zinc-800 align-top">
+                  <td className="px-4 py-3 text-white">{item.vendor}</td>
                   <td className="px-4 py-3 text-white">{item.category}</td>
                   <td className="px-4 py-3">{item.purpose}</td>
                 </tr>

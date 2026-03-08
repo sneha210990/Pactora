@@ -3,7 +3,7 @@ import Link from 'next/link';
 const sections = [
   {
     title: '1. Security overview',
-    body: 'Pactora applies practical security controls to protect uploaded contracts, derived outputs, and account data. Because the service is in beta, these controls continue to evolve as usage grows.',
+    body: 'Pactora processes uploaded contracts to extract contract terms and generate structured review outputs. Security controls are applied across this workflow to protect uploaded files, derived outputs, and account data.',
   },
   {
     title: '2. Encryption in transit',
@@ -11,7 +11,7 @@ const sections = [
   },
   {
     title: '3. Access controls',
-    body: 'Operational access is limited to authorised personnel with role-appropriate permissions. We aim to follow least-privilege access and maintain authentication controls for internal systems.',
+    body: 'Operational access is limited to authorised personnel with role-appropriate permissions. Pactora follows least-privilege access principles and maintains authentication controls for internal systems.',
   },
   {
     title: '4. Confidential handling',
@@ -23,7 +23,7 @@ const sections = [
   },
   {
     title: '6. Third-party infrastructure',
-    body: 'Pactora relies on third-party infrastructure and service providers to run the service. Their controls are part of our overall security posture. See Subprocessors for provider categories.',
+    body: 'Pactora relies on third-party infrastructure and service providers to run the service. Their controls form part of Pactora\'s overall security posture. See Subprocessors for provider details.',
   },
   {
     title: '7. Beta security posture',
