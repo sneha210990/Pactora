@@ -50,7 +50,7 @@ export default function NewDealPage() {
         <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
           <h2 className="text-lg font-medium text-white">Upload contract</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Upload your contract and Pactora will detect key commercial terms.
+            Upload your contract and Pactora will process it to extract key commercial terms and generate structured review outputs.
           </p>
 
           <div className="mt-5">
@@ -74,10 +74,18 @@ export default function NewDealPage() {
             ) : null}
           </div>
 
-          <p className="mt-5 text-xs text-zinc-500">
-            Pactora extracts key commercial terms automatically. You can review and adjust
-            detected values before continuing.
-          </p>
+          <div className="mt-5 space-y-2 text-xs text-zinc-500">
+            <p>
+              Please avoid uploading unnecessary personal data or special category data where
+              possible.
+            </p>
+            <p>
+              Detected values are editable before you continue to the review workflow.
+            </p>
+            <p>
+              In this beta, uploaded content is not used to train public foundation models.
+            </p>
+          </div>
         </section>
 
         <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
@@ -156,14 +164,13 @@ export default function NewDealPage() {
 
             <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
-              <p className="mt-3 text-zinc-200">
-                Pactora is a beta contract review and decision-support tool. It is not a law firm and does not provide legal advice. Please upload
-                only documents you are authorised to use. Avoid unnecessary personal data or special
-                category data where possible. Uploaded content may be processed to extract terms,
-                generate risk-related outputs, support operation of the Service, maintain security, and
-                improve Pactora in controlled, de-identified, aggregated, or limited forms, subject to
-                the Privacy Notice.
-              </p>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
+                <li>Pactora provides decision-support software for commercial contract review.</li>
+                <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
+                <li>Outputs may be incomplete or inaccurate and should be validated.</li>
+                <li>Use qualified human and legal review where appropriate before material decisions.</li>
+                <li>You must be authorised to upload the document and its contents.</li>
+              </ul>
               <p className="mt-4 text-zinc-300">
                 Read our{' '}
                 <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
@@ -194,10 +201,9 @@ export default function NewDealPage() {
                 className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
               />
               <span>
-                I confirm that I am authorised to upload this material, that I understand Pactora is a
-                beta decision-support tool and not a provider of legal advice, and that any outputs
-                must be reviewed by an appropriately qualified human before material decisions are
-                made.
+                I confirm that I am authorised to upload this material, that I understand Pactora is
+                decision-support software and not legal advice, and that outputs may be incomplete or
+                inaccurate and require appropriate human/legal review.
               </span>
             </label>
 

@@ -43,7 +43,7 @@ const sections = [
   },
   {
     title: '9. AI use and product improvement',
-    body: 'Customer content is not intended to be used to train public foundation models. Pactora may use customer content and data derived from it internally in controlled, de-identified, aggregated, or limited forms to test, evaluate, improve, secure, and develop the service, subject to applicable law and this Privacy Notice.',
+    body: 'During beta, Pactora does not use customer content to train public foundation models. Pactora may use customer content and data derived from it internally in controlled, de-identified, aggregated, or limited forms to test, evaluate, improve, secure, and develop the service, subject to applicable law and this Privacy Notice.',
   },
   {
     title: '10. Subprocessors and service providers',

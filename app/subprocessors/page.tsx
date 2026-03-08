@@ -19,7 +19,7 @@ const subprocessorCategories = [
   },
   {
     category: 'AI-assisted processing',
-    purpose: 'Contract text analysis and generation of structured review outputs used for decision-support workflows.',
+    purpose: 'Contract text analysis and generation of structured review outputs used for decision-support workflows. Pactora does not intend to use customer content to train public foundation models in beta.',
   },
 ] as const;
 
@@ -28,9 +28,10 @@ export default function SubprocessorsPage() {
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-4xl space-y-8">
         <header className="space-y-3">
+          <p className="text-xs uppercase tracking-wide text-amber-300">Pactora Beta</p>
           <h1 className="text-3xl font-semibold tracking-tight">Subprocessors</h1>
           <p className="text-sm text-zinc-400">
-            Pactora uses third-party providers to operate and support the service.
+            Pactora uses third-party providers to operate, secure, and support the service.
           </p>
           <p className="text-sm text-zinc-400">Effective date: 7 March 2026</p>
           <p className="text-sm text-zinc-400">Last updated: 7 March 2026</p>
@@ -40,7 +41,7 @@ export default function SubprocessorsPage() {
           <p>
             Pactora is currently in beta and provider infrastructure may evolve. The categories below
             describe the types of subprocessors/service providers that may process data on Pactora’s
-            behalf.
+            behalf and why they are used.
           </p>
         </section>
 

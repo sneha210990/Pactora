@@ -65,7 +65,7 @@ const sections = [
   },
   {
     title: '14. AI use and service improvement',
-    body: 'Customer content is not intended to be used to train public foundation models. Pactora may use customer content and data derived from it internally in controlled, de-identified, aggregated, or limited forms to provide, host, process, store, analyse, maintain, secure, debug, support, test, evaluate, improve, and develop the service, subject to applicable law and the Privacy Notice.',
+    body: 'During beta, Pactora does not use customer content to train public foundation models. Pactora may use customer content and data derived from it internally in controlled, de-identified, aggregated, or limited forms to provide, host, process, store, analyse, maintain, secure, debug, support, test, evaluate, improve, and develop the service, subject to applicable law and the Privacy Notice.',
   },
   {
     title: '15. Pactora intellectual property',

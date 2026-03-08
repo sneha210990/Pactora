@@ -2,52 +2,36 @@ import Link from 'next/link';
 
 const sections = [
   {
-    title: '1. Security at Pactora',
-    body: 'Pactora applies security practices intended to protect customer data and service integrity, while acknowledging that controls continue to evolve during beta.',
+    title: '1. Security overview',
+    body: 'Pactora applies practical security controls to protect uploaded contracts, derived outputs, and account data. Because the service is in beta, these controls continue to evolve as usage grows.',
   },
   {
-    title: '2. Security principles',
-    body: 'Pactora aims to follow least privilege, defence in depth, secure defaults, and continuous improvement, with measures proportionate to service risk.',
+    title: '2. Encryption in transit',
+    body: 'Data sent between your browser and Pactora is encrypted in transit using HTTPS/TLS provided by our hosting stack and service providers.',
   },
   {
-    title: '3. Encryption',
-    body: 'Pactora uses measures designed to protect data in transit and at rest where supported by infrastructure and service providers.',
+    title: '3. Access controls',
+    body: 'Operational access is limited to authorised personnel with role-appropriate permissions. We aim to follow least-privilege access and maintain authentication controls for internal systems.',
   },
   {
-    title: '4. Access controls',
-    body: 'Access to operational systems is intended to be restricted to authorised personnel with role-appropriate permissions and authentication controls.',
+    title: '4. Confidential handling',
+    body: 'Uploaded agreements are handled as confidential business information and processed to extract terms and generate review outputs. Customers remain responsible for assessing what they upload.',
   },
   {
-    title: '5. Logging and monitoring',
-    body: 'Pactora may collect logs and operational telemetry to detect abuse, investigate issues, maintain availability, and support security response.',
+    title: '5. Monitoring and response',
+    body: 'Pactora uses logs and operational monitoring to detect abuse, investigate incidents, support availability, and respond to security events.',
   },
   {
-    title: '6. Retention and deletion',
-    body: 'Pactora aims to limit retention and provide deletion workflows, subject to legal obligations, security requirements, and operational needs.',
+    title: '6. Third-party infrastructure',
+    body: 'Pactora relies on third-party infrastructure and service providers to run the service. Their controls are part of our overall security posture. See Subprocessors for provider categories.',
   },
   {
-    title: '7. Backups and recovery',
-    body: 'Backup and recovery capabilities may include provider-supported backups and restoration procedures designed to improve service resilience.',
+    title: '7. Beta security posture',
+    body: 'Pactora is not yet positioned as an enterprise-certified platform. During beta we prioritise pragmatic protections, clear disclosures, and continuous improvement over certification claims.',
   },
   {
-    title: '8. Secure development',
-    body: 'Pactora aims to use secure development practices, including code review, dependency maintenance, and remediation of identified issues as resources permit.',
-  },
-  {
-    title: '9. Incident response',
-    body: 'Pactora maintains incident handling workflows to identify, triage, and respond to security events, and to implement corrective actions where needed.',
-  },
-  {
-    title: '10. Third-party providers',
-    body: 'Pactora relies on third-party infrastructure and service providers. Their controls form part of the overall security posture. See the Subprocessors page for current information.',
-  },
-  {
-    title: '11. Beta limitation',
-    body: 'Because Pactora is beta-stage, some controls are less mature than in enterprise production environments. Security measures may change as the service develops.',
-  },
-  {
-    title: '12. Security contact',
-    body: 'Security questions or reports can be sent to contact@pactora.com.',
+    title: '8. Security contact',
+    body: 'For security questions or vulnerability reports, contact contact@pactora.com.',
   },
 ] as const;
 
@@ -56,9 +40,10 @@ export default function SecurityPage() {
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-3xl space-y-8">
         <header className="space-y-3">
+          <p className="text-xs uppercase tracking-wide text-amber-300">Pactora Beta</p>
           <h1 className="text-3xl font-semibold tracking-tight">Security</h1>
           <p className="text-sm text-zinc-300">
-            Pactora is a beta-stage contract review and decision-support product.
+            Security practices for Pactora's beta contract review and decision-support service.
           </p>
           <p className="text-sm text-zinc-400">Effective date: 7 March 2026</p>
           <p className="text-sm text-zinc-400">Last updated: 7 March 2026</p>
