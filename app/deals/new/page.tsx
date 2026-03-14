@@ -304,7 +304,6 @@ export default function NewDealPage() {
               disabled={!hasAcceptedLegalNotice || !hasConfirmedDataCaution}
               className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
             >
-              <span className="mr-2 text-xs uppercase tracking-wide text-zinc-700">Stage 4</span>
               Continue to Liability Review
             </button>
           </form>
