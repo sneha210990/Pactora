@@ -49,6 +49,9 @@ function detectAmountByKeywords(lines: string[], keywords: string[]): number | n
 }
 
 async function getPdfParser(): Promise<PdfParse> {
+  // (0, eval)('require') is used intentionally to defer the require call to
+  // runtime, preventing Next.js/webpack from bundling these Node-only modules
+  // into the client bundle or triggering static analysis warnings.
   const runtimeRequire = (0, eval)('require') as (name: string) => unknown;
   const loaded = runtimeRequire('pdf-parse') as PdfParse | { default: PdfParse };
 
@@ -56,6 +59,8 @@ async function getPdfParser(): Promise<PdfParse> {
 }
 
 async function getMammoth(): Promise<Mammoth> {
+  // Same rationale as getPdfParser: deferred require to keep these out of
+  // the client bundle.
   const runtimeRequire = (0, eval)('require') as (name: string) => unknown;
   const loaded = runtimeRequire('mammoth') as Mammoth | { default: Mammoth };
 

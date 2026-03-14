@@ -18,6 +18,7 @@ type DetectedContractValues = {
 export default function NewDealPage() {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [hasDetectedValues, setHasDetectedValues] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
   const [acv, setAcv] = useState<number>(DEFAULT_ACV);
@@ -38,9 +39,11 @@ export default function NewDealPage() {
     if (!file) {
       setSelectedFileName('');
       setHasDetectedValues(false);
+      setUploadError(null);
       return;
     }
 
+    setUploadError(null);
     setSelectedFileName(file.name);
     trackEvent('contract_upload_started', '/deals/new');
 
@@ -54,14 +57,17 @@ export default function NewDealPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Could not extract contract values.');
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(payload?.error ?? 'Could not extract contract values.');
       }
 
       const payload: { detectedValues: DetectedContractValues } = await response.json();
       applyDetectedValues(payload.detectedValues);
       setHasDetectedValues(true);
       trackEvent('contract_uploaded', '/deals/new');
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not extract contract values.';
+      setUploadError(message);
       applyDetectedValues({
         acv: null,
         termMonths: null,
@@ -128,6 +134,11 @@ export default function NewDealPage() {
             {selectedFileName ? (
               <p className="mt-3 text-sm text-zinc-300">
                 Selected file: <span className="font-medium text-white">{selectedFileName}</span>
+              </p>
+            ) : null}
+            {uploadError ? (
+              <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                {uploadError}
               </p>
             ) : null}
           </div>
@@ -290,7 +301,6 @@ export default function NewDealPage() {
 
             <button
               type="submit"
-              onClick={() => trackEvent('analysis_started', '/review/lol')}
               disabled={!hasAcceptedLegalNotice || !hasConfirmedDataCaution}
               className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
             >

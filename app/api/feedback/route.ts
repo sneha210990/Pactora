@@ -10,7 +10,8 @@ export async function POST(request: Request) {
 
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
   const category = typeof body?.category === 'string' ? body.category : '';
-  const page_context = typeof body?.page_context === 'string' ? body.page_context : 'unknown';
+  const rawPageContext = typeof body?.page_context === 'string' ? body.page_context : 'unknown';
+  const page_context = rawPageContext.slice(0, 200);
   const request_call = Boolean(body?.request_call);
   const can_contact = Boolean(body?.can_contact);
 
