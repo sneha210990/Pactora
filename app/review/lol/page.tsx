@@ -276,7 +276,7 @@ function deriveFromDeal(parsed: ParsedClauseResult, acv: number, termMonths: num
   );
 
   let badge: DerivedResult['badge'] = 'Seller-friendly';
-  if (parsed.capType === 'uncapped' || highRiskCarveout) {
+  if (parsed.capType === 'uncapped' || parsed.capType === 'unknown' || highRiskCarveout) {
     badge = 'High risk';
   } else if (capMultipleVsACV !== null && capMultipleVsACV < 1) {
     badge = 'Buyer-friendly';

@@ -3,6 +3,8 @@ import { detectContractValues, extractContractText } from '@/lib/contract-extrac
 
 export const runtime = 'nodejs';
 
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -10,6 +12,13 @@ export async function POST(request: Request) {
 
     if (!(uploaded instanceof File)) {
       return NextResponse.json({ error: 'No contract file uploaded.' }, { status: 400 });
+    }
+
+    if (uploaded.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: 'File is too large. Please upload a contract under 20 MB.' },
+        { status: 413 },
+      );
     }
 
     const buffer = Buffer.from(await uploaded.arrayBuffer());

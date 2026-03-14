@@ -14,7 +14,8 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const event_type = typeof body?.event_type === 'string' ? body.event_type : '';
-  const page_context = typeof body?.page_context === 'string' ? body.page_context : 'unknown';
+  const rawPageContext = typeof body?.page_context === 'string' ? body.page_context : 'unknown';
+  const page_context = rawPageContext.slice(0, 200);
 
   if (!allowedEventTypes.has(event_type as BetaEventType)) {
     return NextResponse.json({ error: 'Invalid event type' }, { status: 400 });
