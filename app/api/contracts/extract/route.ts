@@ -21,8 +21,12 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log('[extract] file.name:', uploaded.name);
+    console.log('[extract] file.type:', uploaded.type);
+    console.log('[extract] file.size:', uploaded.size, 'bytes');
+
     const buffer = Buffer.from(await uploaded.arrayBuffer());
-    const text = await extractContractText(uploaded.name, buffer);
+    const text = await extractContractText(uploaded.name, buffer, uploaded.type);
     const detectedValues = detectContractValues(text);
 
     return NextResponse.json({ detectedValues });
