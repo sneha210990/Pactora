@@ -107,20 +107,47 @@ export function detectContractValues(text: string): ExtractedContractValues {
   };
 }
 
-export async function extractContractText(fileName: string, buffer: Buffer): Promise<string> {
-  const extension = fileName.toLowerCase().split('.').pop();
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const PDF_MIME = 'application/pdf';
+const MIN_CONTENT_LENGTH = 200;
 
-  if (extension === 'pdf') {
+export async function extractContractText(
+  fileName: string,
+  buffer: Buffer,
+  mimeType?: string,
+): Promise<string> {
+  console.log('[contract-extraction] fileName:', fileName);
+  console.log('[contract-extraction] mimeType:', mimeType ?? '(none)');
+  console.log('[contract-extraction] bufferSize:', buffer.length, 'bytes');
+
+  let isPdf = mimeType === PDF_MIME;
+  let isDocx = mimeType === DOCX_MIME;
+
+  if (!isPdf && !isDocx) {
+    const extension = fileName.toLowerCase().split('.').pop();
+    isPdf = extension === 'pdf';
+    isDocx = extension === 'docx';
+  }
+
+  let text = '';
+
+  if (isPdf) {
     const pdfParse = await getPdfParser();
     const parsed = await pdfParse(buffer);
-    return parsed.text ?? '';
-  }
-
-  if (extension === 'docx') {
+    text = parsed.text ?? '';
+  } else if (isDocx) {
     const mammoth = await getMammoth();
     const parsed = await mammoth.extractRawText({ buffer });
-    return parsed.value ?? '';
+    text = parsed.value ?? '';
+  } else {
+    throw new Error('Unsupported file type. Please upload a PDF or DOCX contract.');
   }
 
-  throw new Error('Unsupported file type. Please upload a PDF or DOCX contract.');
+  console.log('[contract-extraction] extractedText.length:', text.length);
+
+  if (text.length < MIN_CONTENT_LENGTH) {
+    throw new Error('Failed to extract meaningful content from document');
+  }
+
+  return text;
 }

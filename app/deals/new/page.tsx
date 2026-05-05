@@ -65,15 +65,8 @@ export default function NewDealPage() {
       applyDetectedValues(payload.detectedValues);
       setHasDetectedValues(true);
       trackEvent('contract_uploaded', '/deals/new');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not extract contract values.';
-      setUploadError(message);
-      applyDetectedValues({
-        acv: null,
-        termMonths: null,
-        insuranceCover: null,
-        dataType: 'standard',
-      });
+    } catch {
+      setUploadError("We couldn't read this file. Try PDF or a different DOCX.");
       setHasDetectedValues(false);
     }
   };
@@ -137,9 +130,10 @@ export default function NewDealPage() {
               </p>
             ) : null}
             {uploadError ? (
-              <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                {uploadError}
-              </p>
+              <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3">
+                <p className="text-sm font-medium text-red-300">{uploadError}</p>
+                <p className="mt-1 text-xs text-red-400">Please select a valid file and try again.</p>
+              </div>
             ) : null}
           </div>
 
