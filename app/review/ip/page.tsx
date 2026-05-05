@@ -38,14 +38,17 @@ function num(value: string | null): number | null {
 }
 
 function parseOwnershipStructure(text: string): OwnershipStructure {
-  const hasVestLanguage = text.includes('all intellectual property rights shall vest in');
+  const vestPrefix = 'all intellectual property rights shall vest in';
+  const hasVestLanguage = text.includes(vestPrefix);
 
-  if (hasVestLanguage && /(vendor|provider|supplier)/.test(text)) {
+  if (hasVestLanguage) {
+    const afterVest = text.split(vestPrefix)[1] ?? '';
+    const vestsInVendor = /(vendor|provider|supplier)/.test(afterVest.slice(0, 60));
+    const vestsInCustomer = /(customer|client)/.test(afterVest.slice(0, 60));
+    if (vestsInVendor && !vestsInCustomer) return 'Vendor owns';
+    if (vestsInCustomer) return 'Customer owns';
+  } else if (/(vendor|provider|supplier)/.test(text) && !/(customer|client)/.test(text)) {
     return 'Vendor owns';
-  }
-
-  if (hasVestLanguage && /(customer|client)/.test(text)) {
-    return 'Customer owns';
   }
 
   if (text.includes('each party retains ownership') || text.includes('retains all right, title and interest')) {

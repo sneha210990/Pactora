@@ -8,6 +8,16 @@ export type ExtractedContractValues = {
 type PdfParseResult = { text?: string };
 type MammothResult = { value?: string };
 
+type PdfJsDocument = {
+  numPages: number;
+  getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: Array<{ str: string; transform: number[] }> }> }>;
+  destroy: () => void;
+};
+type PdfJsModule = {
+  disableWorker: boolean;
+  getDocument: (data: Uint8Array) => Promise<PdfJsDocument>;
+};
+
 type PdfParse = (buffer: Buffer) => Promise<PdfParseResult>;
 type Mammoth = {
   extractRawText: (input: { buffer: Buffer }) => Promise<MammothResult>;
@@ -49,21 +59,45 @@ function detectAmountByKeywords(lines: string[], keywords: string[]): number | n
 }
 
 async function getPdfParser(): Promise<PdfParse> {
-  // (0, eval)('require') is used intentionally to defer the require call to
-  // runtime, preventing Next.js/webpack from bundling these Node-only modules
-  // into the client bundle or triggering static analysis warnings.
-  const runtimeRequire = (0, eval)('require') as (name: string) => unknown;
-  const loaded = runtimeRequire('pdf-parse') as PdfParse | { default: PdfParse };
+  // Dynamic import is used to defer the load to runtime and prevent the
+  // Next.js bundler from including these Node-only modules in the client build.
+  // We use createRequire because the Next.js 16 / Turbopack server runtime uses
+  // ESM, where the CJS 'require' global is not available.
+  // pdf-parse v1.1.4 bundles pdf.js v1.10.100 which fails to initialize in
+  // Node.js 22+. We load the v2.0.550 build directly via its subpath and pass
+  // data as Uint8Array because pdf.js doesn't handle Node.js Buffers correctly.
+  const { createRequire } = await import('module');
+  const runtimeRequire = createRequire(process.cwd() + '/');
+  const pdfjs = runtimeRequire('pdf-parse/lib/pdf.js/v2.0.550/build/pdf.js') as PdfJsModule;
+  pdfjs.disableWorker = true;
 
-  return typeof loaded === 'function' ? loaded : loaded.default;
+  const parse: PdfParse = async (buffer: Buffer): Promise<PdfParseResult> => {
+    const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const doc = await pdfjs.getDocument(uint8);
+    let text = '';
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      let lastY: number | undefined;
+      for (const item of content.items) {
+        const y = item.transform[5];
+        text += lastY !== undefined && y !== lastY ? '\n' : '';
+        text += item.str;
+        lastY = y;
+      }
+      text += '\n';
+    }
+    doc.destroy();
+    return { text };
+  };
+  return parse;
 }
 
 async function getMammoth(): Promise<Mammoth> {
-  // Same rationale as getPdfParser: deferred require to keep these out of
-  // the client bundle.
-  const runtimeRequire = (0, eval)('require') as (name: string) => unknown;
+  // Same rationale as getPdfParser: use createRequire for ESM-safe dynamic loading.
+  const { createRequire } = await import('module');
+  const runtimeRequire = createRequire(process.cwd() + '/');
   const loaded = runtimeRequire('mammoth') as Mammoth | { default: Mammoth };
-
   return 'extractRawText' in loaded ? loaded : loaded.default;
 }
 

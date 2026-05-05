@@ -1,9 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const dummyContractPath = path.resolve(currentDir, 'fixtures/dummy-contract.pdf');
+const dummyContractPath = path.join(__dirname, 'fixtures/dummy-contract.pdf');
 
 type AppIssueTracker = {
   consoleErrors: string[];
@@ -59,25 +57,25 @@ test.afterEach(async ({ page }) => {
 test('Test 1: Homepage loads and primary CTA works', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Pactora', level: 1 })).toBeVisible();
-  await expect(page.getByText('Risk-Weighted Contract Intelligence for SaaS Teams.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Understand SaaS contract risk before legal review', level: 1 })).toBeVisible();
+  await expect(page.getByText('Pactora helps SaaS teams identify liability', { exact: false })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Start review' }).click();
+  await page.getByRole('link', { name: 'Start contract review' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
 });
 
 test('Test 2: Public pages load', async ({ page }) => {
-  const checks = [
+  const checks: Array<{ path: string; heading: string; exact?: boolean }> = [
     { path: '/about', heading: 'About Pactora' },
-    { path: '/security', heading: 'Security' },
+    { path: '/security', heading: 'Security', exact: true },
     { path: '/feedback', heading: 'Share beta feedback' },
-    { path: '/privacy', heading: 'Privacy Notice' },
-    { path: '/terms', heading: 'Terms of Use' },
+    { path: '/privacy', heading: 'Privacy Notice', exact: true },
+    { path: '/terms', heading: 'Terms of Use', exact: true },
   ];
 
   for (const check of checks) {
     await page.goto(check.path);
-    await expect(page.getByRole('heading', { name: check.heading })).toBeVisible();
+    await expect(page.getByRole('heading', { name: check.heading, exact: check.exact })).toBeVisible();
   }
 });
 
@@ -107,6 +105,7 @@ test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
 test('Test 5: Edited values carry through to LoL review', async ({ page }) => {
   await page.goto('/deals/new');
   await page.setInputFiles('#contractUpload', dummyContractPath);
+  await expect(page.getByText('Detected from contract (editable)')).toBeVisible();
 
   await page.locator('#acv').fill('12345');
   await page.locator('#termMonths').fill('24');
@@ -118,7 +117,7 @@ test('Test 5: Edited values carry through to LoL review', async ({ page }) => {
     .getByLabel(/I confirm that, to the best of my knowledge/i)
     .check();
 
-  await page.getByRole('button', { name: 'Continue to LoL Review' }).click();
+  await page.getByRole('button', { name: 'Continue to Liability Review' }).click();
 
   await expect(page).toHaveURL(/\/review\/lol\?/);
   await expect(page.getByText('ACV: £12,345')).toBeVisible();
@@ -139,8 +138,8 @@ test('Test 6: LoL review page loads and clause parser runs', async ({ page }) =>
   await expect(page.getByText('Estimated cap')).toBeVisible();
   await expect(page.getByText('£100,000').first()).toBeVisible();
   await expect(page.getByText('Carve-outs to watch')).toBeVisible();
-  await expect(page.getByText('confidentiality')).toBeVisible();
-  await expect(page.getByText('data_protection')).toBeVisible();
+  await expect(page.getByText('confidentiality').first()).toBeVisible();
+  await expect(page.getByText('data_protection').first()).toBeVisible();
   await expect(page.getByText('Overall commercial reasonableness')).toBeVisible();
   await expect(page.getByText('High risk')).toBeVisible();
   await expect(page.getByText('Negotiation fallback ladder')).toBeVisible();
@@ -159,11 +158,11 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Start review' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Start contract review' })).toBeVisible();
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Continue to LoL Review' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue to Liability Review' })).toBeVisible();
 
   await page.goto('/review/lol');
   await expect(page.locator('#lolClause')).toBeVisible();
@@ -172,7 +171,7 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
 
 test('Test 9: End-to-end review workflow reaches deal summary', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Start review' }).click();
+  await page.getByRole('link', { name: 'Start contract review' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
 
   await page.setInputFiles('#contractUpload', dummyContractPath);
@@ -189,7 +188,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await page
     .getByLabel(/I confirm that, to the best of my knowledge/i)
     .check();
-  await page.getByRole('button', { name: 'Continue to LoL Review' }).click();
+  await page.getByRole('button', { name: 'Continue to Liability Review' }).click();
 
   await expect(page).toHaveURL(/\/review\/lol\?/);
   await expect(page.getByRole('heading', { name: 'Limitation of Liability Review' })).toBeVisible();
@@ -219,7 +218,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await page.getByRole('button', { name: 'Run review' }).click();
   await expect(page.getByText('Directionality').first()).toBeVisible();
   await expect(page.getByText('One-sided').first()).toBeVisible();
-  await expect(page.getByText('Potentially outside cap')).toBeVisible();
+  await expect(page.getByText('Potentially outside cap').first()).toBeVisible();
   await page.getByRole('link', { name: 'Continue to IP Ownership' }).click();
 
   await expect(page).toHaveURL(/\/review\/ip\?/);
