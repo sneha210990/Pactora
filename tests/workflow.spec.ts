@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import path from 'path';
 
 const dummyContractPath = path.join(__dirname, 'fixtures/dummy-contract.pdf');
+const dummyDocxPath = path.join(__dirname, 'fixtures/dummy-contract.docx');
 
 type AppIssueTracker = {
   consoleErrors: string[];
@@ -271,7 +272,22 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('Overall risk')).toBeVisible();
 });
 
-test('Test 10: Termination review detects notice of termination period wording', async ({ page }) => {
+test('Test 10: DOCX upload parses correctly and populates deal context fields', async ({ page }) => {
+  await page.goto('/deals/new');
+  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+
+  await page.setInputFiles('#contractUpload', dummyDocxPath);
+
+  await expect(page.getByText('Selected file:')).toContainText('dummy-contract.docx');
+  await expect(page.getByText('Detected from contract (editable)')).toBeVisible();
+
+  await expect(page.locator('#acv')).toHaveValue('30000');
+  await expect(page.locator('#termMonths')).toHaveValue('24');
+  await expect(page.locator('#insuranceCover')).toHaveValue('2000000');
+  await expect(page.locator('#dataType')).toHaveValue('personal');
+});
+
+test('Test 11: Termination review detects notice of termination period wording', async ({ page }) => {
   await page.goto('/review/termination');
   await expect(page.getByRole('heading', { name: 'Termination Review' })).toBeVisible();
 

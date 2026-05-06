@@ -1,5 +1,3 @@
-import mammoth from 'mammoth';
-
 export type ExtractedContractValues = {
   acv: number | null;
   termMonths: number | null;
@@ -24,6 +22,11 @@ type PdfJsModule = {
 };
 
 type PdfParse = (buffer: Buffer) => Promise<PdfParseResult>;
+
+type Mammoth = {
+  extractRawText: (input: { buffer: Buffer }) => Promise<MammothResult>;
+};
+
 const ACV_KEYWORDS = [
   'acv',
   'annual fee',
@@ -113,6 +116,13 @@ async function getPdfParser(): Promise<PdfParse> {
     return { text };
   };
   return parse;
+}
+
+async function getMammoth(): Promise<Mammoth> {
+  const { createRequire } = await import('module');
+  const runtimeRequire = createRequire(process.cwd() + '/');
+  const loaded = runtimeRequire('mammoth') as Mammoth | { default: Mammoth };
+  return 'extractRawText' in loaded ? loaded : loaded.default;
 }
 
 export function detectContractValues(text: string): ExtractedContractValues {
