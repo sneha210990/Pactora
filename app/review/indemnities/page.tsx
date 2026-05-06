@@ -19,6 +19,7 @@ type ReviewResult = {
 };
 
 const CLAUSE_STORAGE_KEY = 'pactora.indemnityClause';
+const RISK_PARAM_KEYS = ['lolRisk', 'indemnitiesRisk', 'ipRisk', 'dataRisk', 'terminationRisk'] as const;
 
 const DEFAULT_CLAUSE =
   'Supplier shall indemnify Customer against any third-party claim alleging intellectual property infringement, subject to the limitations of liability in this Agreement.';
@@ -201,8 +202,13 @@ function IndemnitiesReviewContent() {
     if (insuranceCover) params.set('insuranceCover', insuranceCover);
     if (dataType) params.set('dataType', dataType);
     if (searchParams.get('lolCap')) params.set('lolCap', searchParams.get('lolCap') as string);
+    RISK_PARAM_KEYS.forEach((riskKey) => {
+      const value = searchParams.get(riskKey);
+      if (value) params.set(riskKey, value);
+    });
+    if (result?.riskRating) params.set('indemnitiesRisk', result.riskRating);
     return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, searchParams]);
+  }, [acv, termMonths, insuranceCover, dataType, searchParams, result?.riskRating]);
 
   function runReview() {
     setResult(parseClause(clause));
