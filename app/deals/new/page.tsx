@@ -65,8 +65,9 @@ export default function NewDealPage() {
       applyDetectedValues(payload.detectedValues);
       setHasDetectedValues(true);
       trackEvent('contract_uploaded', '/deals/new');
-    } catch {
-      setUploadError("We couldn't read this file. Try PDF or a different DOCX.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "We couldn't read this file.";
+      setUploadError(message);
       setHasDetectedValues(false);
     }
   };
@@ -85,7 +86,7 @@ export default function NewDealPage() {
           <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1 of 3</p>
           <h2 className="mt-1 text-lg font-medium text-white">Upload Contract</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Upload your contract (PDF, DOCX). You can edit extracted values later.
+            Upload your contract (PDF, DOCX, or legacy DOC). You can edit extracted values later.
           </p>
 
           <div className="mt-5">
@@ -93,12 +94,12 @@ export default function NewDealPage() {
               htmlFor="contractUpload"
               className="mb-2 block text-xs font-medium uppercase tracking-wide text-zinc-400"
             >
-              Contract file (.pdf or .docx)
+              Contract file (.pdf, .docx, or .doc)
             </label>
             <input
               id="contractUpload"
               type="file"
-              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
               onChange={handleContractUpload}
               className="block w-full cursor-pointer rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-black hover:file:bg-zinc-200"
             />
@@ -110,7 +111,7 @@ export default function NewDealPage() {
             {uploadError ? (
               <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3">
                 <p className="text-sm font-medium text-red-300">{uploadError}</p>
-                <p className="mt-1 text-xs text-red-400">Please select a valid file and try again.</p>
+                <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC file and try again.</p>
               </div>
             ) : null}
           </div>
