@@ -68,59 +68,71 @@ function detectAmountByKeywords(lines: string[], keywords: string[]): number | n
 }
 
 async function getPdfParser(): Promise<PdfParse> {
-  // Dynamic import is used to defer the load to runtime and prevent the
-  // Next.js bundler from including these Node-only modules in the client build.
-  // We use createRequire because the Next.js 16 / Turbopack server runtime uses
-  // ESM, where the CJS 'require' global is not available.
-  // pdf-parse v1.1.4 bundles pdf.js v1.10.100 which fails to initialize in
-  // Node.js 22+. We load the v2.0.550 build directly via its subpath and pass
-  // data as Uint8Array because pdf.js doesn't handle Node.js Buffers correctly.
+  // Use createRequire anchored to this file's URL so module resolution works
+  // consistently regardless of process.cwd() (which differs on Vercel).
   const { createRequire } = await import('module');
-  const runtimeRequire = createRequire(process.cwd() + '/');
-  const pdfjs = runtimeRequire('pdf-parse/lib/pdf.js/v2.0.550/build/pdf.js') as PdfJsModule;
-  pdfjs.disableWorker = true;
+  const runtimeRequire = createRequire(import.meta.url);
 
-  const parse: PdfParse = async (buffer: Buffer): Promise<PdfParseResult> => {
-    const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    const loadingTask = pdfjs.getDocument({ data: uint8 });
-    const doc = await (loadingTask.promise ?? loadingTask);
-    let text = '';
+  // Prefer the pdf.js v2.0.550 subpath: the main pdf-parse entry bundles
+  // v1.10.100 which fails to initialise on Node 22+. On Vercel (Node ≤ 20)
+  // this internal path may not survive file-tracing, so we fall back to the
+  // main pdf-parse API which works fine there.
+  let pdfjs: PdfJsModule | null = null;
+  try {
+    pdfjs = runtimeRequire('pdf-parse/lib/pdf.js/v2.0.550/build/pdf.js') as PdfJsModule;
+    pdfjs.disableWorker = true;
+  } catch {
+    // internal subpath not available – fall back to pdf-parse main entry below
+  }
 
-    try {
-      for (let i = 1; i <= doc.numPages; i++) {
-        const page = await doc.getPage(i);
-        const content = await page.getTextContent();
-        let lastY: number | undefined;
+  if (pdfjs) {
+    const resolvedPdfjs = pdfjs;
+    const parse: PdfParse = async (buffer: Buffer): Promise<PdfParseResult> => {
+      const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+      const loadingTask = resolvedPdfjs.getDocument({ data: uint8 });
+      const doc = await (loadingTask.promise ?? loadingTask);
+      let text = '';
 
-        for (const item of content.items) {
-          const fragment = item.str?.trim();
-          if (!fragment) continue;
+      try {
+        for (let i = 1; i <= doc.numPages; i++) {
+          const page = await doc.getPage(i);
+          const content = await page.getTextContent();
+          let lastY: number | undefined;
 
-          const y = item.transform?.[5];
-          if (lastY !== undefined && y !== undefined && Math.abs(y - lastY) > 1) {
-            text = text.trimEnd() + '\n';
-          } else if (text && !/[\s\n]$/.test(text)) {
-            text += ' ';
+          for (const item of content.items) {
+            const fragment = item.str?.trim();
+            if (!fragment) continue;
+
+            const y = item.transform?.[5];
+            if (lastY !== undefined && y !== undefined && Math.abs(y - lastY) > 1) {
+              text = text.trimEnd() + '\n';
+            } else if (text && !/[\s\n]$/.test(text)) {
+              text += ' ';
+            }
+
+            text += fragment;
+            lastY = y;
           }
 
-          text += fragment;
-          lastY = y;
+          text = text.trimEnd() + '\n';
         }
-
-        text = text.trimEnd() + '\n';
+      } finally {
+        doc.destroy();
       }
-    } finally {
-      doc.destroy();
-    }
 
-    return { text };
-  };
-  return parse;
+      return { text };
+    };
+    return parse;
+  }
+
+  // Fallback: pdf-parse main entry (bundles pdf.js v1.10.100, safe on Node ≤ 20)
+  const pdfParse = runtimeRequire('pdf-parse') as PdfParse;
+  return pdfParse;
 }
 
 async function getMammoth(): Promise<Mammoth> {
   const { createRequire } = await import('module');
-  const runtimeRequire = createRequire(process.cwd() + '/');
+  const runtimeRequire = createRequire(import.meta.url);
   const loaded = runtimeRequire('mammoth') as Mammoth | { default: Mammoth };
   return 'extractRawText' in loaded ? loaded : loaded.default;
 }
