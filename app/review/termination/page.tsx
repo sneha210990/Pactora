@@ -57,18 +57,99 @@ function parseTerminationRight(text: string): TerminationRight {
   return 'Unknown';
 }
 
-function parseNoticePeriod(text: string): string {
-  const noticeRegex = /(notice|written notice|terminate on)[^\d]{0,25}(\d{1,3})\s+(day|days|month|months)/g;
-  const directRegex = /(\d{1,3})\s+(day|days|month|months)/g;
+const NUMBER_WORDS: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  fifteen: 15,
+  twenty: 20,
+  thirty: 30,
+  forty: 40,
+  fortyfive: 45,
+  sixty: 60,
+  ninety: 90,
+};
 
-  const noticeMatch = noticeRegex.exec(text);
-  if (noticeMatch) {
-    return `${noticeMatch[2]} ${noticeMatch[3]}`;
+const NUMBER_WORD_PATTERN = [
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'fifteen',
+  'twenty',
+  'thirty',
+  'forty',
+  String.raw`forty[-\s]?five`,
+  'sixty',
+  'ninety',
+].join('|');
+const WRITTEN_AMOUNT_WITH_NUMERAL_PATTERN = String.raw`(?:${NUMBER_WORD_PATTERN})\s*\(\s*\d{1,3}\s*\)`;
+const NUMERAL_AMOUNT_PATTERN = String.raw`(?:\d{1,3})(?:\s*\(\s*\d{1,3}\s*\))?`;
+const NOTICE_AMOUNT_PATTERN = String.raw`(${WRITTEN_AMOUNT_WITH_NUMERAL_PATTERN}|${NUMERAL_AMOUNT_PATTERN}|${NUMBER_WORD_PATTERN})`;
+const NOTICE_UNIT_PATTERN = String.raw`(days|day|months|month)`;
+
+function normalizeNoticeAmount(value: string): string {
+  const numericMatch = value.match(/\d{1,3}/);
+  if (numericMatch) return numericMatch[0];
+
+  const wordKey = value.replace(/[\s-]+/g, '');
+  return String(NUMBER_WORDS[wordKey] ?? value);
+}
+
+function formatNoticePeriod(match: RegExpMatchArray, amountIndex: number, unitIndex: number): string {
+  return `${normalizeNoticeAmount(match[amountIndex])} ${match[unitIndex]}`;
+}
+
+function parseNoticePeriod(text: string): string {
+  const noticeTermsPattern = [
+    String.raw`notice(?:\s+of\s+termination)?(?:\s+period)?`,
+    String.raw`written\s+notice`,
+    String.raw`prior\s+(?:written\s+)?notice`,
+    String.raw`terminate\s+on`,
+    String.raw`giving(?:\s+not\s+less\s+than)?`,
+  ].join('|');
+  const noticeBeforeAmountPattern = String.raw`(?:${noticeTermsPattern})\D{0,80}${NOTICE_AMOUNT_PATTERN}\s+${NOTICE_UNIT_PATTERN}`;
+
+  const noticePatterns = [
+    new RegExp(noticeBeforeAmountPattern),
+    new RegExp(
+      String.raw`${NOTICE_AMOUNT_PATTERN}\s+${NOTICE_UNIT_PATTERN}(?:'|’)?s?\s+(?:prior\s+)?(?:written\s+)?notice`,
+    ),
+    new RegExp(
+      String.raw`${NOTICE_AMOUNT_PATTERN}\s+${NOTICE_UNIT_PATTERN}(?:'|’)?s?\s+notice\s+of\s+termination`,
+    ),
+    new RegExp(
+      String.raw`termination\s+notice\s+(?:period\s+)?(?:is|of|shall\s+be|must\s+be)?\D{0,40}${NOTICE_AMOUNT_PATTERN}\s+${NOTICE_UNIT_PATTERN}`,
+    ),
+  ];
+
+  for (const pattern of noticePatterns) {
+    const noticeMatch = text.match(pattern);
+    if (noticeMatch) {
+      return formatNoticePeriod(noticeMatch, 1, 2);
+    }
   }
 
-  const directMatch = directRegex.exec(text);
+  const directMatch = text.match(new RegExp(String.raw`${NOTICE_AMOUNT_PATTERN}\s+${NOTICE_UNIT_PATTERN}`));
   if (directMatch) {
-    return `${directMatch[1]} ${directMatch[2]}`;
+    return formatNoticePeriod(directMatch, 1, 2);
   }
 
   return 'Unknown';
