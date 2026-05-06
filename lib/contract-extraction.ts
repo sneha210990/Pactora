@@ -203,7 +203,8 @@ export async function extractContractText(
     const parsed = await pdfParse(buffer);
     text = parsed.text ?? '';
   } else if (fileKind === 'docx') {
-    const parsed = await mammoth.extractRawText({ buffer }) as MammothResult;
+    const mammoth = await getMammoth();
+    const parsed = await mammoth.extractRawText({ buffer });
     text = parsed.value ?? '';
   } else if (fileKind === 'doc') {
     text = extractLegacyDocText(buffer);
