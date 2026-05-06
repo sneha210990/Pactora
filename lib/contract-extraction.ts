@@ -1,3 +1,5 @@
+import mammoth from 'mammoth';
+
 export type ExtractedContractValues = {
   acv: number | null;
   termMonths: number | null;
@@ -8,21 +10,20 @@ export type ExtractedContractValues = {
 type PdfParseResult = { text?: string };
 type MammothResult = { value?: string };
 
+type PdfJsTextItem = { str?: string; transform?: number[] };
+
 type PdfJsDocument = {
   numPages: number;
-  getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: Array<{ str: string; transform: number[] }> }> }>;
+  getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: PdfJsTextItem[] }> }>;
   destroy: () => void;
 };
+type PdfJsLoadingTask = Promise<PdfJsDocument> & { promise?: Promise<PdfJsDocument> };
 type PdfJsModule = {
   disableWorker: boolean;
-  getDocument: (data: Uint8Array) => Promise<PdfJsDocument>;
+  getDocument: (options: { data: Uint8Array } | Uint8Array) => PdfJsLoadingTask;
 };
 
 type PdfParse = (buffer: Buffer) => Promise<PdfParseResult>;
-type Mammoth = {
-  extractRawText: (input: { buffer: Buffer }) => Promise<MammothResult>;
-};
-
 const ACV_KEYWORDS = [
   'acv',
   'annual fee',
@@ -45,13 +46,18 @@ function parseMoney(value: string): number {
 function detectAmountByKeywords(lines: string[], keywords: string[]): number | null {
   for (const line of lines) {
     const normalizedLine = line.toLowerCase();
-    if (!keywords.some((keyword) => normalizedLine.includes(keyword))) {
-      continue;
+    const keyword = keywords.find((candidate) => normalizedLine.includes(candidate));
+    if (!keyword) continue;
+
+    const keywordIndex = normalizedLine.indexOf(keyword);
+    const amountAfterKeyword = line.slice(keywordIndex).match(MONEY_REGEX)?.[0];
+    if (amountAfterKeyword) {
+      return parseMoney(amountAfterKeyword);
     }
 
-    const moneyMatch = line.match(MONEY_REGEX)?.[0];
-    if (moneyMatch) {
-      return parseMoney(moneyMatch);
+    const amountOnLine = line.match(MONEY_REGEX)?.[0];
+    if (amountOnLine) {
+      return parseMoney(amountOnLine);
     }
   }
 
@@ -73,32 +79,40 @@ async function getPdfParser(): Promise<PdfParse> {
 
   const parse: PdfParse = async (buffer: Buffer): Promise<PdfParseResult> => {
     const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    const doc = await pdfjs.getDocument(uint8);
+    const loadingTask = pdfjs.getDocument({ data: uint8 });
+    const doc = await (loadingTask.promise ?? loadingTask);
     let text = '';
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i);
-      const content = await page.getTextContent();
-      let lastY: number | undefined;
-      for (const item of content.items) {
-        const y = item.transform[5];
-        text += lastY !== undefined && y !== lastY ? '\n' : '';
-        text += item.str;
-        lastY = y;
+
+    try {
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        let lastY: number | undefined;
+
+        for (const item of content.items) {
+          const fragment = item.str?.trim();
+          if (!fragment) continue;
+
+          const y = item.transform?.[5];
+          if (lastY !== undefined && y !== undefined && Math.abs(y - lastY) > 1) {
+            text = text.trimEnd() + '\n';
+          } else if (text && !/[\s\n]$/.test(text)) {
+            text += ' ';
+          }
+
+          text += fragment;
+          lastY = y;
+        }
+
+        text = text.trimEnd() + '\n';
       }
-      text += '\n';
+    } finally {
+      doc.destroy();
     }
-    doc.destroy();
+
     return { text };
   };
   return parse;
-}
-
-async function getMammoth(): Promise<Mammoth> {
-  // Same rationale as getPdfParser: use createRequire for ESM-safe dynamic loading.
-  const { createRequire } = await import('module');
-  const runtimeRequire = createRequire(process.cwd() + '/');
-  const loaded = runtimeRequire('mammoth') as Mammoth | { default: Mammoth };
-  return 'extractRawText' in loaded ? loaded : loaded.default;
 }
 
 export function detectContractValues(text: string): ExtractedContractValues {
@@ -142,8 +156,35 @@ export function detectContractValues(text: string): ExtractedContractValues {
 }
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const LEGACY_DOC_MIME = 'application/msword';
 const PDF_MIME = 'application/pdf';
-const MIN_CONTENT_LENGTH = 200;
+const MIN_CONTENT_LENGTH = 20;
+
+type ContractFileKind = 'pdf' | 'docx' | 'doc' | 'unsupported';
+
+function detectFileKind(fileName: string, mimeType?: string): ContractFileKind {
+  const normalizedMime = mimeType?.toLowerCase() ?? '';
+  const extension = fileName.toLowerCase().split('.').pop();
+
+  if (normalizedMime === PDF_MIME || extension === 'pdf') return 'pdf';
+  if (normalizedMime === DOCX_MIME || extension === 'docx') return 'docx';
+  if (normalizedMime === LEGACY_DOC_MIME || extension === 'doc') return 'doc';
+
+  return 'unsupported';
+}
+
+function extractLegacyDocText(buffer: Buffer): string {
+  // Legacy .doc files are binary OLE documents. Without a platform binary such as
+  // antiword available in production, this best-effort fallback pulls readable
+  // text runs out of the binary so common contract fields can still be detected.
+  return buffer
+    .toString('latin1')
+    .replace(/\0/g, ' ')
+    .match(/[ -~£]{4,}/g)
+    ?.join('\n')
+    .replace(/\s{2,}/g, ' ')
+    .trim() ?? '';
+}
 
 export async function extractContractText(
   fileName: string,
@@ -154,33 +195,29 @@ export async function extractContractText(
   console.log('[contract-extraction] mimeType:', mimeType ?? '(none)');
   console.log('[contract-extraction] bufferSize:', buffer.length, 'bytes');
 
-  let isPdf = mimeType === PDF_MIME;
-  let isDocx = mimeType === DOCX_MIME;
-
-  if (!isPdf && !isDocx) {
-    const extension = fileName.toLowerCase().split('.').pop();
-    isPdf = extension === 'pdf';
-    isDocx = extension === 'docx';
-  }
-
+  const fileKind = detectFileKind(fileName, mimeType);
   let text = '';
 
-  if (isPdf) {
+  if (fileKind === 'pdf') {
     const pdfParse = await getPdfParser();
     const parsed = await pdfParse(buffer);
     text = parsed.text ?? '';
-  } else if (isDocx) {
-    const mammoth = await getMammoth();
-    const parsed = await mammoth.extractRawText({ buffer });
+  } else if (fileKind === 'docx') {
+    const parsed = await mammoth.extractRawText({ buffer }) as MammothResult;
     text = parsed.value ?? '';
+  } else if (fileKind === 'doc') {
+    text = extractLegacyDocText(buffer);
   } else {
-    throw new Error('Unsupported file type. Please upload a PDF or DOCX contract.');
+    throw new Error('Unsupported file type. Please upload a PDF, DOCX, or DOC contract.');
   }
 
+  text = text.replace(/\r\n?/g, '\n').trim();
   console.log('[contract-extraction] extractedText.length:', text.length);
 
   if (text.length < MIN_CONTENT_LENGTH) {
-    throw new Error('Failed to extract meaningful content from document');
+    throw new Error(
+      'No readable text was found in this document. If it is scanned or image-only, please upload a text-based PDF or DOCX.',
+    );
   }
 
   return text;
