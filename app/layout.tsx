@@ -23,13 +23,7 @@ export default function RootLayout({
                 Pactora
               </Link>
 
-              <nav className="flex items-center gap-3">
-                <Link
-                  href="/about"
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
-                >
-                  About
-                </Link>
+              <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                 <Link
                   href="/security"
                   className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"

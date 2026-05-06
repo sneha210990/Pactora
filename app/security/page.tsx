@@ -43,11 +43,21 @@ export default function SecurityPage() {
           <p className="text-xs uppercase tracking-wide text-amber-300">Pactora Beta</p>
           <h1 className="text-3xl font-semibold tracking-tight">Security</h1>
           <p className="text-sm text-zinc-300">
-            Security practices for Pactora's beta contract review and decision-support service.
+            Security practices for Pactora&apos;s beta contract review and decision-support service.
           </p>
           <p className="text-sm text-zinc-400">Effective date: 7 March 2026</p>
           <p className="text-sm text-zinc-400">Last updated: 7 March 2026</p>
         </header>
+
+        <section className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+          <h2 className="text-xl font-semibold text-white">Security Overview</h2>
+          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-zinc-300">
+            <li>Data is encrypted in transit.</li>
+            <li>Access is restricted to authorized systems.</li>
+            <li>Uploaded documents are processed securely.</li>
+            <li>Controls are evolving as the product scales.</li>
+          </ul>
+        </section>
 
         <section className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-sm text-zinc-300">
           {sections.map((section) => (

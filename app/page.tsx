@@ -30,6 +30,27 @@ const extractedClauses = ['Limitation of Liability', 'Indemnities', 'IP ownershi
 
 const riskIndicators = ['Liability cap: 1× ACV', 'Indemnity exposure: elevated'];
 
+const productProofCards = [
+  {
+    title: 'Extracted Clauses',
+    description: 'Automatically identifies key commercial clauses like liability, indemnity, and termination.',
+  },
+  {
+    title: 'Risk Labels',
+    description: 'Each clause is scored and labelled by risk level (high, medium, low).',
+  },
+  {
+    title: 'Decision Summary',
+    description: 'See what to push back on, what to accept, and what needs legal review.',
+  },
+];
+
+const proofClauses = [
+  { title: 'Indemnity', risk: 'High' },
+  { title: 'Termination', risk: 'Medium' },
+  { title: 'Confidentiality', risk: 'Low' },
+];
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
@@ -107,6 +128,59 @@ export default function Home() {
                 </div>
                 <p className="mt-4 rounded-md border border-amber-600/40 bg-amber-950/40 px-3 py-2 text-sm font-medium text-amber-200">
                   Overall review priority: Elevated
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-zinc-800 px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="mb-6 text-3xl font-semibold">What Pactora actually shows you</h2>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {productProofCards.map((card) => (
+              <div key={card.title} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
+                <h3 className="font-semibold text-white">{card.title}</h3>
+                <p className="mt-2 text-sm text-zinc-400">{card.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 rounded-lg border border-zinc-200 bg-gray-50 p-4 text-zinc-900">
+            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Extracted clauses</p>
+                {proofClauses.map((clause) => (
+                  <div key={clause.title} className="flex items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2">
+                    <span className="text-sm font-medium">{clause.title}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        clause.risk === 'High'
+                          ? 'bg-rose-100 text-rose-700'
+                          : clause.risk === 'Medium'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {clause.risk}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-md border border-zinc-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Selected clause preview</p>
+                <h3 className="mt-3 font-semibold">Indemnity</h3>
+                <p className="mt-2 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
+                  Customer indemnity obligations apply without a clear cap for third-party claims related to service use.
+                </p>
+                <p className="mt-3 text-sm text-zinc-600">
+                  This may create exposure beyond the negotiated liability position and should be aligned with the overall cap.
+                </p>
+                <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                  Suggested action: push back or route to legal review before signature.
                 </p>
               </div>
             </div>
@@ -289,13 +363,14 @@ export default function Home() {
       </section>
 
       <section className="border-t border-zinc-800 px-6 py-16">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
-          <p className="text-lg text-zinc-200">
-            Using Pactora in beta?{' '}
-            <Link href="/feedback" className="font-semibold text-white underline underline-offset-4 hover:text-zinc-200">
-              Send feedback →
-            </Link>
-          </p>
+        <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center sm:flex-row sm:text-left">
+          <p className="text-lg text-zinc-200">Using Pactora in beta? Send feedback</p>
+          <Link
+            href="/feedback"
+            className="inline-flex rounded-lg bg-white px-5 py-2.5 font-semibold text-black transition hover:bg-zinc-200"
+          >
+            Send feedback
+          </Link>
         </div>
       </section>
     </main>
