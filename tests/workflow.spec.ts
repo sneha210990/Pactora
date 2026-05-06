@@ -270,3 +270,19 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('Liability cap: £100,000')).toBeVisible();
   await expect(page.getByText('Overall risk')).toBeVisible();
 });
+
+test('Test 10: Termination review detects notice of termination period wording', async ({ page }) => {
+  await page.goto('/review/termination');
+  await expect(page.getByRole('heading', { name: 'Termination Review' })).toBeVisible();
+
+  await page
+    .locator('#terminationClause')
+    .fill(
+      'Either party may terminate this agreement by giving a notice of termination period of ninety days. Breaches may be remedied during the cure period.',
+    );
+  await page.getByRole('button', { name: 'Run review' }).click();
+
+  await expect(page.getByText('Termination right').first()).toBeVisible();
+  await expect(page.getByText('Mutual').first()).toBeVisible();
+  await expect(page.getByText('90 days').first()).toBeVisible();
+});
