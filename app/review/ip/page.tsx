@@ -19,6 +19,7 @@ type ReviewResult = {
 };
 
 const CLAUSE_STORAGE_KEY = 'pactora.ipClause';
+const RISK_PARAM_KEYS = ['lolRisk', 'indemnitiesRisk', 'ipRisk', 'dataRisk', 'terminationRisk'] as const;
 
 function normalize(input: string) {
   return input.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -184,8 +185,13 @@ function IpOwnershipReviewContent() {
     if (insuranceCover) params.set('insuranceCover', insuranceCover);
     if (dataType) params.set('dataType', dataType);
     if (lolCapParam) params.set('lolCap', lolCapParam);
+    RISK_PARAM_KEYS.forEach((riskKey) => {
+      const value = searchParams.get(riskKey);
+      if (value) params.set(riskKey, value);
+    });
+    if (result?.riskRating) params.set('ipRisk', result.riskRating);
     return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, lolCapParam]);
+  }, [acv, termMonths, insuranceCover, dataType, lolCapParam, searchParams, result?.riskRating]);
 
   function runReview() {
     setResult(parseClause(clause));

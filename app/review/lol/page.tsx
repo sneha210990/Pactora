@@ -298,6 +298,12 @@ function badgeClass(badge: DerivedResult['badge']) {
   return 'bg-blue-500/15 text-blue-300';
 }
 
+function summaryRiskFromDerived(derived: DerivedResult): 'Low' | 'Medium' | 'High' {
+  if (derived.badge === 'High risk' || derived.capMultipleVsACV === null || derived.capMultipleVsACV < 1) return 'High';
+  if (derived.capMultipleVsACV <= 2) return 'Medium';
+  return 'Low';
+}
+
 function labelForCapType(capType: CapType) {
   if (capType === 'fixed_amount') return 'Fixed amount';
   if (capType === 'fees_paid_window') return 'Fees paid (window)';
@@ -353,9 +359,10 @@ function LolReviewContent() {
     } else if (derived.impliedCapAmountGBP !== null) {
       params.set('lolCap', String(derived.impliedCapAmountGBP));
     }
+    params.set('lolRisk', summaryRiskFromDerived(derived));
 
     return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, searchParams, derived.impliedCapAmountGBP]);
+  }, [acv, termMonths, insuranceCover, dataType, searchParams, derived]);
 
   function runReview() {
     setParsedResult(parseClause(clause));

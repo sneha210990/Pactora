@@ -64,13 +64,13 @@ export function FeedbackForm({ user, compact = false }: { user?: User | null; co
   };
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
-      <h2 className="text-lg font-medium">Share beta feedback</h2>
+    <section className={compact ? 'rounded-xl border border-zinc-900 bg-black/10 p-4' : 'rounded-xl border border-zinc-800 bg-zinc-950 p-5'}>
+      <h2 className={compact ? 'text-sm font-medium text-zinc-300' : 'text-lg font-medium'}>Share beta feedback</h2>
       <p className="mt-2 text-sm text-zinc-400">
         Help improve Pactora. Feedback is used for beta support, product improvements, and security monitoring.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-4 space-y-4">
+      <form onSubmit={onSubmit} className={compact ? 'mt-4 space-y-3' : 'mt-4 space-y-4'}>
         <div>
           <label className="mb-2 block text-sm text-zinc-300">Category</label>
           <select
