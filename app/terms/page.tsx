@@ -132,6 +132,16 @@ export default function TermsPage() {
           <p className="text-sm text-zinc-400">Last updated: 7 March 2026</p>
         </header>
 
+        <section className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+          <h2 className="text-xl font-semibold text-white">Terms Overview</h2>
+          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-zinc-300">
+            <li>Pactora is currently a beta product.</li>
+            <li>Pactora provides decision-support software, not legal advice.</li>
+            <li>Users must be authorized to upload documents and data.</li>
+            <li>Human review is required before relying on outputs for material decisions.</li>
+          </ul>
+        </section>
+
         <section className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-sm text-zinc-300">
           {sections.map((section) => (
             <div key={section.title}>
