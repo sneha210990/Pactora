@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-const riskAreas = [
+const heroClauses = [
   'Limitation of liability',
   'Indemnity obligations',
   'IP ownership and licensing',
@@ -8,63 +8,106 @@ const riskAreas = [
   'Data processing commitments',
 ];
 
-const reviewFindings = [
+const heroFindings = [
   {
-    issue: 'Indemnity carve-out appears uncapped',
+    issue: 'Uncapped indemnity carve-out',
     severity: 'High',
-    note: 'Potential exposure above negotiated liability cap.',
+    note: 'Could create exposure above the agreed liability cap.',
   },
   {
-    issue: 'Termination notice is 90 days',
+    issue: '90-day termination notice',
     severity: 'Medium',
-    note: 'Could delay exit from low-value vendor relationship.',
+    note: 'May delay exit from a low-value vendor relationship.',
   },
   {
-    issue: 'Broad confidentiality obligations survive indefinitely',
+    issue: 'Confidentiality survives indefinitely',
     severity: 'Medium',
-    note: 'Clarify scope and retention timelines before signature.',
+    note: 'Clarify scope and retention before signature.',
   },
 ];
 
-const extractedClauses = ['Limitation of Liability', 'Indemnities', 'IP ownership'];
-
-const riskIndicators = ['Liability cap: 1× ACV', 'Indemnity exposure: elevated'];
+const previewClauses = [
+  {
+    title: 'Indemnity',
+    risk: 'High',
+    summary: 'Customer claims are carved out from the liability cap.',
+  },
+  {
+    title: 'Limitation of liability',
+    risk: 'Medium',
+    summary: 'Cap is set at 1× annual contract value.',
+  },
+  {
+    title: 'Termination',
+    risk: 'Medium',
+    summary: 'Renewal requires 90 days’ written notice.',
+  },
+  {
+    title: 'IP ownership',
+    risk: 'Low',
+    summary: 'Customer keeps its data and pre-existing materials.',
+  },
+];
 
 const productProofCards = [
   {
-    title: 'Extracted Clauses',
-    description: 'Automatically identifies key commercial clauses like liability, indemnity, and termination.',
+    title: 'Find the clauses that matter',
+    description: 'See liability, indemnity, IP, termination, and data terms in one structured view.',
   },
   {
-    title: 'Risk Labels',
-    description: 'Each clause is scored and labelled by risk level (high, medium, low).',
+    title: 'See which clauses create the biggest exposure',
+    description: 'Risk badges show where contract language may increase cost, delay, or negotiation pressure.',
   },
   {
-    title: 'Decision Summary',
-    description: 'See what to push back on, what to accept, and what needs legal review.',
+    title: 'Know what to push back on',
+    description: 'Suggested actions help teams decide what to accept, negotiate, or route to legal review.',
   },
 ];
 
-const proofClauses = [
-  { title: 'Indemnity', risk: 'High' },
-  { title: 'Termination', risk: 'Medium' },
-  { title: 'Confidentiality', risk: 'Low' },
+const trustPoints = [
+  {
+    title: 'Not legal advice',
+    description: 'Pactora supports review and triage. Final decisions should be reviewed by legal counsel.',
+  },
+  {
+    title: 'Human review required',
+    description: 'Use Pactora to prioritise issues, not replace professional judgment.',
+  },
+  {
+    title: 'Confidential handling',
+    description: 'Uploaded documents are treated as confidential product data.',
+  },
+  {
+    title: 'Transparent policies',
+    description: 'Security, privacy, and subprocessors are documented publicly.',
+  },
 ];
+
+function RiskBadge({ risk }: { risk: string }) {
+  const classes =
+    risk === 'High'
+      ? 'bg-rose-100 text-rose-700 ring-rose-200'
+      : risk === 'Medium'
+        ? 'bg-amber-100 text-amber-700 ring-amber-200'
+        : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
+
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${classes}`}>{risk}</span>;
+}
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
-      <section className="border-b border-zinc-800 px-6 py-20 md:py-24">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2">
-          <div className="max-w-2xl">
+    <main className="min-h-screen bg-white text-zinc-950">
+      <section className="border-b border-zinc-800 bg-gradient-to-br from-black via-zinc-900 to-black py-20 text-white md:py-24">
+        <div className="mx-auto grid max-w-5xl items-center gap-12 px-4 lg:grid-cols-2">
+          <div>
             <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">Contract review for SaaS teams</p>
             <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-6xl">
               Understand SaaS contract risk before legal review
             </h1>
 
             <p className="mb-8 text-lg text-zinc-300 md:text-xl">
-              Pactora helps SaaS teams identify liability, indemnity, IP, termination, and negotiation pressure points from
-              customer and vendor contracts.
+              Pactora helps SaaS teams spot liability, indemnity, IP, termination, and data issues. Know what to push
+              back on before the contract reaches legal.
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -81,7 +124,7 @@ export default function Home() {
               <span className="hidden text-zinc-700 sm:inline">•</span>
               <span>Decision-support, not legal advice</span>
               <span className="hidden text-zinc-700 sm:inline">•</span>
-              <span>Built for faster commercial triage</span>
+              <span>Built to understand contract risk quickly</span>
             </div>
           </div>
 
@@ -96,7 +139,7 @@ export default function Home() {
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
                 <p className="text-xs uppercase tracking-wide text-zinc-500">Clause extraction</p>
                 <ul className="mt-3 grid gap-2 text-sm text-zinc-300 sm:grid-cols-2">
-                  {riskAreas.map((area) => (
+                  {heroClauses.map((area) => (
                     <li key={area} className="rounded-md border border-zinc-800 bg-zinc-950/70 px-2 py-1.5">
                       {area}
                     </li>
@@ -105,10 +148,10 @@ export default function Home() {
               </div>
 
               <div className="rounded-xl border border-zinc-700 bg-zinc-900 p-4">
-                <p className="text-sm font-semibold text-zinc-100">Commercial risk summary</p>
-                <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500">Priority issues detected</p>
+                <p className="text-sm font-semibold text-zinc-100">Risk summary</p>
+                <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500">Clauses to review first</p>
                 <div className="mt-3 space-y-2">
-                  {reviewFindings.map((finding) => (
+                  {heroFindings.map((finding) => (
                     <div key={finding.issue} className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm text-zinc-200">{finding.issue}</p>
@@ -127,7 +170,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="mt-4 rounded-md border border-amber-600/40 bg-amber-950/40 px-3 py-2 text-sm font-medium text-amber-200">
-                  Overall review priority: Elevated
+                  Suggested next step: push back on indemnity scope.
                 </p>
               </div>
             </div>
@@ -135,242 +178,206 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-b border-zinc-800 px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="mb-6 text-3xl font-semibold">What Pactora actually shows you</h2>
+      <section className="border-b border-zinc-200 bg-white py-20">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-2xl font-semibold">Product preview</h2>
+          <p className="mt-3 max-w-3xl text-zinc-600">
+            Pactora turns an uploaded contract into a practical review workspace. Teams can see which clauses create the
+            biggest exposure and decide what needs attention first.
+          </p>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
             {productProofCards.map((card) => (
-              <div key={card.title} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
-                <h3 className="font-semibold text-white">{card.title}</h3>
-                <p className="mt-2 text-sm text-zinc-400">{card.description}</p>
+              <div key={card.title} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+                <h3 className="font-semibold text-zinc-950">{card.title}</h3>
+                <p className="mt-2 text-sm text-zinc-600">{card.description}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-8 rounded-lg border border-zinc-200 bg-gray-50 p-4 text-zinc-900">
-            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Extracted clauses</p>
-                {proofClauses.map((clause) => (
-                  <div key={clause.title} className="flex items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2">
-                    <span className="text-sm font-medium">{clause.title}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        clause.risk === 'High'
-                          ? 'bg-rose-100 text-rose-700'
-                          : clause.risk === 'Medium'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-emerald-100 text-emerald-700'
-                      }`}
-                    >
-                      {clause.risk}
-                    </span>
+          <div className="mt-10 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="gap-6 lg:flex">
+              <div className="lg:w-5/12">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Clause list</p>
+                <div className="mt-4 space-y-3">
+                  {previewClauses.map((clause) => (
+                    <div key={clause.title} className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-semibold text-zinc-950">{clause.title}</h3>
+                        <RiskBadge risk={clause.risk} />
+                      </div>
+                      <p className="mt-2 text-sm text-zinc-600">{clause.summary}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-lg border border-zinc-200 bg-white p-5 lg:mt-0 lg:flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Clause detail</p>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <h3 className="text-xl font-semibold">Indemnity</h3>
+                  <RiskBadge risk="High" />
+                </div>
+
+                <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Clause text</p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-700">
+                    Supplier will indemnify Customer for third-party claims arising from use of the services. These
+                    obligations are excluded from the limitation of liability.
+                  </p>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-lg border border-zinc-200 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Explanation</p>
+                    <p className="mt-2 text-sm text-zinc-600">
+                      The carve-out may bypass the negotiated cap. It can increase exposure if claims are broad.
+                    </p>
                   </div>
-                ))}
-              </div>
-
-              <div className="rounded-md border border-zinc-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Selected clause preview</p>
-                <h3 className="mt-3 font-semibold">Indemnity</h3>
-                <p className="mt-2 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700">
-                  Customer indemnity obligations apply without a clear cap for third-party claims related to service use.
-                </p>
-                <p className="mt-3 text-sm text-zinc-600">
-                  This may create exposure beyond the negotiated liability position and should be aligned with the overall cap.
-                </p>
-                <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
-                  Suggested action: push back or route to legal review before signature.
-                </p>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Suggested action</p>
+                    <p className="mt-2 text-sm font-medium text-amber-900">
+                      Push back on the carve-out or route the clause to legal review before signature.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-zinc-800 px-6 py-8">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-zinc-400">
-          <span>Used by RevOps, Finance, and Legal teams</span>
-          <span className="hidden h-4 w-px bg-zinc-800 sm:block" />
-          <span>Standardized early-stage contract triage</span>
-          <span className="hidden h-4 w-px bg-zinc-800 sm:block" />
-          <span>Built for SaaS deal velocity</span>
-        </div>
-      </section>
-
-      <section className="border-b border-zinc-800 px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="mb-4 text-3xl font-semibold">Product preview</h2>
-          <p className="max-w-3xl text-zinc-400">
-            A clear view of how Pactora takes an uploaded contract from clause extraction to a prioritised review outcome.
-          </p>
-
-          <div className="mt-10 grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] md:items-center">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Contract uploaded</p>
-              <p className="mt-2 text-sm font-medium text-zinc-100">Customer MSA.pdf</p>
-              <p className="mt-2 text-xs text-zinc-400">32 pages · Draft v4</p>
-            </div>
-            <p className="hidden text-center text-zinc-500 md:block">↓</p>
-
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Extracted clauses</p>
-              <ul className="mt-2 space-y-1 text-sm text-zinc-300">
-                {extractedClauses.map((clause) => (
-                  <li key={clause}>• {clause}</li>
-                ))}
-              </ul>
-            </div>
-            <p className="hidden text-center text-zinc-500 md:block">↓</p>
-
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Risk indicators</p>
-              <ul className="mt-2 space-y-1 text-sm text-zinc-300">
-                {riskIndicators.map((indicator) => (
-                  <li key={indicator}>{indicator}</li>
-                ))}
-              </ul>
-            </div>
-            <p className="hidden text-center text-zinc-500 md:block">↓</p>
-
-            <div className="rounded-xl border border-amber-600/40 bg-amber-950/30 p-5">
-              <p className="text-xs uppercase tracking-wide text-amber-200">Overall review summary</p>
-              <p className="mt-2 text-lg font-semibold text-amber-100">Priority: Elevated</p>
-              <p className="mt-2 text-sm text-zinc-200">Escalate indemnity and liability terms before signature.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-zinc-800 px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="mb-4 text-3xl font-semibold">How it works</h2>
-          <p className="max-w-3xl text-zinc-400">
-            Pactora turns long contracts into a structured first-pass review so commercial teams can escalate cleaner,
-            faster, and with clearer priorities.
+      <section className="border-b border-zinc-200 bg-gray-50 py-20">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-2xl font-semibold">How it works</h2>
+          <p className="mt-3 max-w-3xl text-zinc-600">
+            Pactora gives commercial teams a structured first pass. Use it to understand contract risk quickly and send
+            cleaner issues to legal.
           </p>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-3">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1</p>
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Step 1</p>
               <h3 className="mt-2 text-lg font-semibold">Upload contract</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Add your customer MSA, order form, procurement template, or vendor agreement.
+              <p className="mt-2 text-sm text-zinc-600">
+                Add a customer MSA, order form, procurement template, or vendor agreement.
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2</p>
-              <h3 className="mt-2 text-lg font-semibold">Extract key clauses</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Identify liability, indemnity, IP, termination, and data handling terms in one view.
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Step 2</p>
+              <h3 className="mt-2 text-lg font-semibold">Review key clauses</h3>
+              <p className="mt-2 text-sm text-zinc-600">
+                See liability, indemnity, IP, termination, and data terms with risk labels.
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 3</p>
-              <h3 className="mt-2 text-lg font-semibold">Prioritize commercial risk</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Surface negotiation pressure points before legal review so teams align faster.
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Step 3</p>
+              <h3 className="mt-2 text-lg font-semibold">Decide next steps</h3>
+              <p className="mt-2 text-sm text-zinc-600">
+                Know what to accept, what to push back on, and what needs legal review.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-zinc-800 px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="mb-6 text-3xl font-semibold">Who it&apos;s for</h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <section className="border-b border-zinc-200 bg-white py-20">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-2xl font-semibold">Who it&apos;s for</h2>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
               <h3 className="mb-2 font-semibold">Revenue leaders</h3>
-              <p className="text-sm text-zinc-400">Identify deal blockers before approval workflows stall out.</p>
+              <p className="text-sm text-zinc-600">Spot deal blockers before approval workflows stall.</p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
               <h3 className="mb-2 font-semibold">Finance partners</h3>
-              <p className="text-sm text-zinc-400">Quantify downside from contract language with consistent criteria.</p>
+              <p className="text-sm text-zinc-600">See which clauses may create cost, delay, or unmanaged exposure.</p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
               <h3 className="mb-2 font-semibold">Legal teams</h3>
-              <p className="text-sm text-zinc-400">Receive cleaner escalations with issues already triaged and prioritized.</p>
+              <p className="text-sm text-zinc-600">Receive cleaner escalations with the main issues already triaged.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-zinc-800 px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="mb-6 text-3xl font-semibold">Trust and support</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <ul className="space-y-3 text-sm text-zinc-300">
-                <li>• Designed for SaaS agreements</li>
-                <li>• Decision-support, not legal advice</li>
-                <li>• Confidential document handling</li>
-                <li>• Human legal review still matters</li>
-              </ul>
-            </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <p className="mb-3 text-sm text-zinc-400">Learn how Pactora handles legal, privacy, and security boundaries:</p>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <Link href="/terms" className="rounded-md border border-zinc-700 px-3 py-1.5 hover:bg-zinc-800">
-                  Terms
-                </Link>
-                <Link href="/privacy" className="rounded-md border border-zinc-700 px-3 py-1.5 hover:bg-zinc-800">
-                  Privacy
-                </Link>
-                <Link href="/security" className="rounded-md border border-zinc-700 px-3 py-1.5 hover:bg-zinc-800">
-                  Security
-                </Link>
-                <Link href="/subprocessors" className="rounded-md border border-zinc-700 px-3 py-1.5 hover:bg-zinc-800">
-                  Subprocessors
-                </Link>
+      <section className="border-b border-zinc-200 bg-gray-50 py-20">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-2xl font-semibold">Trust and support</h2>
+          <p className="mt-3 max-w-3xl text-zinc-600">
+            Pactora is built for contract review support. Legal, privacy, and security boundaries are clear.
+          </p>
+          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {trustPoints.map((point) => (
+              <div key={point.title} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+                <h3 className="font-semibold text-zinc-950">{point.title}</h3>
+                <p className="mt-2 text-sm text-zinc-600">{point.description}</p>
               </div>
-            </div>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3 text-sm">
+            <Link href="/terms" className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 hover:text-zinc-950">
+              Terms
+            </Link>
+            <Link href="/privacy" className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 hover:text-zinc-950">
+              Privacy
+            </Link>
+            <Link href="/security" className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 hover:text-zinc-950">
+              Security
+            </Link>
+            <Link href="/subprocessors" className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 hover:text-zinc-950">
+              Subprocessors
+            </Link>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-zinc-800 px-6 py-20">
-        <div className="mx-auto max-w-4xl">
-          <h2 className="mb-8 text-3xl font-semibold">FAQ</h2>
-          <div className="space-y-6">
+      <section className="border-b border-zinc-200 bg-white py-20">
+        <div className="mx-auto max-w-5xl px-4">
+          <h2 className="text-2xl font-semibold">FAQ</h2>
+          <div className="mt-8 space-y-6">
             <div>
               <h3 className="font-semibold">Is Pactora a legal advice tool?</h3>
-              <p className="mt-2 text-zinc-400">
-                No. Pactora supports structured contract review and early commercial understanding. It does not replace
-                legal advice.
+              <p className="mt-2 text-zinc-600">
+                No. Pactora supports structured contract review and triage. It does not replace legal advice.
               </p>
             </div>
             <div>
               <h3 className="font-semibold">What contracts can I review?</h3>
-              <p className="mt-2 text-zinc-400">
+              <p className="mt-2 text-zinc-600">
                 Customer MSAs, vendor agreements, order forms, and other commercial SaaS contracts.
               </p>
             </div>
             <div>
               <h3 className="font-semibold">Can I use it before legal review?</h3>
-              <p className="mt-2 text-zinc-400">
-                Yes. Pactora is designed for early commercial triage so legal can focus on high-impact issues.
+              <p className="mt-2 text-zinc-600">
+                Yes. Use Pactora to prioritise high-impact issues before legal review.
               </p>
             </div>
             <div>
               <h3 className="font-semibold">How should I use the output?</h3>
-              <p className="mt-2 text-zinc-400">
-                Use the risk summary to align stakeholders, frame negotiation priorities, and prepare for legal handoff.
+              <p className="mt-2 text-zinc-600">
+                Use the risk summary to align stakeholders, plan negotiation points, and prepare for legal handoff.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="border-t border-zinc-800 px-6 py-16">
-        <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center sm:flex-row sm:text-left">
-          <p className="text-lg text-zinc-200">Using Pactora in beta? Send feedback</p>
-          <Link
-            href="/feedback"
-            className="inline-flex rounded-lg bg-white px-5 py-2.5 font-semibold text-black transition hover:bg-zinc-200"
-          >
-            Send feedback
-          </Link>
+      <section className="bg-gray-50 py-20">
+        <div className="mx-auto max-w-5xl px-4">
+          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm sm:flex-row sm:text-left">
+            <div>
+              <h2 className="text-xl font-semibold">Using Pactora in beta?</h2>
+              <p className="mt-2 text-sm text-zinc-600">Send feedback on the review flow and contract outputs.</p>
+            </div>
+            <Link
+              href="/feedback"
+              className="inline-flex rounded-lg bg-zinc-950 px-5 py-2.5 font-semibold text-white transition hover:bg-zinc-800"
+            >
+              Send feedback
+            </Link>
+          </div>
         </div>
       </section>
     </main>
