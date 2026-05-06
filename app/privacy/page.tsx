@@ -7,15 +7,7 @@ const sections = [
   },
   {
     title: '2. Who is responsible for your data',
-    body: (
-      <>
-        <p>Contact: contact@pactora.com.</p>
-        <p className="mt-2">
-          Pactora is currently an independently operated beta product and is not presently offered
-          through a separate incorporated company entity.
-        </p>
-      </>
-    ),
+    body: 'Contact: contact@pactora.com.',
   },
   {
     title: '3. Personal data collected',
