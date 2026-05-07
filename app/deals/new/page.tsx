@@ -25,6 +25,28 @@ export default function NewDealPage() {
   const [termMonths, setTermMonths] = useState<number>(DEFAULT_TERM_MONTHS);
   const [insuranceCover, setInsuranceCover] = useState<number>(DEFAULT_INSURANCE_COVER);
   const [dataType, setDataType] = useState<DetectedContractValues['dataType']>('standard');
+  const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'ready' | 'failed'>('idle');
+
+  const runClauseAnalysis = async (text: string) => {
+    setAnalysisStatus('analyzing');
+    localStorage.removeItem('pactora.clauseAnalysis');
+    try {
+      const res = await fetch('/api/contracts/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { analysis: unknown };
+        localStorage.setItem('pactora.clauseAnalysis', JSON.stringify(data.analysis));
+        setAnalysisStatus('ready');
+      } else {
+        setAnalysisStatus('failed');
+      }
+    } catch {
+      setAnalysisStatus('failed');
+    }
+  };
 
   const applyDetectedValues = (detectedValues: DetectedContractValues) => {
     setAcv(detectedValues.acv ?? DEFAULT_ACV);
@@ -61,10 +83,13 @@ export default function NewDealPage() {
         throw new Error(payload?.error ?? 'Could not extract contract values.');
       }
 
-      const payload: { detectedValues: DetectedContractValues } = await response.json();
+      const payload: { detectedValues: DetectedContractValues; contractText?: string } = await response.json();
       applyDetectedValues(payload.detectedValues);
       setHasDetectedValues(true);
       trackEvent('contract_uploaded', '/deals/new');
+      if (payload.contractText) {
+        void runClauseAnalysis(payload.contractText);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "We couldn't read this file.";
       setUploadError(message);
@@ -114,6 +139,15 @@ export default function NewDealPage() {
                 <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC file and try again.</p>
               </div>
             ) : null}
+            {analysisStatus === 'analyzing' && (
+              <p className="mt-3 text-xs text-zinc-400">AI clause analysis running — results will appear in the Deal Summary…</p>
+            )}
+            {analysisStatus === 'ready' && (
+              <p className="mt-3 text-xs text-emerald-400">AI clause analysis complete — results ready in Deal Summary.</p>
+            )}
+            {analysisStatus === 'failed' && (
+              <p className="mt-3 text-xs text-amber-400">AI clause analysis unavailable — deal summary will show manually reviewed sections only.</p>
+            )}
           </div>
         </section>
 

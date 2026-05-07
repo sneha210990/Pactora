@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const text = await extractContractText(uploaded.name, buffer, uploaded.type);
     const detectedValues = detectContractValues(text);
 
-    return NextResponse.json({ detectedValues });
+    return NextResponse.json({ detectedValues, contractText: text });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to extract contract values.';
     return NextResponse.json({ error: message }, { status: 400 });

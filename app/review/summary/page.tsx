@@ -5,6 +5,7 @@ import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import { useSearchParams } from 'next/navigation';
+import type { ClauseAnalysis, ClauseFlag } from '@/lib/clause-analysis';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -102,6 +103,35 @@ function describeOverall(overallRisk: RiskLevel, knownRiskCount: number, capRati
   return `Current inputs indicate a comparatively low-risk position across reviewed areas.${ratioText}`;
 }
 
+function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
+  if (risk === 'High') return 'border-red-500/40 bg-red-500/10 text-red-200';
+  if (risk === 'Medium') return 'border-amber-500/40 bg-amber-500/10 text-amber-200';
+  return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
+}
+
+function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold text-zinc-200">{flag.clauseType}</span>
+        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${clauseFlagRiskClass(flag.riskLevel)}`}>
+          {flag.riskLevel}
+        </span>
+      </div>
+      {flag.problematicLanguage && (
+        <blockquote className="mb-3 border-l-2 border-zinc-600 pl-3">
+          <p className="text-xs italic text-zinc-400">"{flag.problematicLanguage}"</p>
+        </blockquote>
+      )}
+      <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
+      <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Negotiation point</p>
+        <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
+      </div>
+    </div>
+  );
+}
+
 function SummaryContent() {
   const searchParams = useSearchParams();
 
@@ -109,12 +139,22 @@ function SummaryContent() {
   const [captureEmail, setCaptureEmail] = useState('');
   const [captureStatus, setCaptureStatus] = useState('');
   const [captureSubmitting, setCaptureSubmitting] = useState(false);
+  const [clauseAnalysis, setClauseAnalysis] = useState<ClauseAnalysis | null>(null);
 
   useEffect(() => {
     trackEvent('analysis_completed', '/review/summary');
     fetch('/api/me')
       .then((response) => response.json())
       .then((data: { user: { email: string } | null }) => setUser(data.user));
+
+    const stored = localStorage.getItem('pactora.clauseAnalysis');
+    if (stored) {
+      try {
+        setClauseAnalysis(JSON.parse(stored) as ClauseAnalysis);
+      } catch {
+        // ignore corrupt data
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -272,6 +312,22 @@ function SummaryContent() {
             {captureStatus ? <p className="mt-2 text-xs text-zinc-300">{captureStatus}</p> : null}
           </div>
         </section>
+
+        {clauseAnalysis && clauseAnalysis.flags.length > 0 && (
+          <section className="mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">AI Clause Analysis</h2>
+              <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
+                {clauseAnalysis.flags.length} {clauseAnalysis.flags.length === 1 ? 'flag' : 'flags'}
+              </span>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {clauseAnalysis.flags.map((flag, i) => (
+                <ClauseFlagCard key={i} flag={flag} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mt-14 rounded-2xl border border-zinc-900 bg-black/20 p-4 opacity-90">
           <div className="mb-3 border-b border-zinc-900 pb-3">
