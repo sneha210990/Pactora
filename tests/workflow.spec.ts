@@ -302,3 +302,103 @@ test('Test 11: Termination review detects notice of termination period wording',
   await expect(page.getByText('Mutual').first()).toBeVisible();
   await expect(page.getByText('90 days').first()).toBeVisible();
 });
+
+const MOCK_CLAUSE_ANALYSIS = {
+  flags: [
+    {
+      clauseType: 'Liability Cap',
+      riskLevel: 'High',
+      problematicLanguage: "Supplier's total aggregate liability shall not exceed fees paid in the 3 months preceding the claim.",
+      plainEnglish: 'The vendor caps its total liability at only 3 months of fees, which is very low and leaves you exposed on large claims.',
+      negotiationPoint: 'Push for a minimum 12-month fee cap, and seek carve-outs for data breaches and wilful misconduct.',
+    },
+    {
+      clauseType: 'Auto-Renewal',
+      riskLevel: 'Medium',
+      problematicLanguage: 'Agreement will automatically renew unless Customer provides 90 days prior written notice.',
+      plainEnglish: 'The contract auto-renews and requires 90 days notice to cancel, which is an unusually long opt-out window.',
+      negotiationPoint: 'Negotiate the opt-out notice period down to 30 days and add a calendar reminder obligation on the vendor.',
+    },
+    {
+      clauseType: 'Fee Increases',
+      riskLevel: 'Medium',
+      problematicLanguage: 'Supplier may increase fees upon 30 days written notice. Continued use constitutes acceptance.',
+      plainEnglish: 'The vendor can raise prices unilaterally with only 30 days notice, and your continued use counts as agreement.',
+      negotiationPoint: 'Cap annual increases at CPI and require mutual written agreement for any increase above that threshold.',
+    },
+  ],
+  analyzedAt: '2026-01-01T00:00:00.000Z',
+};
+
+test('Test 12: Deal Summary renders AI Clause Analysis section from localStorage', async ({ page }) => {
+  // Seed the analysis into localStorage before the page loads
+  await page.goto('/review/summary?acv=50000&termMonths=12&insuranceCover=1000000&dataType=personal');
+  await page.evaluate((data) => {
+    localStorage.setItem('pactora.clauseAnalysis', JSON.stringify(data));
+  }, MOCK_CLAUSE_ANALYSIS);
+  await page.reload();
+
+  await expect(page.getByText('AI Clause Analysis')).toBeVisible();
+  await expect(page.getByText('3 flags')).toBeVisible();
+
+  // The flag cards use title-cased clause types — use exact match to avoid
+  // colliding with the nav links which say "Liability cap" (lowercase c)
+  await expect(page.getByText('Liability Cap', { exact: true })).toBeVisible();
+  await expect(page.getByText('Auto-Renewal', { exact: true })).toBeVisible();
+  await expect(page.getByText('Fee Increases', { exact: true })).toBeVisible();
+
+  // Check quoted language appears in the blockquote
+  await expect(page.getByText(/fees paid in the 3 months/)).toBeVisible();
+
+  // Each flag card has a "Negotiation point" label
+  const negotiationLabels = page.getByText('Negotiation point');
+  await expect(negotiationLabels).toHaveCount(3);
+});
+
+test('Test 13: Analyze API returns valid clause flag structure', async ({ page }) => {
+  const shortContract = `
+    SOFTWARE SERVICES AGREEMENT
+
+    1. Limitation of Liability. Supplier's total aggregate liability shall not exceed
+    the fees paid by Customer in the 3 months preceding the claim.
+
+    2. Indemnity. Customer shall indemnify Supplier from all claims arising from
+    Customer's use of the Services. This indemnity shall not be limited by the cap.
+
+    3. Auto-Renewal. This Agreement auto-renews annually unless Customer gives
+    90 days written notice of non-renewal before the end of the term.
+
+    4. Fee Changes. Supplier may change fees on 30 days notice. Continued use
+    constitutes acceptance of the new fees.
+
+    5. Governing Law. This Agreement is governed by the laws of Delaware, USA.
+    Customer submits to exclusive jurisdiction of Delaware courts.
+  `.trim();
+
+  const response = await page.request.post('/api/contracts/analyze', {
+    data: { text: shortContract },
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  expect(response.status()).toBe(200);
+
+  const body = await response.json() as {
+    analysis: { flags: Array<{ clauseType: string; riskLevel: string; problematicLanguage: string; plainEnglish: string; negotiationPoint: string }>; analyzedAt: string };
+  };
+
+  expect(body.analysis).toBeDefined();
+  expect(Array.isArray(body.analysis.flags)).toBe(true);
+  expect(body.analysis.flags.length).toBeGreaterThan(0);
+
+  for (const flag of body.analysis.flags) {
+    expect(['High', 'Medium', 'Low']).toContain(flag.riskLevel);
+    expect(typeof flag.clauseType).toBe('string');
+    expect(typeof flag.problematicLanguage).toBe('string');
+    expect(typeof flag.plainEnglish).toBe('string');
+    expect(typeof flag.negotiationPoint).toBe('string');
+  }
+
+  // Contract above should trigger at least Liability Cap and Auto-Renewal
+  const clauseTypes = body.analysis.flags.map((f) => f.clauseType);
+  expect(clauseTypes.some((t) => t.toLowerCase().includes('liability') || t.toLowerCase().includes('cap'))).toBe(true);
+});
