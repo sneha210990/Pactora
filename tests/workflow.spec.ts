@@ -355,7 +355,7 @@ test('Test 12: Deal Summary renders AI Clause Analysis section from localStorage
   await expect(negotiationLabels).toHaveCount(3);
 });
 
-test('Test 13: Analyze API returns valid clause flag structure', async ({ page }) => {
+test('Test 13: Analyze API returns valid clause flag structure', async ({ request }) => {
   const shortContract = `
     SOFTWARE SERVICES AGREEMENT
 
@@ -375,7 +375,7 @@ test('Test 13: Analyze API returns valid clause flag structure', async ({ page }
     Customer submits to exclusive jurisdiction of Delaware courts.
   `.trim();
 
-  const response = await page.request.post('/api/contracts/analyze', {
+  const response = await request.post('/api/contracts/analyze', {
     data: { text: shortContract },
     headers: { 'Content-Type': 'application/json' },
   });
