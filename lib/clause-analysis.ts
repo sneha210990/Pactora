@@ -47,7 +47,9 @@ Risk level guidance:
 Only include categories where you find actual problematic language. Quote verbatim. If no problematic clause exists for a category, omit it. Be specific and commercial.`;
 
 export async function analyzeContractClauses(contractText: string): Promise<ClauseAnalysis> {
-  const client = new Anthropic();
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set in environment');
+  const client = new Anthropic({ apiKey });
 
   const truncatedText = contractText.slice(0, 120_000);
 
