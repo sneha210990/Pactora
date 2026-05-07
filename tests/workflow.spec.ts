@@ -375,7 +375,8 @@ test('Test 13: Analyze API returns valid clause flag structure', async ({ reques
     Customer submits to exclusive jurisdiction of Delaware courts.
   `.trim();
 
-  const response = await request.post('/api/contracts/analyze', {
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
+  const response = await request.post(`${baseURL}/api/contracts/analyze`, {
     data: { text: shortContract },
     headers: { 'Content-Type': 'application/json' },
   });
