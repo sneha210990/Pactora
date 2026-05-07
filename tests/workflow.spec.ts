@@ -381,7 +381,10 @@ test('Test 13: Analyze API returns valid clause flag structure', async ({ reques
     headers: { 'Content-Type': 'application/json' },
   });
 
-  expect(response.status()).toBe(200);
+  if (response.status() !== 200) {
+    const errorBody = await response.text();
+    throw new Error(`API returned ${response.status()}: ${errorBody}`);
+  }
 
   const body = await response.json() as {
     analysis: { flags: Array<{ clauseType: string; riskLevel: string; problematicLanguage: string; plainEnglish: string; negotiationPoint: string }>; analyzedAt: string };
