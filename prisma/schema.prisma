@@ -1,0 +1,156 @@
+// Suggested persistence model for the Pactora Integrity Engine.
+// The current MVP API runs deterministically in-process; these tables are ready
+// for storing parsed contracts, validator runs, and audit-grade issue history
+// once Prisma is wired into the existing auth/document upload system.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContractDocumentKind {
+  msa
+  sow
+  dpa
+  order_form
+  schedule
+  annex
+  exhibit
+  unknown
+}
+
+enum IntegritySeverity {
+  critical
+  high
+  medium
+  low
+  info
+}
+
+enum IntegrityIssueType {
+  undefined_defined_term
+  duplicate_definition
+  dead_definition
+  broken_cross_reference
+  inconsistent_capitalization
+  missing_related_document
+}
+
+model ContractDocument {
+  id             String               @id @default(cuid())
+  organizationId String
+  uploadedById   String
+  title          String
+  kind           ContractDocumentKind @default(unknown)
+  sourceFileName String?
+  sourceMimeType String?
+  rawTextHash    String
+  rawText        String
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  sections    ContractSection[]
+  definitions ContractDefinition[]
+  references  ContractReference[]
+  runItems    IntegrityRunDocument[]
+
+  @@index([organizationId, createdAt])
+  @@index([rawTextHash])
+}
+
+model ContractSection {
+  id          String  @id @default(cuid())
+  documentId  String
+  parentId    String?
+  clauseNumber String?
+  heading     String
+  rawText     String
+  lineStart   Int
+  lineEnd     Int
+  sortOrder   Int
+
+  document ContractDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  parent   ContractSection? @relation("SectionTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children ContractSection[] @relation("SectionTree")
+
+  @@index([documentId, clauseNumber])
+  @@index([parentId])
+}
+
+model ContractDefinition {
+  id             String @id @default(cuid())
+  documentId      String
+  sectionId       String?
+  term            String
+  normalizedTerm  String
+  definition      String
+  extractionPattern String
+  line            Int?
+  excerpt         String
+
+  document ContractDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, normalizedTerm])
+  @@index([normalizedTerm])
+}
+
+model ContractReference {
+  id               String @id @default(cuid())
+  documentId        String
+  sectionId         String?
+  referenceText     String
+  targetType        String
+  targetLabel       String
+  normalizedTarget  String
+  line              Int?
+  excerpt           String
+
+  document ContractDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, normalizedTarget])
+  @@index([normalizedTarget])
+}
+
+model IntegrityRun {
+  id             String   @id @default(cuid())
+  organizationId String
+  requestedById  String
+  generatedAt    DateTime @default(now())
+  validatorVersion String
+  summaryJson    Json
+
+  documents IntegrityRunDocument[]
+  issues    IntegrityIssue[]
+
+  @@index([organizationId, generatedAt])
+}
+
+model IntegrityRunDocument {
+  runId      String
+  documentId String
+
+  run      IntegrityRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  document ContractDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([runId, documentId])
+}
+
+model IntegrityIssue {
+  id        String             @id @default(cuid())
+  runId     String
+  type      IntegrityIssueType
+  severity  IntegritySeverity
+  message   String
+  locations Json
+  metadata  Json
+  createdAt DateTime           @default(now())
+
+  run IntegrityRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, type])
+  @@index([severity])
+}
