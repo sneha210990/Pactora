@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
 type TriggerScope = 'IP' | 'Data' | 'Third-party claims' | 'Broad breach' | 'Unknown';
@@ -18,11 +18,6 @@ type ReviewResult = {
   redFlags: string[];
 };
 
-const CLAUSE_STORAGE_KEY = 'pactora.indemnityClause';
-const RISK_PARAM_KEYS = ['lolRisk', 'indemnitiesRisk', 'ipRisk', 'dataRisk', 'terminationRisk'] as const;
-
-const DEFAULT_CLAUSE =
-  'Supplier shall indemnify Customer against any third-party claim alleging intellectual property infringement, subject to the limitations of liability in this Agreement.';
 
 function num(value: string | null): number | null {
   const n = Number(value);
@@ -172,51 +167,29 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
 }
 
 function IndemnitiesReviewContent() {
-  const searchParams = useSearchParams();
+  const commercialContext = useDocumentCommercialContext();
+  const canonicalClause = useClauseByType('Indemnities');
 
-  const acv = searchParams.get('acv');
-  const termMonths = searchParams.get('termMonths');
-  const insuranceCover = searchParams.get('insuranceCover');
-  const dataType = searchParams.get('dataType');
-  const lolCap = num(searchParams.get('lolCap'));
+  const acv = commercialContext.acv ? String(commercialContext.acv) : null;
+  const termMonths = commercialContext.termMonths ? String(commercialContext.termMonths) : null;
+  const insuranceCover = commercialContext.insuranceCover ? String(commercialContext.insuranceCover) : null;
+  const dataType = commercialContext.dataType ?? null;
+  const lolCap = commercialContext.liabilityCap ?? null;
   const acvAmount = num(acv);
 
   const ladderBaseCap = lolCap !== null && lolCap > 0 ? lolCap : acvAmount !== null && acvAmount > 0 ? acvAmount : null;
   const ladderStretchCap = acvAmount !== null && acvAmount > 0 ? Math.round(acvAmount * 1.5) : null;
 
-  const [clause, setClause] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_CLAUSE;
-    const saved = window.localStorage.getItem(CLAUSE_STORAGE_KEY);
-    return saved && saved.trim().length > 0 ? saved : DEFAULT_CLAUSE;
-  });
+  const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
-  useEffect(() => {
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
-  }, [clause]);
-
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
-    if (acv) params.set('acv', acv);
-    if (termMonths) params.set('termMonths', termMonths);
-    if (insuranceCover) params.set('insuranceCover', insuranceCover);
-    if (dataType) params.set('dataType', dataType);
-    if (searchParams.get('lolCap')) params.set('lolCap', searchParams.get('lolCap') as string);
-    RISK_PARAM_KEYS.forEach((riskKey) => {
-      const value = searchParams.get(riskKey);
-      if (value) params.set(riskKey, value);
-    });
-    if (result?.riskRating) params.set('indemnitiesRisk', result.riskRating);
-    return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, searchParams, result?.riskRating]);
+  const queryString = '';
 
   function runReview() {
     setResult(parseClause(clause));
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
   }
 
   function reset() {
-    window.localStorage.removeItem(CLAUSE_STORAGE_KEY);
     setClause('');
     setResult(null);
   }
@@ -279,7 +252,7 @@ function IndemnitiesReviewContent() {
             value={clause}
             onChange={(event) => setClause(event.target.value)}
             className="mt-2 w-full rounded-xl border border-zinc-700 bg-black/40 p-4 text-sm text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-zinc-500"
-            placeholder="Paste indemnity wording..."
+            placeholder="Clause not detected"
           />
 
           <div className="mt-4 flex flex-wrap gap-3">

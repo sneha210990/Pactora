@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
-import { useSearchParams } from 'next/navigation';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type CapType =
   | 'fixed_amount'
@@ -43,19 +43,6 @@ type DerivedResult = {
   capMultipleVsACV: number | null;
   badge: 'High risk' | 'Buyer-friendly' | 'Firm but common' | 'Seller-friendly';
 };
-
-const CLAUSE_STORAGE_KEY = 'pactora.lolClause';
-const DEMO_LOL_CLAUSE =
-  "Supplier's total aggregate liability under this Agreement shall not exceed the fees paid by Customer in the 12 months preceding the event giving rise to the claim. The foregoing cap shall not apply to fraud or wilful misconduct.";
-
-function num(value: string | null, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function str(value: string | null, fallback = '') {
-  return value && value.length > 0 ? value : fallback;
-}
 
 function money(n: number) {
   return new Intl.NumberFormat('en-GB', {
@@ -298,81 +285,58 @@ function badgeClass(badge: DerivedResult['badge']) {
   return 'bg-blue-500/15 text-blue-300';
 }
 
-function summaryRiskFromDerived(derived: DerivedResult): 'Low' | 'Medium' | 'High' {
-  if (derived.badge === 'High risk' || derived.capMultipleVsACV === null || derived.capMultipleVsACV < 1) return 'High';
-  if (derived.capMultipleVsACV <= 2) return 'Medium';
-  return 'Low';
-}
+
 
 function labelForCapType(capType: CapType) {
-  if (capType === 'fixed_amount') return 'Fixed amount';
-  if (capType === 'fees_paid_window') return 'Fees paid (window)';
-  if (capType === 'fees_payable_total') return 'Fees payable (total term)';
-  if (capType === 'fees_payable_window') return 'Fees payable (window)';
-  if (capType === 'multiple_of_fees') return 'Multiple of fees';
-  if (capType === 'uncapped') return 'Uncapped';
-  return 'Unknown';
+  const labels: Record<CapType, string> = {
+    fixed_amount: 'Fixed amount',
+    fees_paid_window: 'Fees paid window',
+    fees_payable_total: 'Fees payable total',
+    fees_payable_window: 'Fees payable window',
+    multiple_of_fees: 'Multiple of fees',
+    uncapped: 'Uncapped',
+    unknown: 'Clause not detected',
+  };
+  return labels[capType];
 }
 
 function LolReviewContent() {
-  const searchParams = useSearchParams();
+  const commercialContext = useDocumentCommercialContext();
+  const actions = useDocumentAnalysisActions();
+  const canonicalClause = useClauseByType('Liability Cap');
 
   useEffect(() => {
     trackEvent('analysis_started', '/review/lol');
   }, []);
 
-  const acv = num(searchParams.get('acv'), 25000);
-  const termMonths = num(searchParams.get('termMonths'), 12);
-  const insuranceCover = num(searchParams.get('insuranceCover'), 1000000);
-  const dataType = str(searchParams.get('dataType'), 'standard');
-  const queryClause = str(searchParams.get('lolClause'));
+  const acv = commercialContext.acv ?? 0;
+  const termMonths = commercialContext.termMonths ?? 0;
+  const insuranceCover = commercialContext.insuranceCover ?? 0;
+  const dataType = commercialContext.dataType ?? 'Not identified';
+  const initialClause = canonicalClause?.text ?? '';
 
-  const [clause, setClause] = useState(DEMO_LOL_CLAUSE);
-  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(DEMO_LOL_CLAUSE));
+  const [clause, setClause] = useState(initialClause);
+  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
 
   useEffect(() => {
-    const savedClause = window.localStorage.getItem(CLAUSE_STORAGE_KEY);
-    const initialClause = savedClause || queryClause || DEMO_LOL_CLAUSE;
     setClause(initialClause);
     setParsedResult(parseClause(initialClause));
-  }, [queryClause]);
-
-  useEffect(() => {
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
-  }, [clause]);
+  }, [initialClause]);
 
   const derived = useMemo(
     () => deriveFromDeal(parsedResult, acv, termMonths),
     [parsedResult, acv, termMonths],
   );
 
-  const reviewQuery = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set('acv', String(acv));
-    params.set('termMonths', String(termMonths));
-    params.set('insuranceCover', String(insuranceCover));
-    params.set('dataType', dataType);
-
-    const explicitLolCap = searchParams.get('lolCap');
-    if (explicitLolCap) {
-      params.set('lolCap', explicitLolCap);
-    } else if (derived.impliedCapAmountGBP !== null) {
-      params.set('lolCap', String(derived.impliedCapAmountGBP));
-    }
-    params.set('lolRisk', summaryRiskFromDerived(derived));
-
-    return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, searchParams, derived]);
-
   function runReview() {
-    setParsedResult(parseClause(clause));
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
+    const result = parseClause(clause);
+    setParsedResult(result);
+    actions.setLiabilityCap(deriveFromDeal(result, acv, termMonths).impliedCapAmountGBP);
   }
 
   function resetClause() {
-    window.localStorage.removeItem(CLAUSE_STORAGE_KEY);
-    setClause(DEMO_LOL_CLAUSE);
-    setParsedResult(parseClause(DEMO_LOL_CLAUSE));
+    setClause(initialClause);
+    setParsedResult(parseClause(initialClause));
   }
 
   const hasNarrowingItem = parsedResult.carveoutsFound.some((x) =>
@@ -553,7 +517,7 @@ function LolReviewContent() {
 
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
-              href={`/review/indemnities?${reviewQuery}`}
+              href="/review/indemnities"
               className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
             >
               Continue to Indemnities

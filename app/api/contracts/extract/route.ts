@@ -5,6 +5,19 @@ export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
+function extractTerm(pattern: RegExp, text: string) {
+  return text.match(pattern)?.[1]?.trim();
+}
+
+function detectCanonicalTerms(text: string) {
+  return {
+    effectiveDate: extractTerm(/effective date[:\s]+([^\n.;]+)/i, text),
+    governingLaw: extractTerm(/governed by (?:and construed in accordance with )?(?:the laws of )?([^\n.;]+)/i, text),
+    terminationNotice: extractTerm(/(\d+\s+(?:days?|months?)['’]?\s+(?:prior\s+)?(?:written\s+)?notice)/i, text),
+    renewalTerm: extractTerm(/renew(?:s|al)?[^\n.]*?(\d+\s+(?:days?|months?|years?))/i, text),
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -28,8 +41,27 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await uploaded.arrayBuffer());
     const text = await extractContractText(uploaded.name, buffer, uploaded.type);
     const detectedValues = detectContractValues(text);
+    const extractedTerms = detectCanonicalTerms(text);
+    const documentId = crypto.randomUUID();
 
-    return NextResponse.json({ detectedValues, contractText: text });
+    console.log('[extract] parser payload shape:', {
+      documentId: typeof documentId,
+      detectedValues: Object.keys(detectedValues),
+      extractedTerms: Object.keys(extractedTerms).filter((key) => Boolean(extractedTerms[key as keyof typeof extractedTerms])),
+      contractTextLength: text.length,
+    });
+
+    return NextResponse.json({
+      documentId,
+      detectedValues,
+      extractedTerms,
+      documentMeta: {
+        fileName: uploaded.name,
+        fileType: uploaded.type,
+        uploadedAt: new Date().toISOString(),
+      },
+      contractText: text,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to extract contract values.';
     return NextResponse.json({ error: message }, { status: 400 });
