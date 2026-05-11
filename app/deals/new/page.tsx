@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import {
   DocumentAnalysisState,
@@ -20,8 +20,8 @@ type ExtractionResponse = {
 };
 
 const processingStages: Array<{ key: keyof DocumentAnalysisState['processingSteps']; label: string }> = [
-  { key: 'upload', label: 'Uploading document…' },
-  { key: 'extraction', label: 'Extracting text…' },
+  { key: 'upload', label: 'Capturing contract input…' },
+  { key: 'extraction', label: 'Extracting supported values…' },
   { key: 'clauseDetection', label: 'Identifying clauses…' },
   { key: 'riskAnalysis', label: 'Analyzing risks…' },
   { key: 'recommendations', label: 'Generating recommendations…' },
@@ -63,6 +63,7 @@ export default function NewDealPage() {
   const analysis = useDocumentAnalysis();
   const actions = useDocumentAnalysisActions();
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [manualClauseText, setManualClauseText] = useState<string>('');
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
 
@@ -86,6 +87,18 @@ export default function NewDealPage() {
       actions.hydrateAnalysis(data.analysis);
     } catch (error) {
       actions.analysisFailed(error instanceof Error ? error.message : 'Clause analysis failed.');
+    }
+  };
+
+  const processExtractionPayload = (payload: ExtractionResponse, successEventName: string) => {
+    console.info('[PACTORA] Parser payload shape', { endpoint: '/api/contracts/extract', keys: Object.keys(payload) });
+    actions.hydrateExtraction(payload);
+    trackEvent(successEventName, '/deals/new');
+
+    if (payload.contractText) {
+      void runClauseAnalysis(payload.contractText);
+    } else {
+      actions.analysisFailed('Analysis incomplete: no raw text returned by parser.');
     }
   };
 
@@ -117,16 +130,45 @@ export default function NewDealPage() {
       }
 
       const payload = (await response.json()) as ExtractionResponse;
-      console.info('[PACTORA] Parser payload shape', { endpoint: '/api/contracts/extract', keys: Object.keys(payload) });
-      actions.hydrateExtraction(payload);
-      trackEvent('contract_uploaded', '/deals/new');
-      if (payload.contractText) {
-        void runClauseAnalysis(payload.contractText);
-      } else {
-        actions.analysisFailed('Analysis incomplete: no raw text returned by parser.');
-      }
+      processExtractionPayload(payload, 'contract_uploaded');
     } catch (error) {
       const message = error instanceof Error ? error.message : "We couldn't read this file.";
+      setUploadError(message);
+      actions.setError(message);
+    }
+  };
+
+  const handleManualClauseSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const text = manualClauseText.trim();
+
+    if (text.length < 20) {
+      const message = 'Please paste at least 20 characters of contract clauses.';
+      setUploadError(message);
+      actions.setError(message);
+      return;
+    }
+
+    setUploadError(null);
+    actions.uploadStarted({ name: 'Pasted contract clauses', type: 'text/plain' });
+    trackEvent('manual_clause_entry_started', '/deals/new');
+
+    try {
+      const response = await fetch('/api/contracts/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, sourceName: 'Pasted contract clauses' }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(payload?.error ?? 'Could not read pasted clauses.');
+      }
+
+      const payload = (await response.json()) as ExtractionResponse;
+      processExtractionPayload(payload, 'manual_clause_entry_submitted');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "We couldn't read these clauses.";
       setUploadError(message);
       actions.setError(message);
     }
@@ -147,15 +189,15 @@ export default function NewDealPage() {
         <header className="mb-8 space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight">New Deal Intake</h1>
           <p className="max-w-2xl text-sm text-zinc-400">
-            Upload your draft contract, confirm the extracted commercial context, then continue to Liability review.
+            Upload your draft contract or paste key clauses manually, confirm the extracted commercial context, then continue to Liability review.
           </p>
         </header>
 
         <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
           <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1 of 3</p>
-          <h2 className="mt-1 text-lg font-medium text-white">Upload Contract</h2>
+          <h2 className="mt-1 text-lg font-medium text-white">Add contract content</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Upload your contract (PDF, DOCX, or legacy DOC). Pactora will only display extracted data it can support.
+            Upload your contract (PDF, DOCX, or legacy DOC) or paste the clauses you want Pactora to review. Pactora will only display extracted data it can support.
           </p>
 
           <div className="mt-5">
@@ -171,13 +213,44 @@ export default function NewDealPage() {
             />
             {selectedFileName ? (
               <p className="mt-3 text-sm text-zinc-300">
-                Selected file: <span className="font-medium text-white">{selectedFileName}</span>
+                Current input: <span className="font-medium text-white">{selectedFileName}</span>
               </p>
             ) : null}
+
+            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-zinc-500">
+              <span className="h-px flex-1 bg-zinc-800" />
+              <span>or paste clauses manually</span>
+              <span className="h-px flex-1 bg-zinc-800" />
+            </div>
+
+            <form onSubmit={handleManualClauseSubmit} className="space-y-3">
+              <label htmlFor="manualClauses" className="block text-xs font-medium uppercase tracking-wide text-zinc-400">
+                Contract clauses
+              </label>
+              <textarea
+                id="manualClauses"
+                value={manualClauseText}
+                onChange={(event) => setManualClauseText(event.target.value)}
+                rows={8}
+                placeholder="Paste limitation of liability, indemnity, termination, data protection, or other contract clauses here…"
+                className="block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-700"
+              />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-zinc-500">Manual mode accepts pasted text when a file is unavailable or you only need to review selected clauses.</p>
+                <button
+                  type="submit"
+                  disabled={analysis.uploadStatus === 'uploading' || analysis.uploadStatus === 'processing'}
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+                >
+                  Analyze pasted clauses
+                </button>
+              </div>
+            </form>
+
             {uploadError ? (
               <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3">
                 <p className="text-sm font-medium text-red-300">{uploadError}</p>
-                <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC under 20 MB.</p>
+                <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC under 20 MB, or paste at least 20 characters of clause text.</p>
               </div>
             ) : null}
             <ProcessingPipeline analysis={analysis} />
@@ -221,7 +294,7 @@ export default function NewDealPage() {
               <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
               <li>Outputs may be incomplete or inaccurate and should be validated.</li>
               <li>Use qualified human and legal review where appropriate before material decisions.</li>
-              <li>You must be authorised to upload the document and its contents.</li>
+              <li>You must be authorised to upload or paste the document and its contents.</li>
             </ul>
             <p className="mt-4 text-zinc-300">
               Read our <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Terms</Link>,{' '}
@@ -234,7 +307,7 @@ export default function NewDealPage() {
           <div className="mt-4 space-y-3">
             <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
               <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
-              <span>I confirm that I am authorised to upload this material and understand Pactora outputs may be incomplete or inaccurate.</span>
+              <span>I confirm that I am authorised to upload or paste this material and understand Pactora outputs may be incomplete or inaccurate.</span>
             </label>
             <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
               <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
@@ -250,7 +323,7 @@ export default function NewDealPage() {
             </Link>
           ) : (
             <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
-              Complete upload and acknowledgments
+              Complete input and acknowledgments
             </button>
           )}
         </div>

@@ -341,7 +341,7 @@ type StoreValue = {
   state: DocumentAnalysisState;
   actions: {
     reset: () => void;
-    uploadStarted: (file: File) => void;
+    uploadStarted: (file: Pick<File, 'name' | 'type'>) => void;
     hydrateExtraction: (payload: ExtractionPayload) => void;
     analysisStarted: () => void;
     hydrateAnalysis: (analysis: AnalysisPayload) => void;
