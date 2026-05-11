@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
-import { useSearchParams } from 'next/navigation';
-import type { ClauseAnalysis, ClauseFlag } from '@/lib/clause-analysis';
+import type { ClauseFlag } from '@/lib/clause-analysis';
+import { useDocumentAnalysis } from '@/lib/document-analysis-store';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -63,15 +63,6 @@ function money(n: number) {
   }).format(n);
 }
 
-function num(value: string | null): number | null {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function normalizeRisk(value: string | null): RiskLevel | null {
-  if (value === 'Low' || value === 'Medium' || value === 'High') return value;
-  return null;
-}
 
 function riskScore(risk: RiskLevel) {
   if (risk === 'High') return 3;
@@ -120,7 +111,7 @@ function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
       </div>
       {flag.problematicLanguage && (
         <blockquote className="mb-3 border-l-2 border-zinc-600 pl-3">
-          <p className="text-xs italic text-zinc-400">"{flag.problematicLanguage}"</p>
+          <p className="text-xs italic text-zinc-400">“{flag.problematicLanguage}”</p>
         </blockquote>
       )}
       <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
@@ -133,60 +124,54 @@ function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
 }
 
 function SummaryContent() {
-  const searchParams = useSearchParams();
+  const analysis = useDocumentAnalysis();
 
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [captureEmail, setCaptureEmail] = useState('');
   const [captureStatus, setCaptureStatus] = useState('');
   const [captureSubmitting, setCaptureSubmitting] = useState(false);
-  const [clauseAnalysis, setClauseAnalysis] = useState<ClauseAnalysis | null>(null);
 
   useEffect(() => {
     trackEvent('analysis_completed', '/review/summary');
     fetch('/api/me')
       .then((response) => response.json())
-      .then((data: { user: { email: string } | null }) => setUser(data.user));
+      .then((data: { user: { email: string } | null }) => {
+        setUser(data.user);
+        if (data.user?.email) setCaptureEmail(data.user.email);
+      });
 
-    const stored = localStorage.getItem('pactora.clauseAnalysis');
-    if (stored) {
-      try {
-        setClauseAnalysis(JSON.parse(stored) as ClauseAnalysis);
-      } catch {
-        // ignore corrupt data
-      }
-    }
   }, []);
 
-  useEffect(() => {
-    if (user?.email) setCaptureEmail(user.email);
-  }, [user?.email]);
 
-  const acv = searchParams.get('acv');
-  const termMonths = searchParams.get('termMonths');
-  const insuranceCover = searchParams.get('insuranceCover');
-  const dataType = searchParams.get('dataType');
-  const lolCapParam = searchParams.get('lolCap');
-
-  const acvAmount = num(acv);
-  const insuranceAmount = num(insuranceCover);
-  const lolCap = num(lolCapParam);
+  const acvAmount = analysis.commercialContext?.acv ?? null;
+  const termMonths = analysis.commercialContext?.termMonths ?? null;
+  const insuranceAmount = analysis.commercialContext?.insuranceCover ?? null;
+  const dataType = analysis.commercialContext?.dataType ?? null;
+  const lolCap = analysis.commercialContext?.liabilityCap ?? null;
   const capRatio = lolCap !== null && acvAmount !== null && acvAmount > 0 ? lolCap / acvAmount : null;
   const inferredLolRisk = deriveLolRisk(lolCap, acvAmount);
-  const queryString = searchParams.toString();
+  const clauseFlags: ClauseFlag[] = analysis.clauses.map((clause) => ({
+    clauseType: clause.type,
+    riskLevel: clause.riskLevel ?? 'Low',
+    problematicLanguage: clause.text ?? '',
+    plainEnglish: clause.explanation ?? 'Analysis incomplete',
+    negotiationPoint: analysis.recommendations.find((recommendation) => recommendation.clauseType === clause.type)?.text ?? 'No recommendation generated',
+  }));
 
   const rankedSections = useMemo(() => {
     return reviewSections
       .map((section) => {
-        const risk = section.key === 'lol' ? inferredLolRisk ?? normalizeRisk(searchParams.get(section.param)) : normalizeRisk(searchParams.get(section.param));
+        const canonicalRisk = analysis.risks.find((risk) => risk.clauseType.toLowerCase().includes(section.label.toLowerCase().split(' ')[0]));
+        const risk = section.key === 'lol' ? inferredLolRisk ?? canonicalRisk?.level ?? null : canonicalRisk?.level ?? null;
         return {
           ...section,
           risk,
           score: risk ? riskScore(risk) : 0,
-          hrefWithParams: `${section.href}${queryString ? `?${queryString}` : ''}`,
+          hrefWithParams: section.href,
         };
       })
       .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
-  }, [inferredLolRisk, queryString, searchParams]);
+  }, [analysis.risks, inferredLolRisk]);
 
   const knownRisks = rankedSections.filter((section) => section.risk !== null) as Array<(typeof rankedSections)[number] & { risk: RiskLevel }>;
   const averageRisk = knownRisks.length > 0 ? knownRisks.reduce((sum, section) => sum + riskScore(section.risk), 0) / knownRisks.length : 0;
@@ -254,7 +239,7 @@ function SummaryContent() {
               {reviewSections.map((section) => (
                 <Link
                   key={section.key}
-                  href={`${section.href}${queryString ? `?${queryString}` : ''}`}
+                  href={section.href}
                   className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:border-zinc-500 hover:bg-zinc-900"
                 >
                   {section.label}
@@ -313,19 +298,24 @@ function SummaryContent() {
           </div>
         </section>
 
-        {clauseAnalysis && clauseAnalysis.flags.length > 0 && (
+        {clauseFlags.length > 0 ? (
           <section className="mt-8">
             <div className="mb-4 flex items-center gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">AI Clause Analysis</h2>
               <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
-                {clauseAnalysis.flags.length} {clauseAnalysis.flags.length === 1 ? 'flag' : 'flags'}
+                {clauseFlags.length} {clauseFlags.length === 1 ? 'flag' : 'flags'}
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {clauseAnalysis.flags.map((flag, i) => (
+              {clauseFlags.map((flag, i) => (
                 <ClauseFlagCard key={i} flag={flag} />
               ))}
             </div>
+          </section>
+        ) : (
+          <section className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">AI Clause Analysis</h2>
+            <p className="mt-2 text-sm text-zinc-500">Analysis incomplete — no clause risks detected from the uploaded document.</p>
           </section>
         )}
 

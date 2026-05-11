@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type TerminationRight = 'Mutual' | 'One-sided' | 'Unknown';
 type CureRights = 'Present' | 'Absent' | 'Unknown';
@@ -19,8 +19,6 @@ type ReviewResult = {
   redFlags: string[];
 };
 
-const CLAUSE_STORAGE_KEY = 'pactora.terminationClause';
-const RISK_PARAM_KEYS = ['lolRisk', 'indemnitiesRisk', 'ipRisk', 'dataRisk', 'terminationRisk'] as const;
 
 function normalize(input: string) {
   return input.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -292,50 +290,29 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
 }
 
 function TerminationReviewContent() {
-  const searchParams = useSearchParams();
+  const commercialContext = useDocumentCommercialContext();
+  const canonicalClause = useClauseByType('Termination');
 
-  const acv = searchParams.get('acv');
-  const termMonths = searchParams.get('termMonths');
-  const insuranceCover = searchParams.get('insuranceCover');
-  const dataType = searchParams.get('dataType');
-  const lolCapParam = searchParams.get('lolCap');
+  const acv = commercialContext.acv ? String(commercialContext.acv) : null;
+  const termMonths = commercialContext.termMonths ? String(commercialContext.termMonths) : null;
+  const insuranceCover = commercialContext.insuranceCover ? String(commercialContext.insuranceCover) : null;
+  const dataType = commercialContext.dataType ?? null;
+  const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
 
   const acvAmount = num(acv);
   const insuranceAmount = num(insuranceCover);
   const lolCap = num(lolCapParam);
 
-  const [clause, setClause] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    return window.localStorage.getItem(CLAUSE_STORAGE_KEY) ?? '';
-  });
+  const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
-  useEffect(() => {
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
-  }, [clause]);
-
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
-    if (acv) params.set('acv', acv);
-    if (termMonths) params.set('termMonths', termMonths);
-    if (insuranceCover) params.set('insuranceCover', insuranceCover);
-    if (dataType) params.set('dataType', dataType);
-    if (lolCapParam) params.set('lolCap', lolCapParam);
-    RISK_PARAM_KEYS.forEach((riskKey) => {
-      const value = searchParams.get(riskKey);
-      if (value) params.set(riskKey, value);
-    });
-    if (result?.riskRating) params.set('terminationRisk', result.riskRating);
-    return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, lolCapParam, searchParams, result?.riskRating]);
+  const queryString = '';
 
   function runReview() {
     setResult(parseClause(clause));
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
   }
 
   function reset() {
-    window.localStorage.removeItem(CLAUSE_STORAGE_KEY);
     setClause('');
     setResult(null);
   }

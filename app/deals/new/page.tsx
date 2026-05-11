@@ -1,72 +1,105 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
+import {
+  DocumentAnalysisState,
+  useDocumentAnalysis,
+  useDocumentAnalysisActions,
+} from '@/lib/document-analysis-store';
+import type { ClauseAnalysis } from '@/lib/clause-analysis';
+import type { ExtractedContractValues } from '@/lib/contract-extraction';
 
-const DEFAULT_ACV = 25000;
-const DEFAULT_TERM_MONTHS = 12;
-const DEFAULT_INSURANCE_COVER = 1000000;
-
-type DetectedContractValues = {
-  acv: number | null;
-  termMonths: number | null;
-  insuranceCover: number | null;
-  dataType: 'standard' | 'personal' | 'sensitive';
+type ExtractionResponse = {
+  documentId?: string;
+  detectedValues?: ExtractedContractValues;
+  contractText?: string;
+  documentMeta?: DocumentAnalysisState['documentMeta'];
+  extractedTerms?: DocumentAnalysisState['extractedTerms'];
 };
 
+const processingStages: Array<{ key: keyof DocumentAnalysisState['processingSteps']; label: string }> = [
+  { key: 'upload', label: 'Uploading document…' },
+  { key: 'extraction', label: 'Extracting text…' },
+  { key: 'clauseDetection', label: 'Identifying clauses…' },
+  { key: 'riskAnalysis', label: 'Analyzing risks…' },
+  { key: 'recommendations', label: 'Generating recommendations…' },
+];
+
+function formatOptionalMoney(value?: number) {
+  if (!value) return '';
+  return String(value);
+}
+
+function ProcessingPipeline({ analysis }: { analysis: DocumentAnalysisState }) {
+  if (analysis.uploadStatus === 'idle') return null;
+
+  return (
+    <div className="mt-5 rounded-xl border border-zinc-800 bg-black/30 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Processing pipeline</p>
+        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-300">
+          {analysis.uploadStatus === 'complete' ? 'Finalizing workspace… complete' : analysis.uploadStatus}
+        </span>
+      </div>
+      <ol className="space-y-2 text-sm">
+        {processingStages.map((stage) => (
+          <li key={stage.key} className="flex items-center gap-3 text-zinc-300">
+            <span className={`h-2.5 w-2.5 rounded-full ${analysis.processingSteps[stage.key] ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+            <span>{stage.label}</span>
+          </li>
+        ))}
+        <li className="flex items-center gap-3 text-zinc-300">
+          <span className={`h-2.5 w-2.5 rounded-full ${analysis.uploadStatus === 'complete' ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+          <span>Finalizing workspace…</span>
+        </li>
+      </ol>
+    </div>
+  );
+}
+
 export default function NewDealPage() {
-  const [selectedFileName, setSelectedFileName] = useState<string>('');
-  const [hasDetectedValues, setHasDetectedValues] = useState<boolean>(false);
+  const analysis = useDocumentAnalysis();
+  const actions = useDocumentAnalysisActions();
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
-  const [acv, setAcv] = useState<number>(DEFAULT_ACV);
-  const [termMonths, setTermMonths] = useState<number>(DEFAULT_TERM_MONTHS);
-  const [insuranceCover, setInsuranceCover] = useState<number>(DEFAULT_INSURANCE_COVER);
-  const [dataType, setDataType] = useState<DetectedContractValues['dataType']>('standard');
-  const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'ready' | 'failed'>('idle');
 
+  const commercialContext = analysis.commercialContext ?? {};
+  const selectedFileName = analysis.documentMeta.fileName ?? '';
+  const canContinue = analysis.uploadStatus === 'complete' && hasAcceptedLegalNotice && hasConfirmedDataCaution;
   const runClauseAnalysis = async (text: string) => {
-    setAnalysisStatus('analyzing');
-    localStorage.removeItem('pactora.clauseAnalysis');
+    actions.analysisStarted();
     try {
       const res = await fetch('/api/contracts/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
-      if (res.ok) {
-        const data = (await res.json()) as { analysis: unknown };
-        localStorage.setItem('pactora.clauseAnalysis', JSON.stringify(data.analysis));
-        setAnalysisStatus('ready');
-      } else {
-        setAnalysisStatus('failed');
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(payload?.error ?? 'Clause analysis failed.');
       }
-    } catch {
-      setAnalysisStatus('failed');
+      const data = (await res.json()) as { analysis: ClauseAnalysis };
+      console.info('[PACTORA] Parser payload shape', { endpoint: '/api/contracts/analyze', keys: Object.keys(data.analysis ?? {}) });
+      actions.hydrateAnalysis(data.analysis);
+    } catch (error) {
+      actions.analysisFailed(error instanceof Error ? error.message : 'Clause analysis failed.');
     }
-  };
-
-  const applyDetectedValues = (detectedValues: DetectedContractValues) => {
-    setAcv(detectedValues.acv ?? DEFAULT_ACV);
-    setTermMonths(detectedValues.termMonths ?? DEFAULT_TERM_MONTHS);
-    setInsuranceCover(detectedValues.insuranceCover ?? DEFAULT_INSURANCE_COVER);
-    setDataType(detectedValues.dataType);
   };
 
   const handleContractUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) {
-      setSelectedFileName('');
-      setHasDetectedValues(false);
+      actions.reset();
       setUploadError(null);
       return;
     }
 
     setUploadError(null);
-    setSelectedFileName(file.name);
+    actions.uploadStarted(file);
     trackEvent('contract_upload_started', '/deals/new');
 
     try {
@@ -83,19 +116,30 @@ export default function NewDealPage() {
         throw new Error(payload?.error ?? 'Could not extract contract values.');
       }
 
-      const payload: { detectedValues: DetectedContractValues; contractText?: string } = await response.json();
-      applyDetectedValues(payload.detectedValues);
-      setHasDetectedValues(true);
+      const payload = (await response.json()) as ExtractionResponse;
+      console.info('[PACTORA] Parser payload shape', { endpoint: '/api/contracts/extract', keys: Object.keys(payload) });
+      actions.hydrateExtraction(payload);
       trackEvent('contract_uploaded', '/deals/new');
       if (payload.contractText) {
         void runClauseAnalysis(payload.contractText);
+      } else {
+        actions.analysisFailed('Analysis incomplete: no raw text returned by parser.');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "We couldn't read this file.";
       setUploadError(message);
-      setHasDetectedValues(false);
+      actions.setError(message);
     }
   };
+
+  const warnings = useMemo(() => {
+    const items = [...(analysis.errors ?? [])];
+    const missingExtractionFields = analysis.diagnostics?.missingFields ?? [];
+    if (analysis.uploadStatus === 'complete' && missingExtractionFields.length > 0) {
+      items.push(`Analysis incomplete: ${missingExtractionFields.join(', ')} not identified.`);
+    }
+    return items;
+  }, [analysis.diagnostics?.missingFields, analysis.errors, analysis.uploadStatus]);
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -107,18 +151,15 @@ export default function NewDealPage() {
           </p>
         </header>
 
-        <section className="border rounded-lg p-4 mb-6 border-zinc-800 bg-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
           <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1 of 3</p>
           <h2 className="mt-1 text-lg font-medium text-white">Upload Contract</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Upload your contract (PDF, DOCX, or legacy DOC). You can edit extracted values later.
+            Upload your contract (PDF, DOCX, or legacy DOC). Pactora will only display extracted data it can support.
           </p>
 
           <div className="mt-5">
-            <label
-              htmlFor="contractUpload"
-              className="mb-2 block text-xs font-medium uppercase tracking-wide text-zinc-400"
-            >
+            <label htmlFor="contractUpload" className="mb-2 block text-xs font-medium uppercase tracking-wide text-zinc-400">
               Contract file (.pdf, .docx, or .doc)
             </label>
             <input
@@ -136,177 +177,93 @@ export default function NewDealPage() {
             {uploadError ? (
               <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3">
                 <p className="text-sm font-medium text-red-300">{uploadError}</p>
-                <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC file and try again.</p>
+                <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC under 20 MB.</p>
               </div>
             ) : null}
-            {analysisStatus === 'analyzing' && (
-              <p className="mt-3 text-xs text-zinc-400">AI clause analysis running — results will appear in the Deal Summary…</p>
-            )}
-            {analysisStatus === 'ready' && (
-              <p className="mt-3 text-xs text-emerald-400">AI clause analysis complete — results ready in Deal Summary.</p>
-            )}
-            {analysisStatus === 'failed' && (
-              <p className="mt-3 text-xs text-amber-400">AI clause analysis unavailable — deal summary will show manually reviewed sections only.</p>
-            )}
+            <ProcessingPipeline analysis={analysis} />
           </div>
         </section>
 
-        <form action="/review/lol" method="GET">
-          <section className="border rounded-lg p-4 mb-6 border-zinc-800 bg-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
-                <h2 className="mt-1 text-lg font-medium text-white">Deal Context</h2>
-              </div>
-              {hasDetectedValues ? (
-                <span className="w-fit rounded-full border border-emerald-700/70 bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-300">
-                  Detected from contract (editable)
-                </span>
-              ) : (
-                <span className="w-fit rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs font-medium text-zinc-400">
-                  Manual entry
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="acv" className="mb-2 block text-sm text-zinc-300">
-                  ACV (£)
-                </label>
-                <input
-                  id="acv"
-                  name="acv"
-                  type="number"
-                  value={acv}
-                  onChange={(event) => setAcv(Number(event.target.value))}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="termMonths" className="mb-2 block text-sm text-zinc-300">
-                  Term (months)
-                </label>
-                <input
-                  id="termMonths"
-                  name="termMonths"
-                  type="number"
-                  value={termMonths}
-                  onChange={(event) => setTermMonths(Number(event.target.value))}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="insuranceCover" className="mb-2 block text-sm text-zinc-300">
-                  Insurance cover (£)
-                </label>
-                <input
-                  id="insuranceCover"
-                  name="insuranceCover"
-                  type="number"
-                  value={insuranceCover}
-                  onChange={(event) => setInsuranceCover(Number(event.target.value))}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="dataType" className="mb-2 block text-sm text-zinc-300">
-                  Data type
-                </label>
-                <select
-                  id="dataType"
-                  name="dataType"
-                  value={dataType}
-                  onChange={(event) => setDataType(event.target.value as DetectedContractValues['dataType'])}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
-                >
-                  <option value="standard">Standard</option>
-                  <option value="personal">Personal data</option>
-                  <option value="sensitive">Special category</option>
-                </select>
-              </div>
-            </div>
+        {warnings.length > 0 ? (
+          <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <h2 className="font-semibold">Partial analysis warning</h2>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {warnings.map((warning) => <li key={warning}>{warning}</li>)}
+            </ul>
           </section>
+        ) : null}
 
-          <section className="border rounded-lg p-4 mb-6 border-zinc-800 bg-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">Step 3 of 3</p>
-            <h2 className="mt-1 text-lg font-medium text-white">Acknowledgment</h2>
+        <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+          <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
+          <h2 className="mt-1 text-lg font-medium text-white">Extracted commercial context</h2>
+          <p className="mt-2 text-sm text-zinc-400">
+            Empty fields mean the parser did not identify that value. Pactora will not substitute fake defaults.
+          </p>
 
-            <div className="mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
-              <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
-                <li>Pactora provides decision-support software for commercial contract review.</li>
-                <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
-                <li>Outputs may be incomplete or inaccurate and should be validated.</li>
-                <li>Use qualified human and legal review where appropriate before material decisions.</li>
-                <li>You must be authorised to upload the document and its contents.</li>
-              </ul>
-              <p className="mt-4 text-zinc-300">
-                Read our{' '}
-                <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Terms
-                </Link>{' '}
-                ,{' '}
-                <Link href="/privacy" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Privacy Notice
-                </Link>{' '}
-                ,{' '}
-                <Link href="/security" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Security
-                </Link>{' '}
-                and{' '}
-                <Link href="/subprocessors" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">
-                  Subprocessors
-                </Link>
-                .
-              </p>
-            </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <ReadOnlyField label="Annual contract value" value={formatOptionalMoney(commercialContext.acv)} empty="ACV not detected" />
+            <ReadOnlyField label="Initial term" value={commercialContext.termMonths ? `${commercialContext.termMonths} months` : ''} empty="Initial term not detected" />
+            <ReadOnlyField label="Insurance cover" value={formatOptionalMoney(commercialContext.insuranceCover)} empty="Insurance cover not detected" />
+            <ReadOnlyField label="Data type" value={commercialContext.dataType} empty="Data category not identified" />
+            <ReadOnlyField label="Governing law" value={analysis.extractedTerms.governingLaw} empty="No governing law identified" />
+            <ReadOnlyField label="Termination notice" value={analysis.extractedTerms.terminationNotice} empty="Clause not detected" />
+          </div>
+        </section>
 
-            <div className="mt-4 space-y-3">
-              <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-                <input
-                  type="checkbox"
-                  required
-                  checked={hasAcceptedLegalNotice}
-                  onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
-                />
-                <span>
-                  I confirm that I am authorised to upload this material, that I understand Pactora is
-                  decision-support software and not legal advice, and that outputs may be incomplete or inaccurate and
-                  require appropriate human/legal review.
-                </span>
-              </label>
+        <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+          <p className="text-xs uppercase tracking-wide text-zinc-500">Step 3 of 3</p>
+          <h2 className="mt-1 text-lg font-medium text-white">Acknowledgment</h2>
 
-              <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-                <input
-                  type="checkbox"
-                  required
-                  checked={hasConfirmedDataCaution}
-                  onChange={(event) => setHasConfirmedDataCaution(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white"
-                />
-                <span>
-                  I confirm that, to the best of my knowledge, this upload does not include unnecessary personal data or
-                  special category data, and that any such data included is being uploaded lawfully and with appropriate
-                  authority.
-                </span>
-              </label>
-            </div>
-          </section>
+          <div className="mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
+              <li>Pactora provides decision-support software for commercial contract review.</li>
+              <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
+              <li>Outputs may be incomplete or inaccurate and should be validated.</li>
+              <li>Use qualified human and legal review where appropriate before material decisions.</li>
+              <li>You must be authorised to upload the document and its contents.</li>
+            </ul>
+            <p className="mt-4 text-zinc-300">
+              Read our <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Terms</Link>,{' '}
+              <Link href="/privacy" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Privacy Notice</Link>,{' '}
+              <Link href="/security" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Security</Link> and{' '}
+              <Link href="/subprocessors" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Subprocessors</Link>.
+            </p>
+          </div>
 
-          <button
-            type="submit"
-            disabled={!hasAcceptedLegalNotice || !hasConfirmedDataCaution}
-            className="w-full rounded-lg bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
-          >
-            Continue to Liability Review
-          </button>
-        </form>
+          <div className="mt-4 space-y-3">
+            <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
+              <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+              <span>I confirm that I am authorised to upload this material and understand Pactora outputs may be incomplete or inaccurate.</span>
+            </label>
+            <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
+              <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+              <span>I understand extracted values are parser outputs and should be checked before legal or commercial decisions.</span>
+            </label>
+          </div>
+        </section>
+
+        <div className="flex justify-end">
+          {canContinue ? (
+            <Link href="/review/lol" className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">
+              Continue to Liability review
+            </Link>
+          ) : (
+            <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
+              Complete upload and acknowledgments
+            </button>
+          )}
+        </div>
       </div>
     </main>
+  );
+}
+
+function ReadOnlyField({ label, value, empty }: { label: string; value?: string; empty: string }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
+      <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
+      <div className={`mt-2 text-sm font-semibold ${value ? 'text-zinc-100' : 'text-zinc-500'}`}>{value || empty}</div>
+    </div>
   );
 }
