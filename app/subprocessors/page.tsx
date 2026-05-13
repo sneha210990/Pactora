@@ -17,6 +17,11 @@ const subprocessors = [
     purpose: 'Supporting Google sign-in for account authentication and session access.',
   },
   {
+    vendor: 'Anthropic',
+    category: 'AI / contract analysis',
+    purpose: 'Processing uploaded contract text through the Claude API to extract clauses, identify risk, and generate structured review outputs.',
+  },
+  {
     vendor: 'Pactora-operated processing services',
     category: 'Application processing',
     purpose: 'Processing uploaded documents to extract contract terms and generate structured review outputs.',
