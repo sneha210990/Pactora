@@ -8,7 +8,7 @@ import {
   useMemo,
   useReducer,
 } from 'react';
-import type { ClauseFlag, RiskLevel } from '@/lib/clause-analysis';
+import type { ClauseCitation, ClauseFlag, RiskLevel } from '@/lib/clause-analysis';
 import type { ExtractedContractValues } from '@/lib/contract-extraction';
 
 export type Clause = {
@@ -17,6 +17,7 @@ export type Clause = {
   text?: string;
   riskLevel?: RiskLevel;
   explanation?: string;
+  citation?: ClauseCitation;
 };
 
 export type Risk = {
@@ -185,6 +186,7 @@ function toCanonicalAnalysis(state: DocumentAnalysisState, analysis: AnalysisPay
     text: flag.problematicLanguage,
     riskLevel: flag.riskLevel,
     explanation: flag.plainEnglish,
+    citation: flag.citation,
   }));
   const risks = flags.map((flag, index): Risk => ({
     id: `${state.documentId || 'document'}-risk-${index}`,
