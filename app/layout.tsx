@@ -33,10 +33,10 @@ export default function RootLayout({
                   How it works
                 </Link>
                 <Link
-                  href="/security"
+                  href="/faq"
                   className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
                 >
-                  Security
+                  FAQ
                 </Link>
                 <Link
                   href="/feedback"
@@ -61,6 +61,9 @@ export default function RootLayout({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-4 md:justify-end">
+                <Link href="/faq" className="hover:text-white">
+                  FAQ
+                </Link>
                 <Link href="/terms" className="hover:text-white">
                   Terms
                 </Link>
