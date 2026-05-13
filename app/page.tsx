@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
       <section className="flex flex-col items-center justify-center px-4 py-32 text-center md:py-40">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
           Contract review for SaaS teams
