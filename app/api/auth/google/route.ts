@@ -3,7 +3,8 @@ import { getSupabaseUrl } from '@/lib/supabase-auth';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const next = url.searchParams.get('next') || '/deals/new';
+  const rawNext = url.searchParams.get('next') || '';
+  const next = rawNext && /^\/[^/]/.test(rawNext) ? rawNext : '/deals/new';
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || url.origin;

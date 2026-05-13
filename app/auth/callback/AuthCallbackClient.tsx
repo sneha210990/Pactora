@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -12,6 +13,7 @@ export default function AuthCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Completing sign in…');
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -23,8 +25,13 @@ export default function AuthCallbackClient() {
       const oauthError = searchParams.get('error_description') ?? searchParams.get('error');
       const next = searchParams.get('next') || '/deals/new';
 
+      const fail = (message: string) => {
+        setStatus(message);
+        setFailed(true);
+      };
+
       if (oauthError) {
-        setStatus(`Google sign in failed: ${oauthError}`);
+        fail(`Google sign in failed: ${oauthError}`);
         return;
       }
 
@@ -40,7 +47,7 @@ export default function AuthCallbackClient() {
           };
 
       if (!code && (!accessToken || !refreshToken)) {
-        setStatus('Sign in could not be completed: missing OAuth code or session tokens.');
+        fail('Sign in could not be completed: missing OAuth code or session tokens.');
         return;
       }
 
@@ -53,9 +60,7 @@ export default function AuthCallbackClient() {
       if (!response.ok) {
         const errorResponse = (await response.json().catch(() => null)) as SessionResponse | null;
         const stageText = errorResponse?.stage ? ` (${errorResponse.stage})` : '';
-        setStatus(
-          `Sign in could not be completed${stageText}: ${errorResponse?.error ?? 'Unknown error.'}`,
-        );
+        fail(`Sign in could not be completed${stageText}: ${errorResponse?.error ?? 'Unknown error.'}`);
         return;
       }
 
@@ -68,8 +73,13 @@ export default function AuthCallbackClient() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-2xl space-y-4">
         <p className="text-sm text-zinc-400">{status}</p>
+        {failed && (
+          <Link href="/login" className="inline-block text-sm text-zinc-100 underline">
+            Back to login
+          </Link>
+        )}
       </div>
     </main>
   );

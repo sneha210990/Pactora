@@ -23,7 +23,7 @@ export default function LoginPage() {
 
     const params = new URLSearchParams(window.location.search);
     const next = params.get('next');
-    return next?.startsWith('/') ? next : '/deals/new';
+    return next && /^\/[^/]/.test(next) ? next : '/deals/new';
   });
 
   const onSubmit = async (event: FormEvent) => {
