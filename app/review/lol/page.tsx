@@ -388,9 +388,16 @@ function LolReviewContent() {
             <h2 className="text-lg font-semibold">Clause text panel</h2>
             <p className="text-xs text-zinc-400">Reusable for Indemnities, IP Ownership, Data Protection, and Termination.</p>
           </div>
-          <label htmlFor="lolClause" className="text-base font-semibold">
-            Detected clause text
-          </label>
+          <div className="flex items-center gap-3">
+            <label htmlFor="lolClause" className="text-base font-semibold">
+              Detected clause text
+            </label>
+            {canonicalClause?.citation && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
+                ✓ Verified in source
+              </span>
+            )}
+          </div>
           <textarea
             id="lolClause"
             value={clause}

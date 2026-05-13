@@ -1,6 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { CitationCharLocation } from '@anthropic-ai/sdk/resources/messages/messages';
 
 export type RiskLevel = 'High' | 'Medium' | 'Low';
+
+export type ClauseCitation = {
+  citedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
+};
 
 export type ClauseFlag = {
   clauseType: string;
@@ -8,6 +15,9 @@ export type ClauseFlag = {
   problematicLanguage: string;
   plainEnglish: string;
   negotiationPoint: string;
+  // Present when Claude's citation was successfully matched to this flag.
+  // Guarantees the quoted language is verbatim from the source document.
+  citation?: ClauseCitation;
 };
 
 export type ClauseAnalysis = {
@@ -58,7 +68,24 @@ export async function analyzeContractClauses(contractText: string): Promise<Clau
     messages: [
       {
         role: 'user',
-        content: `Analyze this SaaS contract for the 8 risk categories and return JSON:\n\n${truncatedText}`,
+        content: [
+          {
+            // Passing the contract as a document block enables the Citations API:
+            // Claude must ground every quote in actual text from this source,
+            // eliminating hallucinated problematicLanguage values.
+            type: 'document',
+            source: {
+              type: 'text',
+              media_type: 'text/plain',
+              data: truncatedText,
+            },
+            citations: { enabled: true },
+          },
+          {
+            type: 'text',
+            text: 'Analyze this SaaS contract for the 8 risk categories and return JSON:',
+          },
+        ],
       },
     ],
   });
@@ -80,8 +107,35 @@ export async function analyzeContractClauses(contractText: string): Promise<Clau
     throw new Error('Claude returned an unparseable response');
   }
 
+  // Extract char_location citations from the response text block.
+  // For plain-text documents the API always returns 'char_location' citations.
+  const charCitations: CitationCharLocation[] = (textBlock.citations ?? []).filter(
+    (c): c is CitationCharLocation => c.type === 'char_location',
+  );
+
+  // Match each citation to the most relevant flag by overlapping text.
+  // We compare the first 50 chars of each side to survive minor truncation.
+  const flags = (Array.isArray(parsed.flags) ? parsed.flags : []).map((flag) => {
+    const lang = (flag.problematicLanguage ?? '').toLowerCase();
+    const match = charCitations.find((c) => {
+      const ct = c.cited_text.toLowerCase();
+      return lang.includes(ct.slice(0, 50)) || ct.includes(lang.slice(0, 50));
+    });
+
+    if (!match) return flag;
+
+    return {
+      ...flag,
+      citation: {
+        citedText: match.cited_text,
+        startCharIndex: match.start_char_index,
+        endCharIndex: match.end_char_index,
+      },
+    };
+  });
+
   return {
-    flags: Array.isArray(parsed.flags) ? parsed.flags : [],
+    flags,
     analyzedAt: new Date().toISOString(),
   };
 }
