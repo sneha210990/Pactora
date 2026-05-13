@@ -235,16 +235,9 @@ function IpOwnershipReviewContent() {
               Paste the IP / ownership wording here to assess assignment risk, licence scope, and vendor/customer rights.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <label htmlFor="ipClause" className="text-base font-semibold">
-              Paste the IP ownership clause
-            </label>
-            {canonicalClause?.citation && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-                ✓ Verified in source
-              </span>
-            )}
-          </div>
+          <label htmlFor="ipClause" className="text-base font-semibold">
+            Paste the IP ownership clause
+          </label>
           <textarea
             id="ipClause"
             rows={8}

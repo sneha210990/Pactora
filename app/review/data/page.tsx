@@ -285,16 +285,9 @@ function DataProtectionReviewContent() {
               liability carve-outs.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <label htmlFor="dataClause" className="text-base font-semibold">
-              Paste the data protection clause
-            </label>
-            {canonicalClause?.citation && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-                ✓ Verified in source
-              </span>
-            )}
-          </div>
+          <label htmlFor="dataClause" className="text-base font-semibold">
+            Paste the data protection clause
+          </label>
           <textarea
             id="dataClause"
             rows={8}

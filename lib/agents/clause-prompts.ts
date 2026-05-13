@@ -23,6 +23,10 @@ import type { PactoraClauseType } from './types';
 //   Pactora-custom and has no direct equivalent in the reference repo.
 // ──────────────────────────────────────────────────────────────────────────────
 
+// clauseText: the full verbatim text of every relevant clause/sub-clause found in
+// the contract for this topic. This populates the review-page textarea so the user
+// sees the real contract wording, not just a short snippet.
+
 export const CLAUSE_SYSTEM_PROMPTS: Record<PactoraClauseType, string> = {
   'Liability Cap': `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify and assess the vendor's liability cap provisions.
@@ -39,13 +43,14 @@ Return ONLY valid JSON — no markdown, no explanation:
   "flag": {
     "clauseType": "Liability Cap",
     "riskLevel": "High | Medium | Low",
-    "problematicLanguage": "<verbatim quote from contract, max 200 chars>",
+    "clauseText": "<full verbatim text of all relevant liability cap clauses and sub-clauses from the contract>",
+    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
     "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
     "negotiationPoint": "<1-2 sentence specific, actionable ask>"
   } | null
 }
 
-Set "flag" to null if no problematic liability cap language exists.`,
+Set "flag" to null if no liability cap language exists at all.`,
 
   Indemnities: `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify and assess indemnification clauses.
@@ -62,13 +67,14 @@ Return ONLY valid JSON — no markdown, no explanation:
   "flag": {
     "clauseType": "Indemnities",
     "riskLevel": "High | Medium | Low",
-    "problematicLanguage": "<verbatim quote from contract, max 200 chars>",
+    "clauseText": "<full verbatim text of all relevant indemnity clauses and sub-clauses from the contract>",
+    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
     "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
     "negotiationPoint": "<1-2 sentence specific, actionable ask>"
   } | null
 }
 
-Set "flag" to null if no problematic indemnity language exists.`,
+Set "flag" to null if no indemnity language exists at all.`,
 
   // PACTORA-CUSTOM: No direct equivalent in claude-for-legal.
   // claude-for-legal's ip_assignment covers standard IP assignment / work-for-hire
@@ -96,13 +102,14 @@ Return ONLY valid JSON — no markdown, no explanation:
   "flag": {
     "clauseType": "IP Ownership",
     "riskLevel": "High | Medium | Low",
-    "problematicLanguage": "<verbatim quote from contract, max 200 chars>",
+    "clauseText": "<full verbatim text of all relevant IP ownership, licence, and data rights clauses from the contract>",
+    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
     "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
     "negotiationPoint": "<1-2 sentence specific, actionable ask>"
   } | null
 }
 
-Set "flag" to null if no problematic IP ownership language exists.`,
+Set "flag" to null if no IP ownership language exists at all.`,
 
   'Data Protection': `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify data protection and privacy compliance risks.
@@ -121,13 +128,14 @@ Return ONLY valid JSON — no markdown, no explanation:
   "flag": {
     "clauseType": "Data Protection",
     "riskLevel": "High | Medium | Low",
-    "problematicLanguage": "<verbatim quote from contract, max 200 chars>",
+    "clauseText": "<full verbatim text of all relevant data protection, GDPR, and security clauses from the contract>",
+    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
     "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
     "negotiationPoint": "<1-2 sentence specific, actionable ask>"
   } | null
 }
 
-Set "flag" to null if no problematic data protection language exists.`,
+Set "flag" to null if no data protection language exists at all.`,
 
   'Termination Rights': `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify termination rights risks.
@@ -146,11 +154,12 @@ Return ONLY valid JSON — no markdown, no explanation:
   "flag": {
     "clauseType": "Termination Rights",
     "riskLevel": "High | Medium | Low",
-    "problematicLanguage": "<verbatim quote from contract, max 200 chars>",
+    "clauseText": "<full verbatim text of all relevant termination clauses and sub-clauses from the contract>",
+    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
     "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
     "negotiationPoint": "<1-2 sentence specific, actionable ask>"
   } | null
 }
 
-Set "flag" to null if no problematic termination language exists.`,
+Set "flag" to null if no termination language exists at all.`,
 };

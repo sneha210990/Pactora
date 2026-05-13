@@ -5,9 +5,9 @@ import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 
 const MODEL = 'claude-sonnet-4-6';
 
-// Focused agents need far fewer tokens than the monolithic 8-category call
-// because each only returns a single flag object (or null).
-const MAX_TOKENS = 512;
+// Each agent returns a flag + the full verbatim clause text for textarea pre-fill.
+// Full clause sections can be several hundred words, so 2048 tokens is safe.
+const MAX_TOKENS = 2048;
 
 export type ClauseAgentResult =
   | { ok: true; flag: ClauseFlag | null }
