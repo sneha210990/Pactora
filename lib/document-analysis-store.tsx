@@ -182,7 +182,7 @@ function toCanonicalAnalysis(state: DocumentAnalysisState, analysis: AnalysisPay
   const clauses = flags.map((flag, index): Clause => ({
     id: `${state.documentId || 'document'}-clause-${index}`,
     type: flag.clauseType,
-    text: flag.problematicLanguage,
+    text: flag.clauseText ?? flag.problematicLanguage,
     riskLevel: flag.riskLevel,
     explanation: flag.plainEnglish,
   }));
