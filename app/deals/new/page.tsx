@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import {
   DocumentAnalysisState,
@@ -63,7 +63,16 @@ export default function NewDealPage() {
   const analysis = useDocumentAnalysis();
   const actions = useDocumentAnalysisActions();
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [manualClauseText, setManualClauseText] = useState<string>('');
+  const [manualClauseText, setManualClauseText] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    // Restore pasted text if the page reloaded mid-analysis.
+    // If the store already has a completed analysis, the text was already processed.
+    return sessionStorage.getItem('pactora.manualClauseText') ?? '';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('pactora.manualClauseText', manualClauseText);
+  }, [manualClauseText]);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
 
@@ -116,6 +125,7 @@ export default function NewDealPage() {
                 flags: event.flags,
                 analyzedAt: event.analyzedAt ?? new Date().toISOString(),
               });
+              sessionStorage.removeItem('pactora.manualClauseText');
               received = true;
             }
           } catch {

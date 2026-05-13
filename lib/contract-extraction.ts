@@ -28,42 +28,126 @@ type Mammoth = {
 };
 
 const ACV_KEYWORDS = [
+  // Explicit ACV / ARR labels
   'acv',
+  'annual contract value',
+  'annual recurring revenue',
+  'arr',
+  // Annual fee variants (most specific first)
+  'annual subscription fee',
+  'annual subscription price',
+  'annual subscription',
+  'annual licence fee',
+  'annual license fee',
+  'annual service fee',
+  'annual services fee',
+  'annual platform fee',
+  'annual software fee',
+  'annual saas fee',
   'annual fee',
   'annual fees',
-  'annual subscription fee',
+  'annual charge',
+  'annual charges',
+  'annual price',
+  'annual payment',
+  'annual payments',
+  // Generic subscription / licence terms (will be checked with nearby amounts)
+  'subscription fee',
+  'subscription fees',
+  'subscription price',
+  'subscription cost',
+  'licence fee',
+  'licence fees',
+  'license fee',
+  'license fees',
+  'platform fee',
+  'platform fees',
+  'platform licence',
+  'platform license',
+  'saas fee',
+  'saas subscription',
+  'software subscription',
+  'software fee',
+  'service fee',
+  'service fees',
+  'services fee',
+  'services fees',
+  'recurring fee',
+  'recurring fees',
+  // Order / contract value labels
   'contract value',
-  'annual contract value',
+  'total contract value',
+  'order value',
+  'total order value',
+  'total annual value',
+  'total value',
+  'total annual fee',
+  'total annual fees',
+  'total fees',
 ];
 
 const INSURANCE_KEYWORDS = ['insurance', 'insurance coverage', 'insurance cover', 'coverage'];
 
-const MONEY_REGEX = /(?:£|\$)\s?\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g;
+// Monthly labels — matched amounts will be multiplied by 12 to get ACV
+const MONTHLY_FEE_KEYWORDS = [
+  'monthly subscription fee',
+  'monthly subscription',
+  'monthly licence fee',
+  'monthly license fee',
+  'monthly service fee',
+  'monthly platform fee',
+  'monthly saas fee',
+  'monthly fee',
+  'monthly fees',
+  'monthly charge',
+  'monthly charges',
+  'monthly payment',
+  'monthly amount',
+];
+
+// Matches: £75,000  $90,000  €50,000  GBP 75,000  USD 90k  £50K etc.
+const MONEY_REGEX = /(?:[£$€]|(?:GBP|USD|EUR)\s?)[\s]?\d{1,3}(?:,\d{3})*(?:\.\d{2})?(?:\s*[kK]\b)?/g;
 const MONTH_TERM_REGEX = /(\d{1,3})\s*(months?|mos?)/i;
 const YEAR_TERM_REGEX = /(\d{1,3})\s*(years?|yrs?)/i;
+// Detects "per month / /month / pm / p.m." after an amount on the same line
+const PER_MONTH_SUFFIX = /per[\s-]?month|\/\s*month|\bpm\b|p\.m\.|per\s+mo\b/i;
 
 function parseMoney(value: string): number {
-  return Number(value.replace(/[^\d.]/g, ''));
+  const hasK = /[kK]\s*$/.test(value.trim());
+  const n = Number(value.replace(/[^\d.]/g, ''));
+  return hasK ? n * 1000 : n;
 }
 
-function detectAmountByKeywords(lines: string[], keywords: string[]): number | null {
-  for (const line of lines) {
-    const normalizedLine = line.toLowerCase();
-    const keyword = keywords.find((candidate) => normalizedLine.includes(candidate));
-    if (!keyword) continue;
+function firstMoneyOnLine(line: string): number | null {
+  const match = line.match(MONEY_REGEX)?.[0];
+  return match ? parseMoney(match) : null;
+}
 
-    const keywordIndex = normalizedLine.indexOf(keyword);
-    const amountAfterKeyword = line.slice(keywordIndex).match(MONEY_REGEX)?.[0];
-    if (amountAfterKeyword) {
-      return parseMoney(amountAfterKeyword);
-    }
+// Returns the amount and whether it was expressed as a monthly figure.
+function detectAmountByKeywords(
+  lines: string[],
+  keywords: string[],
+  multiplyMonthly = false,
+): number | null {
+  for (let i = 0; i < lines.length; i++) {
+    const normalizedLine = lines[i].toLowerCase();
+    if (!keywords.some((kw) => normalizedLine.includes(kw))) continue;
 
-    const amountOnLine = line.match(MONEY_REGEX)?.[0];
-    if (amountOnLine) {
-      return parseMoney(amountOnLine);
+    // Check current line, then immediately adjacent lines (value often on next/prev line in tables)
+    const candidates = [lines[i], lines[i + 1] ?? '', lines[i + 2] ?? '', lines[i - 1] ?? ''];
+
+    for (const candidate of candidates) {
+      const amount = firstMoneyOnLine(candidate);
+      if (!amount) continue;
+
+      if (multiplyMonthly) return amount * 12;
+
+      // If the same line/nearby line has "per month" wording, annualise
+      if (PER_MONTH_SUFFIX.test(candidate)) return amount * 12;
+
+      return amount;
     }
   }
-
   return null;
 }
 
@@ -131,7 +215,9 @@ export function detectContractValues(text: string): ExtractedContractValues {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const detectedAcv = detectAmountByKeywords(lines, ACV_KEYWORDS);
+  const detectedAcv =
+    detectAmountByKeywords(lines, ACV_KEYWORDS) ??
+    detectAmountByKeywords(lines, MONTHLY_FEE_KEYWORDS, true);
   const detectedInsurance = detectAmountByKeywords(lines, INSURANCE_KEYWORDS);
 
   let termMonths: number | null = null;
