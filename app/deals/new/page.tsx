@@ -8,7 +8,7 @@ import {
   useDocumentAnalysis,
   useDocumentAnalysisActions,
 } from '@/lib/document-analysis-store';
-import type { ClauseAnalysis } from '@/lib/clause-analysis';
+import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { ExtractedContractValues } from '@/lib/contract-extraction';
 
 type ExtractionResponse = {
@@ -73,18 +73,58 @@ export default function NewDealPage() {
   const runClauseAnalysis = async (text: string) => {
     actions.analysisStarted();
     try {
-      const res = await fetch('/api/contracts/analyze', {
+      const res = await fetch('/api/contracts/analyze-agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
+
       if (!res.ok) {
         const payload = await res.json().catch(() => null) as { error?: string } | null;
         throw new Error(payload?.error ?? 'Clause analysis failed.');
       }
-      const data = (await res.json()) as { analysis: ClauseAnalysis };
-      console.info('[PACTORA] Parser payload shape', { endpoint: '/api/contracts/analyze', keys: Object.keys(data.analysis ?? {}) });
-      actions.hydrateAnalysis(data.analysis);
+
+      if (!res.body) throw new Error('No response stream from analysis.');
+
+      // Read the SSE stream — each agent emits an event as it finishes.
+      // We wait for 'analysis_complete' which carries the full flags array.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let received = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() ?? '';
+
+        for (const part of parts) {
+          if (!part.startsWith('data: ')) continue;
+          const json = part.slice(6).trim();
+          if (!json) continue;
+          try {
+            const event = JSON.parse(json) as {
+              type: string;
+              flags?: ClauseFlag[];
+              analyzedAt?: string;
+            };
+            if (event.type === 'analysis_complete' && Array.isArray(event.flags)) {
+              actions.hydrateAnalysis({
+                flags: event.flags,
+                analyzedAt: event.analyzedAt ?? new Date().toISOString(),
+              });
+              received = true;
+            }
+          } catch {
+            // ignore malformed SSE events
+          }
+        }
+      }
+
+      if (!received) throw new Error('Analysis completed without returning results.');
     } catch (error) {
       actions.analysisFailed(error instanceof Error ? error.message : 'Clause analysis failed.');
     }
