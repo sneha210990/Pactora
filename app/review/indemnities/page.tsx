@@ -243,16 +243,9 @@ function IndemnitiesReviewContent() {
               Paste the indemnity wording here to assess trigger scope, mutuality, and whether it may sit outside the liability cap.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <label htmlFor="indemnityClause" className="text-base font-semibold">
-              Paste the indemnity clause
-            </label>
-            {canonicalClause?.citation && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-                ✓ Verified in source
-              </span>
-            )}
-          </div>
+          <label htmlFor="indemnityClause" className="text-base font-semibold">
+            Paste the indemnity clause
+          </label>
           <textarea
             id="indemnityClause"
             rows={8}
