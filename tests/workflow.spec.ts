@@ -4,6 +4,8 @@ import path from 'path';
 const dummyContractPath = path.join(__dirname, 'fixtures/dummy-contract.pdf');
 const dummyDocxPath = path.join(__dirname, 'fixtures/dummy-contract.docx');
 
+const STORAGE_KEY = 'pactora.documentAnalysis.v1';
+
 type AppIssueTracker = {
   consoleErrors: string[];
   failedRequests: string[];
@@ -47,6 +49,35 @@ function assertNoImportantAppIssues(page: Page) {
   expect(tracker?.failedRequests ?? [], 'Unexpected 5xx app responses').toEqual([]);
 }
 
+type StoreCommercialContext = {
+  acv?: number;
+  termMonths?: number;
+  insuranceCover?: number;
+  dataType?: string;
+  liabilityCap?: number | null;
+};
+
+async function seedStore(page: Page, commercialContext: StoreCommercialContext) {
+  const storeData = {
+    documentId: 'playwright-test',
+    uploadStatus: 'complete',
+    documentMeta: { fileName: 'test-contract.pdf' },
+    extractedParties: {},
+    extractedTerms: {},
+    clauses: [],
+    risks: [],
+    obligations: [],
+    recommendations: [],
+    processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
+    errors: [],
+    commercialContext,
+    diagnostics: { missingFields: [], hydrationWarnings: [] },
+  };
+  await page.addInitScript((args: { key: string; value: string }) => {
+    window.localStorage.setItem(args.key, args.value);
+  }, { key: STORAGE_KEY, value: JSON.stringify(storeData) });
+}
+
 test.beforeEach(async ({ page }) => {
   attachIssueTracking(page);
 });
@@ -59,7 +90,7 @@ test('Test 1: Homepage loads and primary CTA works', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: 'Understand SaaS contract risk before legal review', level: 1 })).toBeVisible();
-  await expect(page.getByText('Pactora helps SaaS teams identify liability', { exact: false })).toBeVisible();
+  await expect(page.getByText('Pactora helps SaaS teams spot liability', { exact: false })).toBeVisible();
 
   await page.getByRole('link', { name: 'Start contract review' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
@@ -86,8 +117,8 @@ async function uploadContractAndConfirm(page: Page) {
 
   await page.setInputFiles('#contractUpload', dummyContractPath);
 
-  await expect(page.getByText('Selected file:')).toContainText('dummy-contract.pdf');
-  await expect(page.getByText('Detected from contract (editable)')).toBeVisible();
+  await expect(page.getByText('Current input:')).toContainText('dummy-contract.pdf');
+  await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 }
 
 test('Test 3: New Deal page loads and upload UI works', async ({ page }) => {
@@ -97,36 +128,37 @@ test('Test 3: New Deal page loads and upload UI works', async ({ page }) => {
 test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
   await uploadContractAndConfirm(page);
 
-  await expect(page.locator('#acv')).toHaveValue('25000');
-  await expect(page.locator('#termMonths')).toHaveValue('12');
-  await expect(page.locator('#insuranceCover')).toHaveValue('1000000');
-  await expect(page.locator('#dataType')).toHaveValue('standard');
+  await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
+  await expect(page.getByText('25000', { exact: true })).toBeVisible();
+  await expect(page.getByText('12 months', { exact: true })).toBeVisible();
+  await expect(page.getByText('1000000', { exact: true })).toBeVisible();
+  await expect(page.getByText('standard', { exact: true })).toBeVisible();
 });
 
-test('Test 5: Edited values carry through to LoL review', async ({ page }) => {
+test('Test 5: Commercial context carries through to LoL review', async ({ page }) => {
+  await seedStore(page, { acv: 12345, termMonths: 24 });
   await page.goto('/deals/new');
-  await page.setInputFiles('#contractUpload', dummyContractPath);
-  await expect(page.getByText('Detected from contract (editable)')).toBeVisible();
 
-  await page.locator('#acv').fill('12345');
-  await page.locator('#termMonths').fill('24');
+  await expect(page.getByText('12345', { exact: true })).toBeVisible();
+  await expect(page.getByText('24 months', { exact: true })).toBeVisible();
 
   await page
-    .getByLabel(/I confirm that I am authorised to upload this material/i)
+    .getByLabel(/I confirm that I am authorised to upload or paste this material/i)
     .check();
   await page
-    .getByLabel(/I confirm that, to the best of my knowledge/i)
+    .getByLabel(/I understand extracted values are parser outputs/i)
     .check();
 
-  await page.getByRole('button', { name: 'Continue to Liability Review' }).click();
+  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
 
-  await expect(page).toHaveURL(/\/review\/lol\?/);
+  await expect(page).toHaveURL(/\/review\/lol/);
   await expect(page.getByText('ACV: £12,345')).toBeVisible();
   await expect(page.getByText('Term: 24 months')).toBeVisible();
 });
 
 test('Test 6: LoL review page loads and clause parser runs', async ({ page }) => {
-  await page.goto('/review/lol?acv=50000&termMonths=12&insuranceCover=1000000&dataType=personal');
+  await seedStore(page, { acv: 50000, termMonths: 12, insuranceCover: 1000000, dataType: 'personal' });
+  await page.goto('/review/lol');
 
   const clause =
     'Supplier liability shall be limited to 2x fees paid in the preceding 12 months. The cap shall not apply to confidentiality and data protection breaches.';
@@ -163,7 +195,7 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Continue to Liability Review' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Complete input and acknowledgments' })).toBeVisible();
 
   await page.goto('/review/lol');
   await expect(page.locator('#lolClause')).toBeVisible();
@@ -171,27 +203,25 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
 });
 
 test('Test 9: End-to-end review workflow reaches deal summary', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('link', { name: 'Start contract review' }).click();
-  await expect(page).toHaveURL(/\/deals\/new$/);
+  await seedStore(page, { acv: 50000, termMonths: 24, insuranceCover: 2000000, dataType: 'personal' });
 
-  await page.setInputFiles('#contractUpload', dummyContractPath);
-  await expect(page.getByText('Detected from contract (editable)')).toBeVisible();
+  await page.goto('/deals/new');
+  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
 
-  await page.locator('#acv').fill('50000');
-  await page.locator('#termMonths').fill('24');
-  await page.locator('#insuranceCover').fill('2000000');
-  await page.locator('#dataType').selectOption('personal');
+  await expect(page.getByText('50000', { exact: true })).toBeVisible();
+  await expect(page.getByText('24 months', { exact: true })).toBeVisible();
+  await expect(page.getByText('2000000', { exact: true })).toBeVisible();
+  await expect(page.getByText('personal', { exact: true })).toBeVisible();
 
   await page
-    .getByLabel(/I confirm that I am authorised to upload this material/i)
+    .getByLabel(/I confirm that I am authorised to upload or paste this material/i)
     .check();
   await page
-    .getByLabel(/I confirm that, to the best of my knowledge/i)
+    .getByLabel(/I understand extracted values are parser outputs/i)
     .check();
-  await page.getByRole('button', { name: 'Continue to Liability Review' }).click();
+  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
 
-  await expect(page).toHaveURL(/\/review\/lol\?/);
+  await expect(page).toHaveURL(/\/review\/lol/);
   await expect(page.getByRole('heading', { name: 'Limitation of Liability Review' })).toBeVisible();
   await expect(page.getByText('ACV: £50,000')).toBeVisible();
   await expect(page.getByText('Term: 24 months')).toBeVisible();
@@ -208,7 +238,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('£100,000').first()).toBeVisible();
   await page.getByRole('link', { name: 'Continue to Indemnities' }).click();
 
-  await expect(page).toHaveURL(/\/review\/indemnities\?/);
+  await expect(page).toHaveURL(/\/review\/indemnities/);
   await expect(page.getByRole('heading', { name: 'Indemnities Review' })).toBeVisible();
   await expect(page.getByText('Liability cap: £100,000')).toBeVisible();
   await page
@@ -222,7 +252,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('Potentially outside cap').first()).toBeVisible();
   await page.getByRole('link', { name: 'Continue to IP Ownership' }).click();
 
-  await expect(page).toHaveURL(/\/review\/ip\?/);
+  await expect(page).toHaveURL(/\/review\/ip/);
   await expect(page.getByRole('heading', { name: 'IP Ownership Review' })).toBeVisible();
   await page
     .locator('#ipClause')
@@ -235,7 +265,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('Perpetual/Broad licence').first()).toBeVisible();
   await page.getByRole('link', { name: 'Continue to Data Protection' }).click();
 
-  await expect(page).toHaveURL(/\/review\/data\?/);
+  await expect(page).toHaveURL(/\/review\/data/);
   await expect(page.getByRole('heading', { name: 'Data Protection Review' })).toBeVisible();
   await page
     .locator('#dataClause')
@@ -249,7 +279,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('Outside cap').first()).toBeVisible();
   await page.getByRole('link', { name: 'Continue to Termination' }).click();
 
-  await expect(page).toHaveURL(/\/review\/termination\?/);
+  await expect(page).toHaveURL(/\/review\/termination/);
   await expect(page.getByRole('heading', { name: 'Termination Review' })).toBeVisible();
   await page
     .locator('#terminationClause')
@@ -262,7 +292,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('30 days').first()).toBeVisible();
   await page.getByRole('link', { name: 'Continue' }).click();
 
-  await expect(page).toHaveURL(/\/review\/summary\?/);
+  await expect(page).toHaveURL(/\/review\/summary/);
   await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
   await expect(page.getByText('ACV: £50,000')).toBeVisible();
   await expect(page.getByText('Term: 24 months')).toBeVisible();
@@ -278,13 +308,14 @@ test('Test 10: DOCX upload parses correctly and populates deal context fields', 
 
   await page.setInputFiles('#contractUpload', dummyDocxPath);
 
-  await expect(page.getByText('Selected file:')).toContainText('dummy-contract.docx');
-  await expect(page.getByText('Detected from contract (editable)')).toBeVisible();
+  await expect(page.getByText('Current input:')).toContainText('dummy-contract.docx');
+  await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 
-  await expect(page.locator('#acv')).toHaveValue('30000');
-  await expect(page.locator('#termMonths')).toHaveValue('24');
-  await expect(page.locator('#insuranceCover')).toHaveValue('2000000');
-  await expect(page.locator('#dataType')).toHaveValue('personal');
+  await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
+  await expect(page.getByText('30000', { exact: true })).toBeVisible();
+  await expect(page.getByText('24 months', { exact: true })).toBeVisible();
+  await expect(page.getByText('2000000', { exact: true })).toBeVisible();
+  await expect(page.getByText('personal', { exact: true })).toBeVisible();
 });
 
 test('Test 11: Termination review detects notice of termination period wording', async ({ page }) => {
