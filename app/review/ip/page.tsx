@@ -362,7 +362,7 @@ function IpOwnershipReviewContent() {
           </Link>
           <Link
             href={`/review/data${queryString ? `?${queryString}` : ''}`}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+            className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
           >
             Continue to Data Protection
           </Link>

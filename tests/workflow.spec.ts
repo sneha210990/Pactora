@@ -195,7 +195,7 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Complete input and acknowledgments' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue to Liability review' })).toBeVisible();
 
   await page.goto('/review/lol');
   await expect(page.locator('#lolClause')).toBeVisible();
@@ -834,7 +834,7 @@ test('Test 52: Continue button stays disabled until both checkboxes are ticked',
   await page.goto('/deals/new');
 
   // Initially disabled
-  await expect(page.getByRole('button', { name: 'Complete input and acknowledgments' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue to Liability review' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Continue to Liability review' })).not.toBeVisible();
 
   // Tick first checkbox only — still disabled

@@ -356,14 +356,30 @@ export default function NewDealPage() {
           </div>
         </section>
 
+        {!canContinue && (
+          <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">
+            <p className="font-medium text-zinc-100">Before you can continue:</p>
+            <ul className="mt-2 space-y-1">
+              <li className={analysis.uploadStatus === 'complete' ? 'text-emerald-400' : 'text-zinc-400'}>
+                {analysis.uploadStatus === 'complete' ? '✓' : '○'} Upload a contract or paste clause text
+              </li>
+              <li className={hasAcceptedLegalNotice ? 'text-emerald-400' : 'text-zinc-400'}>
+                {hasAcceptedLegalNotice ? '✓' : '○'} Confirm authorisation and accuracy notice
+              </li>
+              <li className={hasConfirmedDataCaution ? 'text-emerald-400' : 'text-zinc-400'}>
+                {hasConfirmedDataCaution ? '✓' : '○'} Confirm data caution
+              </li>
+            </ul>
+          </div>
+        )}
         <div className="flex justify-end">
           {canContinue ? (
-            <Link href="/review/lol" className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">
+            <Link href="/review/lol" className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
               Continue to Liability review
             </Link>
           ) : (
             <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
-              Complete input and acknowledgments
+              Continue to Liability review
             </button>
           )}
         </div>
