@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
@@ -128,20 +128,16 @@ function SummaryContent() {
   const analysis = useDocumentAnalysis();
 
   const [user, setUser] = useState<{ email: string } | null>(null);
-  const [captureEmail, setCaptureEmail] = useState('');
-  const [captureStatus, setCaptureStatus] = useState('');
-  const [captureSubmitting, setCaptureSubmitting] = useState(false);
-  const [captureSucceeded, setCaptureSucceeded] = useState(false);
+  const [emailContent, setEmailContent] = useState('');
+  const [emailGenerating, setEmailGenerating] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailCopied, setEmailCopied] = useState(false);
 
   useEffect(() => {
     trackEvent('analysis_completed', '/review/summary');
     fetch('/api/me')
       .then((response) => response.json())
-      .then((data: { user: { email: string } | null }) => {
-        setUser(data.user);
-        if (data.user?.email) setCaptureEmail(data.user.email);
-      });
-
+      .then((data: { user: { email: string } | null }) => setUser(data.user));
   }, []);
 
 
@@ -179,30 +175,36 @@ function SummaryContent() {
   const averageRisk = knownRisks.length > 0 ? knownRisks.reduce((sum, section) => sum + riskScore(section.risk), 0) / knownRisks.length : 0;
   const overallRisk: RiskLevel = knownRisks.some((section) => section.risk === 'High') || averageRisk >= 2.4 ? 'High' : averageRisk >= 1.7 ? 'Medium' : 'Low';
 
-  async function submitCapture(event: FormEvent) {
-    event.preventDefault();
-    setCaptureSubmitting(true);
-    setCaptureStatus('');
+  async function generateEmail() {
+    if (clauseFlags.length === 0) return;
+    setEmailGenerating(true);
+    setEmailError('');
+    setEmailCopied(false);
 
-    const response = await fetch('/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        category: 'missing_feature',
-        email: captureEmail,
-        message: 'Notify me when the consolidated negotiation email is available.',
-        page_context: '/review/summary',
-        can_contact: true,
-        request_call: false,
-      }),
-    });
-
-    setCaptureSubmitting(false);
-    if (response.ok) {
-      setCaptureSucceeded(true);
-    } else {
-      setCaptureStatus("Could not subscribe right now. Please try again later.");
+    try {
+      const response = await fetch('/api/contracts/negotiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flags: clauseFlags, commercialContext: analysis.commercialContext }),
+      });
+      const data = (await response.json()) as { email?: string; error?: string };
+      if (!response.ok || !data.email) {
+        setEmailError(data.error ?? 'Could not generate email. Please try again.');
+      } else {
+        setEmailContent(data.email);
+        trackEvent('negotiation_email_generated', '/review/summary');
+      }
+    } catch {
+      setEmailError('Network error. Please try again.');
+    } finally {
+      setEmailGenerating(false);
     }
+  }
+
+  async function copyEmail() {
+    await navigator.clipboard.writeText(emailContent);
+    setEmailCopied(true);
+    setTimeout(() => setEmailCopied(false), 2000);
   }
 
   return (
@@ -287,30 +289,36 @@ function SummaryContent() {
             </ul>
           </div>
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-blue-200">Next: consolidated negotiation email</h2>
-            <p className="mt-2 text-sm text-zinc-300">Get notified when Pactora can turn these priorities into a founder-ready negotiation email.</p>
-            {captureSucceeded ? (
-              <div className="mt-4 rounded-lg border border-emerald-700/40 bg-emerald-900/20 px-4 py-3">
-                <p className="text-sm font-medium text-emerald-300">You&apos;re on the list.</p>
-                <p className="mt-1 text-xs text-zinc-400">We&apos;ll email you when the consolidated negotiation email ships.</p>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-blue-200">Negotiation email</h2>
+            <p className="mt-2 text-sm text-zinc-300">Generate a ready-to-send negotiation email covering all flagged issues, prioritised by risk.</p>
+            {emailContent ? (
+              <div className="mt-4 flex flex-col gap-2">
+                <textarea
+                  readOnly
+                  value={emailContent}
+                  rows={10}
+                  className="w-full rounded-lg border border-zinc-700 bg-black/40 px-3 py-2 text-xs text-zinc-200 leading-relaxed"
+                />
+                <div className="flex gap-2">
+                  <button onClick={copyEmail} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800">
+                    {emailCopied ? 'Copied!' : 'Copy to clipboard'}
+                  </button>
+                  <button onClick={generateEmail} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800">
+                    Regenerate
+                  </button>
+                </div>
               </div>
             ) : (
-              <>
-                <form onSubmit={submitCapture} className="mt-4 flex flex-col gap-2">
-                  <input
-                    type="email"
-                    required
-                    value={captureEmail}
-                    onChange={(event) => setCaptureEmail(event.target.value)}
-                    placeholder="you@company.com"
-                    className="rounded-lg border border-zinc-800 bg-black/40 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500"
-                  />
-                  <button type="submit" disabled={captureSubmitting} className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300">
-                    {captureSubmitting ? 'Subscribing…' : 'Notify me'}
-                  </button>
-                </form>
-                {captureStatus ? <p className="mt-2 text-xs text-red-300">{captureStatus}</p> : null}
-              </>
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  onClick={generateEmail}
+                  disabled={emailGenerating || clauseFlags.length === 0}
+                  className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300"
+                >
+                  {emailGenerating ? 'Generating…' : clauseFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
+                </button>
+                {emailError ? <p className="text-xs text-red-300">{emailError}</p> : null}
+              </div>
             )}
           </div>
         </section>
