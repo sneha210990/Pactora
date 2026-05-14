@@ -265,6 +265,12 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
           termMonths: detected?.termMonths ?? state.commercialContext?.termMonths,
           insuranceCover: detected?.insuranceCover ?? state.commercialContext?.insuranceCover,
           dataType: detected?.dataType ?? state.commercialContext?.dataType,
+          // AI extraction (Haiku) populates liabilityCap automatically.
+          // If AI returns null, preserve any value the user manually entered.
+          liabilityCap:
+            detected?.liabilityCap != null
+              ? detected.liabilityCap
+              : state.commercialContext?.liabilityCap,
         },
         processingSteps: { ...state.processingSteps, upload: true, extraction: true },
         errors: state.errors ?? [],

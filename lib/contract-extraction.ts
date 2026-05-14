@@ -3,6 +3,9 @@ export type ExtractedContractValues = {
   termMonths: number | null;
   insuranceCover: number | null;
   dataType: 'standard' | 'personal' | 'sensitive';
+  // Fields populated by AI extraction (Haiku); absent when AI is unavailable.
+  liabilityCap?: number | null;
+  currency?: 'GBP' | 'USD' | 'EUR' | 'other';
 };
 
 type PdfParseResult = { text?: string };
