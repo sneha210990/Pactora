@@ -13,6 +13,55 @@ export type ClauseAgentResult =
   | { ok: true; flag: ClauseFlag | null }
   | { ok: false; error: string };
 
+const REPORT_FLAG_TOOL = {
+  name: 'report_clause_flag',
+  description:
+    'Report the single clause flag found for this clause type, or null if no relevant clause was identified.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      flag: {
+        description: 'The identified clause flag, or null if no relevant clause was found.',
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              clauseType: { type: 'string' },
+              riskLevel: { type: 'string', enum: ['High', 'Medium', 'Low'] },
+              clauseText: {
+                type: 'string',
+                description: 'Full verbatim text of all relevant clauses and sub-clauses',
+              },
+              problematicLanguage: {
+                type: 'string',
+                description: 'Verbatim quote of the single most problematic phrase, max 200 chars',
+              },
+              plainEnglish: {
+                type: 'string',
+                description: '1-2 sentence plain-English risk explanation for a non-lawyer buyer',
+              },
+              negotiationPoint: {
+                type: 'string',
+                description: '1-2 sentence specific, actionable ask',
+              },
+            },
+            required: [
+              'clauseType',
+              'riskLevel',
+              'clauseText',
+              'problematicLanguage',
+              'plainEnglish',
+              'negotiationPoint',
+            ],
+          },
+          { type: 'null' },
+        ],
+      },
+    },
+    required: ['flag'],
+  },
+};
+
 // Runs a single specialist clause agent against the contract text.
 // Called in parallel for all five clause types by the analyze-agents route.
 //
@@ -39,26 +88,23 @@ export async function runClauseAgent(
       model: MODEL,
       max_tokens: MAX_TOKENS,
       system: CLAUSE_SYSTEM_PROMPTS[clauseType],
+      tools: [REPORT_FLAG_TOOL],
+      tool_choice: { type: 'tool', name: 'report_clause_flag' },
       messages: [
         {
           role: 'user',
-          content: `Review the following SaaS contract for ${clauseType} risks and return JSON:\n\n${truncated}`,
+          content: `Review the following SaaS contract for ${clauseType} risks:\n\n${truncated}`,
         },
       ],
     });
 
-    const textBlock = response.content.find((b) => b.type === 'text');
-    if (!textBlock || textBlock.type !== 'text') {
-      return { ok: false, error: 'No text block in response' };
+    const toolUseBlock = response.content.find((b) => b.type === 'tool_use');
+    if (!toolUseBlock || toolUseBlock.type !== 'tool_use') {
+      return { ok: false, error: 'No tool_use block in response' };
     }
 
-    const raw = textBlock.text.trim();
-    const jsonText = raw.startsWith('```')
-      ? raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-      : raw;
-
-    const parsed = JSON.parse(jsonText) as { flag: ClauseFlag | null };
-    return { ok: true, flag: parsed.flag ?? null };
+    const input = toolUseBlock.input as { flag: ClauseFlag | null };
+    return { ok: true, flag: input.flag ?? null };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }

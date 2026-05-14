@@ -27,25 +27,58 @@ const SYSTEM_PROMPT = `You are a specialist SaaS contract lawyer reviewing agree
 7. Fee Increases – price escalation (look for: CPI increases, unilateral price change rights, indexation without cap)
 8. Governing Law – choice of law and jurisdiction (look for: foreign jurisdiction, arbitration only, no injunctive relief carve-out)
 
-Return ONLY a valid JSON object in this exact format (no markdown, no explanation, just JSON):
-{
-  "flags": [
-    {
-      "clauseType": "<one of the 8 category names above>",
-      "riskLevel": "<High | Medium | Low>",
-      "problematicLanguage": "<exact verbatim quote from the contract, max 200 chars>",
-      "plainEnglish": "<plain English explanation of why this is risky for the buyer, 1-2 sentences>",
-      "negotiationPoint": "<specific, actionable negotiation point for the buyer, 1-2 sentences>"
-    }
-  ]
-}
-
 Risk level guidance:
 - High: Significant financial or legal exposure, heavily one-sided, missing key buyer protections
 - Medium: Notable risk worth addressing in negotiation but not a deal-breaker
 - Low: Minor concern worth flagging but acceptable in many contexts
 
 Only include categories where you find actual problematic language. Quote verbatim. If no problematic clause exists for a category, omit it. Be specific and commercial.`;
+
+const REPORT_FLAGS_TOOL = {
+  name: 'report_clause_flags',
+  description:
+    'Report all risk clause flags identified in the contract. Pass an empty flags array if no risks are found.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      flags: {
+        type: 'array',
+        description: 'Identified risk clause flags. Empty array if none found.',
+        items: {
+          type: 'object',
+          properties: {
+            clauseType: {
+              type: 'string',
+              description:
+                'One of: Liability Cap, Indemnities, IP Ownership, Data Protection, Termination Rights, Auto-Renewal, Fee Increases, Governing Law',
+            },
+            riskLevel: { type: 'string', enum: ['High', 'Medium', 'Low'] },
+            problematicLanguage: {
+              type: 'string',
+              description: 'Exact verbatim quote from the contract, max 200 chars',
+            },
+            plainEnglish: {
+              type: 'string',
+              description: 'Why this is risky for the buyer, 1-2 sentences',
+            },
+            negotiationPoint: {
+              type: 'string',
+              description: 'Specific, actionable negotiation point for the buyer, 1-2 sentences',
+            },
+          },
+          required: [
+            'clauseType',
+            'riskLevel',
+            'problematicLanguage',
+            'plainEnglish',
+            'negotiationPoint',
+          ],
+        },
+      },
+    },
+    required: ['flags'],
+  },
+} satisfies Anthropic.Tool;
 
 export async function analyzeContractClauses(contractText: string): Promise<ClauseAnalysis> {
   const client = new Anthropic();
@@ -56,33 +89,25 @@ export async function analyzeContractClauses(contractText: string): Promise<Clau
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
+    tools: [REPORT_FLAGS_TOOL],
+    tool_choice: { type: 'tool', name: 'report_clause_flags' },
     messages: [
       {
         role: 'user',
-        content: `Analyze this SaaS contract for the 8 risk categories and return JSON:\n\n${truncatedText}`,
+        content: `Analyze this SaaS contract for the 8 risk categories:\n\n${truncatedText}`,
       },
     ],
   });
 
-  const textBlock = response.content.find((b) => b.type === 'text');
-  if (!textBlock || textBlock.type !== 'text') {
-    throw new Error('No text response from Claude');
+  const toolUseBlock = response.content.find((b) => b.type === 'tool_use');
+  if (!toolUseBlock || toolUseBlock.type !== 'tool_use') {
+    throw new Error('No tool_use block in Claude response');
   }
 
-  const raw = textBlock.text.trim();
-  const jsonText = raw.startsWith('```')
-    ? raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    : raw;
-
-  let parsed: { flags: ClauseFlag[] };
-  try {
-    parsed = JSON.parse(jsonText) as { flags: ClauseFlag[] };
-  } catch {
-    throw new Error('Claude returned an unparseable response');
-  }
+  const input = toolUseBlock.input as { flags: ClauseFlag[] };
 
   return {
-    flags: Array.isArray(parsed.flags) ? parsed.flags : [],
+    flags: Array.isArray(input.flags) ? input.flags : [],
     analyzedAt: new Date().toISOString(),
   };
 }

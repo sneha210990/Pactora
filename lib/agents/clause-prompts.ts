@@ -38,19 +38,7 @@ Analyse:
 - Carve-outs that erode buyer recovery (indirect/consequential loss exclusions, loss-of-profit waivers)
 - Whether the cap is mutual or asymmetric
 
-Return ONLY valid JSON — no markdown, no explanation:
-{
-  "flag": {
-    "clauseType": "Liability Cap",
-    "riskLevel": "High | Medium | Low",
-    "clauseText": "<full verbatim text of all relevant liability cap clauses and sub-clauses from the contract>",
-    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
-    "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
-    "negotiationPoint": "<1-2 sentence specific, actionable ask>"
-  } | null
-}
-
-Set "flag" to null if no liability cap language exists at all.`,
+Use the report_clause_flag tool to report your finding. Set flag to null if no liability cap language exists at all.`,
 
   Indemnities: `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify and assess indemnification clauses.
@@ -62,19 +50,7 @@ Analyse:
 - Open-ended exposure: indemnities that expose the buyer to unlimited vendor losses
 - Missing reciprocal protections: absent vendor IP indemnity, absent data-breach indemnity
 
-Return ONLY valid JSON — no markdown, no explanation:
-{
-  "flag": {
-    "clauseType": "Indemnities",
-    "riskLevel": "High | Medium | Low",
-    "clauseText": "<full verbatim text of all relevant indemnity clauses and sub-clauses from the contract>",
-    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
-    "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
-    "negotiationPoint": "<1-2 sentence specific, actionable ask>"
-  } | null
-}
-
-Set "flag" to null if no indemnity language exists at all.`,
+Use the report_clause_flag tool to report your finding. Set flag to null if no indemnity language exists at all.`,
 
   // PACTORA-CUSTOM: No direct equivalent in claude-for-legal.
   // claude-for-legal's ip_assignment covers standard IP assignment / work-for-hire
@@ -97,19 +73,7 @@ Also look for:
 - Feedback licences with no carve-out for customer confidential information
 - Missing explicit confirmation that the customer retains ownership of its data
 
-Return ONLY valid JSON — no markdown, no explanation:
-{
-  "flag": {
-    "clauseType": "IP Ownership",
-    "riskLevel": "High | Medium | Low",
-    "clauseText": "<full verbatim text of all relevant IP ownership, licence, and data rights clauses from the contract>",
-    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
-    "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
-    "negotiationPoint": "<1-2 sentence specific, actionable ask>"
-  } | null
-}
-
-Set "flag" to null if no IP ownership language exists at all.`,
+Use the report_clause_flag tool to report your finding. Set flag to null if no IP ownership language exists at all.`,
 
   'Data Protection': `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify data protection and privacy compliance risks.
@@ -123,19 +87,7 @@ Analyse:
 - Ambiguous data role: unclear whether vendor is Processor, Controller, or Joint Controller
 - Data retention and deletion: missing timelines for post-termination deletion or return
 
-Return ONLY valid JSON — no markdown, no explanation:
-{
-  "flag": {
-    "clauseType": "Data Protection",
-    "riskLevel": "High | Medium | Low",
-    "clauseText": "<full verbatim text of all relevant data protection, GDPR, and security clauses from the contract>",
-    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
-    "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
-    "negotiationPoint": "<1-2 sentence specific, actionable ask>"
-  } | null
-}
-
-Set "flag" to null if no data protection language exists at all.`,
+Use the report_clause_flag tool to report your finding. Set flag to null if no data protection language exists at all.`,
 
   'Termination Rights': `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify termination rights risks.
@@ -149,17 +101,5 @@ Analyse:
 - Post-termination obligations: data return or deletion timelines, wind-down transition assistance
 - Termination for cause definition: overly broad definitions that give vendor excessive discretion
 
-Return ONLY valid JSON — no markdown, no explanation:
-{
-  "flag": {
-    "clauseType": "Termination Rights",
-    "riskLevel": "High | Medium | Low",
-    "clauseText": "<full verbatim text of all relevant termination clauses and sub-clauses from the contract>",
-    "problematicLanguage": "<verbatim quote of the single most problematic phrase, max 200 chars>",
-    "plainEnglish": "<1-2 sentence plain-English risk explanation for a non-lawyer buyer>",
-    "negotiationPoint": "<1-2 sentence specific, actionable ask>"
-  } | null
-}
-
-Set "flag" to null if no termination language exists at all.`,
+Use the report_clause_flag tool to report your finding. Set flag to null if no termination language exists at all.`,
 };
