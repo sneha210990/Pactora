@@ -6,9 +6,31 @@ import { CLAUSE_AGENT_TOOLS } from './tools';
 
 const MODEL = 'claude-sonnet-4-6';
 
-// 2048 covers the tool call overhead plus a full verbatim clause section.
-// Increase to 4096 if very long contracts regularly produce truncated clauseText.
-const MAX_TOKENS = 2048;
+// Extended thinking is enabled selectively for the two legally complex clause types:
+//
+//   IP Ownership — requires multi-step reasoning across data-rights grants, feedback
+//     licences, derived-work ownership, anonymisation carve-outs, and perpetual/
+//     irrevocable licence interactions. A shallow read misses layered claims.
+//
+//   Indemnities — requires tracing whether indemnity obligations bypass the liability
+//     cap ("notwithstanding the limitation of liability"), assessing directionality
+//     across complex multi-party drafting, and evaluating trigger scope across
+//     cross-referenced clause groups. Errors here carry the highest financial risk.
+//
+// The remaining six clause types (Liability Cap, Data Protection, Termination Rights,
+// Auto-Renewal, Fee Increases, Governing Law) involve pattern recognition more than
+// multi-step legal chains — standard inference is sufficient and cheaper.
+const EXTENDED_THINKING_CLAUSE_TYPES = new Set<PactoraClauseType>([
+  'IP Ownership',
+  'Indemnities',
+]);
+
+const THINKING_BUDGET_TOKENS = 8_000;
+// Must be strictly greater than THINKING_BUDGET_TOKENS to leave headroom for the
+// tool call response (full verbatim clauseText + other fields).
+const MAX_TOKENS_THINKING = 12_000;
+// Standard agents: covers tool call overhead plus a full verbatim clause section.
+const MAX_TOKENS_STANDARD = 2_048;
 
 export type ClauseAgentResult =
   | { ok: true; flag: ClauseFlag | null }
@@ -37,10 +59,13 @@ export async function runClauseAgent(
   // Mirror the same 120 k truncation used by analyzeContractClauses().
   const truncated = contractText.slice(0, 120_000);
 
+  const withThinking = EXTENDED_THINKING_CLAUSE_TYPES.has(clauseType);
+
   try {
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: MAX_TOKENS,
+      max_tokens: withThinking ? MAX_TOKENS_THINKING : MAX_TOKENS_STANDARD,
+      ...(withThinking ? { thinking: { type: 'enabled' as const, budget_tokens: THINKING_BUDGET_TOKENS } } : {}),
       tools: CLAUSE_AGENT_TOOLS,
       // 'any' = Claude MUST call one of the two tools. No text-only responses.
       // This is the key guarantee: every agent call returns a typed tool_use block.
@@ -67,7 +92,7 @@ export async function runClauseAgent(
     });
 
     // With tool_choice: 'any', response.content always contains a tool_use block.
-    // There may also be a preceding text block (Claude reasoning) — we skip it.
+    // There may also be a preceding thinking block or text block — we skip both.
     const toolCall = response.content.find((b) => b.type === 'tool_use');
     if (!toolCall || toolCall.type !== 'tool_use') {
       return { ok: false, error: 'Claude did not call a tool (unexpected stop_reason)' };
