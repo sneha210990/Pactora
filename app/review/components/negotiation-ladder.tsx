@@ -17,9 +17,9 @@ export function NegotiationLadder({ title = 'Negotiation ladder', items, classNa
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
         {items.map((item) => (
           <div key={`${item.label}-${item.title}`} className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-            <div className="text-xs text-zinc-400">{item.label}</div>
-            <div className="mt-1 font-medium">{item.title}</div>
-            <div className="mt-2 text-zinc-300">{item.script}</div>
+            <span className="inline-block rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">{item.label}</span>
+            <div className="mt-2 font-medium">{item.title}</div>
+            <div className="mt-2 text-sm text-zinc-300">{item.script}</div>
           </div>
         ))}
       </div>

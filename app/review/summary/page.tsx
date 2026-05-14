@@ -131,6 +131,7 @@ function SummaryContent() {
   const [captureEmail, setCaptureEmail] = useState('');
   const [captureStatus, setCaptureStatus] = useState('');
   const [captureSubmitting, setCaptureSubmitting] = useState(false);
+  const [captureSucceeded, setCaptureSucceeded] = useState(false);
 
   useEffect(() => {
     trackEvent('analysis_completed', '/review/summary');
@@ -197,7 +198,11 @@ function SummaryContent() {
     });
 
     setCaptureSubmitting(false);
-    setCaptureStatus(response.ok ? 'You’re on the list — we’ll email you when it ships.' : 'Could not subscribe right now. Please try again later.');
+    if (response.ok) {
+      setCaptureSucceeded(true);
+    } else {
+      setCaptureStatus("Could not subscribe right now. Please try again later.");
+    }
   }
 
   return (
@@ -284,20 +289,29 @@ function SummaryContent() {
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-blue-200">Next: consolidated negotiation email</h2>
             <p className="mt-2 text-sm text-zinc-300">Get notified when Pactora can turn these priorities into a founder-ready negotiation email.</p>
-            <form onSubmit={submitCapture} className="mt-4 flex flex-col gap-2">
-              <input
-                type="email"
-                required
-                value={captureEmail}
-                onChange={(event) => setCaptureEmail(event.target.value)}
-                placeholder="you@company.com"
-                className="rounded-lg border border-zinc-800 bg-black/40 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500"
-              />
-              <button type="submit" disabled={captureSubmitting} className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300">
-                {captureSubmitting ? 'Subscribing…' : 'Notify me'}
-              </button>
-            </form>
-            {captureStatus ? <p className="mt-2 text-xs text-zinc-300">{captureStatus}</p> : null}
+            {captureSucceeded ? (
+              <div className="mt-4 rounded-lg border border-emerald-700/40 bg-emerald-900/20 px-4 py-3">
+                <p className="text-sm font-medium text-emerald-300">You&apos;re on the list.</p>
+                <p className="mt-1 text-xs text-zinc-400">We&apos;ll email you when the consolidated negotiation email ships.</p>
+              </div>
+            ) : (
+              <>
+                <form onSubmit={submitCapture} className="mt-4 flex flex-col gap-2">
+                  <input
+                    type="email"
+                    required
+                    value={captureEmail}
+                    onChange={(event) => setCaptureEmail(event.target.value)}
+                    placeholder="you@company.com"
+                    className="rounded-lg border border-zinc-800 bg-black/40 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500"
+                  />
+                  <button type="submit" disabled={captureSubmitting} className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300">
+                    {captureSubmitting ? 'Subscribing…' : 'Notify me'}
+                  </button>
+                </form>
+                {captureStatus ? <p className="mt-2 text-xs text-red-300">{captureStatus}</p> : null}
+              </>
+            )}
           </div>
         </section>
 
