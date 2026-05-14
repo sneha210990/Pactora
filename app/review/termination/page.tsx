@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ReviewProgress } from '../components/review-progress';
 import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type TerminationRight = 'Mutual' | 'One-sided' | 'Unknown';
@@ -330,6 +331,8 @@ function TerminationReviewContent() {
             New review
           </Link>
         </div>
+
+        <ReviewProgress current="termination" />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Termination Review</h1>

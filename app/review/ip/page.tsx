@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ReviewProgress } from '../components/review-progress';
 import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type OwnershipStructure = 'Vendor owns' | 'Customer owns' | 'Shared/retained ownership' | 'Unknown';
@@ -202,6 +203,8 @@ function IpOwnershipReviewContent() {
             New review
           </Link>
         </div>
+
+        <ReviewProgress current="ip" />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">IP Ownership Review</h1>
