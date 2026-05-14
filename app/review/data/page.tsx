@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ReviewProgress } from '../components/review-progress';
 import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type DataRole = 'Controller' | 'Processor' | 'Joint' | 'Unknown';
@@ -251,6 +252,8 @@ function DataProtectionReviewContent() {
             New review
           </Link>
         </div>
+
+        <ReviewProgress current="data" />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Data Protection Review</h1>

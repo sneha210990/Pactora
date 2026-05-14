@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ReviewProgress } from '../components/review-progress';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type CapType =
@@ -287,6 +288,17 @@ function badgeClass(badge: DerivedResult['badge']) {
 
 
 
+const CARVEOUT_LABELS: Record<CarveoutLabel, string> = {
+  confidentiality: 'Confidentiality',
+  data_protection: 'Data protection',
+  ip: 'IP infringement',
+  fraud: 'Fraud',
+  wilful_misconduct: 'Wilful misconduct',
+  gross_negligence: 'Gross negligence',
+  injury_death: 'Personal injury / death',
+  payment_obligations: 'Payment obligations',
+};
+
 function labelForCapType(capType: CapType) {
   const labels: Record<CapType, string> = {
     fixed_amount: 'Fixed amount',
@@ -358,6 +370,8 @@ function LolReviewContent() {
           </Link>
         </div>
 
+        <ReviewProgress current="lol" />
+
         <div className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Limitation of Liability Review</h1>
           <p className="mt-2 text-zinc-400">
@@ -403,7 +417,7 @@ function LolReviewContent() {
             <button
               type="button"
               onClick={runReview}
-              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
             >
               Run review
             </button>
@@ -474,7 +488,7 @@ function LolReviewContent() {
                   {parsedResult.carveoutsFound.map((x) => (
                     <li key={x} className="flex gap-3 rounded-lg border border-zinc-800 bg-black/30 p-3">
                       <span className="mt-0.5 text-amber-300">⚠</span>
-                      <span>{x}</span>
+                      <span>{CARVEOUT_LABELS[x] ?? x}</span>
                     </li>
                   ))}
                 </ul>

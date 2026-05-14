@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ReviewProgress } from '../components/review-progress';
 import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
@@ -210,6 +211,8 @@ function IndemnitiesReviewContent() {
             New review
           </Link>
         </div>
+
+        <ReviewProgress current="indemnities" />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Indemnities Review</h1>

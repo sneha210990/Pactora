@@ -171,8 +171,8 @@ test('Test 6: LoL review page loads and clause parser runs', async ({ page }) =>
   await expect(page.getByText('Estimated cap')).toBeVisible();
   await expect(page.getByText('£100,000').first()).toBeVisible();
   await expect(page.getByText('Carve-outs to watch')).toBeVisible();
-  await expect(page.getByText('confidentiality').first()).toBeVisible();
-  await expect(page.getByText('data_protection').first()).toBeVisible();
+  await expect(page.getByText('Confidentiality').first()).toBeVisible();
+  await expect(page.getByText('Data protection').first()).toBeVisible();
   await expect(page.getByText('Overall commercial reasonableness')).toBeVisible();
   await expect(page.getByText('High risk')).toBeVisible();
   await expect(page.getByText('Negotiation fallback ladder')).toBeVisible();

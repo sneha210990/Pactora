@@ -6,6 +6,7 @@ import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import { useDocumentAnalysis } from '@/lib/document-analysis-store';
+import { ReviewProgress } from '../components/review-progress';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -210,6 +211,8 @@ function SummaryContent() {
             New review
           </Link>
         </div>
+
+        <ReviewProgress current="summary" />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Deal Summary</h1>
