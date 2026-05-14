@@ -5,6 +5,8 @@ import { BetaEventType, createEvent } from '@/lib/beta-store';
 const allowedEventTypes = new Set<BetaEventType>([
   'contract_upload_started',
   'contract_uploaded',
+  'manual_clause_entry_started',
+  'manual_clause_entry_submitted',
   'analysis_started',
   'analysis_completed',
 ]);
