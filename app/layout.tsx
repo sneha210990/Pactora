@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import './globals.css';
-import { BetaNav } from '@/components/beta-nav';
+import { MainNav } from '@/components/main-nav';
 import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 
 export const metadata: Metadata = {
@@ -25,28 +25,7 @@ export default function RootLayout({
                 Pactora
               </Link>
 
-              <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-                <Link
-                  href="/how-it-works"
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
-                >
-                  How it works
-                </Link>
-                <Link
-                  href="/faq"
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
-                >
-                  FAQ
-                </Link>
-                <Link
-                  href="/feedback"
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
-                >
-                  Feedback
-                </Link>
-
-                <BetaNav />
-              </nav>
+              <MainNav />
             </div>
           </header>
 
@@ -61,6 +40,9 @@ export default function RootLayout({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-4 md:justify-end">
+                <Link href="/changelog" className="hover:text-white">
+                  Changelog
+                </Link>
                 <Link href="/faq" className="hover:text-white">
                   FAQ
                 </Link>

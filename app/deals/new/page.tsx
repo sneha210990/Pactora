@@ -131,7 +131,6 @@ export default function NewDealPage() {
   };
 
   const processExtractionPayload = (payload: ExtractionResponse, successEventName: string) => {
-    console.info('[PACTORA] Parser payload shape', { endpoint: '/api/contracts/extract', keys: Object.keys(payload) });
     actions.hydrateExtraction(payload);
     trackEvent(successEventName, '/deals/new');
 
@@ -224,12 +223,12 @@ export default function NewDealPage() {
   }, [analysis.diagnostics?.missingFields, analysis.errors, analysis.uploadStatus]);
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black px-6 py-16 text-white">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8 space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight">New Deal Intake</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Review a contract</h1>
           <p className="max-w-2xl text-sm text-zinc-400">
-            Upload your draft contract or paste key clauses manually, confirm the extracted commercial context, then continue to Liability review.
+            Upload a contract or paste clauses manually. Pactora will extract the commercial context and flag the clauses that need attention.
           </p>
         </header>
 
