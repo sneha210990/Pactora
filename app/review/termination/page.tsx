@@ -485,8 +485,8 @@ function TerminationReviewContent() {
           <Link href={`/review/data${queryString ? `?${queryString}` : ''}`} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900">
             Back
           </Link>
-          <Link href={`/review/summary${queryString ? `?${queryString}` : ''}`} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">
-            Continue
+          <Link href={`/review/summary${queryString ? `?${queryString}` : ''}`} className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
+            Continue to Summary
           </Link>
         </div>
       </div>
