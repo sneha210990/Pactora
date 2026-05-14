@@ -38,11 +38,23 @@ export async function runClauseAgent(
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
-      system: CLAUSE_SYSTEM_PROMPTS[clauseType],
+      system: [
+        {
+          type: 'text',
+          text: CLAUSE_SYSTEM_PROMPTS[clauseType],
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       messages: [
         {
           role: 'user',
-          content: `Review the following SaaS contract for ${clauseType} risks and return JSON:\n\n${truncated}`,
+          content: [
+            {
+              type: 'text',
+              text: `Review the following SaaS contract for ${clauseType} risks and return JSON:\n\n${truncated}`,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
         },
       ],
     });
