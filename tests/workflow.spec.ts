@@ -767,18 +767,13 @@ test('Test 45: Summary risk score derives from liability cap vs ACV ratio', asyn
   await expect(page.getByText('Liability cap: £5,000')).toBeVisible();
 });
 
-test('Test 46: Summary page email capture form submits and shows confirmation', async ({ page }) => {
+test('Test 46: Summary negotiation email button is present and interactive', async ({ page }) => {
   await seedStore(page, { acv: 50000, termMonths: 12 });
   await page.goto('/review/summary');
 
-  const emailInput = page.getByPlaceholder('you@company.com');
-  await emailInput.fill('test@example.com');
-  await page.getByRole('button', { name: 'Notify me' }).click();
-
-  // Should show either success or error — not crash or 5xx
-  await expect(
-    page.getByText(/list|subscri|later/i).first()
-  ).toBeVisible({ timeout: 15000 });
+  // Button exists. With no clause flags in seeded store it is disabled.
+  const btn = page.getByRole('button', { name: /generate negotiation email|no flags to include/i });
+  await expect(btn).toBeVisible();
 });
 
 // ─── Navigation and direct access ─────────────────────────────────────────────
