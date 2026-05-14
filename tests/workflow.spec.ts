@@ -195,7 +195,7 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Continue to Liability review' })).toBeVisible();
+  await expect(page.locator('#manualClauses')).toBeVisible();
 
   await page.goto('/review/lol');
   await expect(page.locator('#lolClause')).toBeVisible();
