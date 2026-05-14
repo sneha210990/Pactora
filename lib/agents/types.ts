@@ -1,13 +1,16 @@
 import type { ClauseFlag } from '@/lib/clause-analysis';
 
-// The five clause types that have dedicated review pages in Pactora.
-// These become individual specialist agents in the managed-agents architecture.
+// All clause types covered by specialist agents.
+// The first five have dedicated review pages; the last three surface in AI Clause Analysis.
 export const PACTORA_CLAUSE_AGENTS = [
   'Liability Cap',
   'Indemnities',
   'IP Ownership',
   'Data Protection',
   'Termination Rights',
+  'Auto-Renewal',
+  'Fee Increases',
+  'Governing Law',
 ] as const;
 
 export type PactoraClauseType = (typeof PACTORA_CLAUSE_AGENTS)[number];
