@@ -2,7 +2,7 @@ export type ExtractedContractValues = {
   acv: number | null;
   termMonths: number | null;
   insuranceCover: number | null;
-  dataType: 'standard' | 'personal' | 'sensitive';
+  dataType: 'standard' | 'personal' | 'sensitive' | null;
 };
 
 type PdfParseResult = { text?: string };
@@ -146,7 +146,7 @@ export function detectContractValues(text: string): ExtractedContractValues {
   }
 
   const normalizedText = text.toLowerCase();
-  let dataType: ExtractedContractValues['dataType'] = 'standard';
+  let dataType: ExtractedContractValues['dataType'] = null;
 
   if (
     normalizedText.includes('special category data') ||
@@ -155,6 +155,8 @@ export function detectContractValues(text: string): ExtractedContractValues {
     dataType = 'sensitive';
   } else if (normalizedText.includes('personal data')) {
     dataType = 'personal';
+  } else if (normalizedText.includes('standard data') || normalizedText.includes('non-personal')) {
+    dataType = 'standard';
   }
 
   return {

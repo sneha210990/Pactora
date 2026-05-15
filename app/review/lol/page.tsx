@@ -48,13 +48,14 @@ const CLAUSE_STORAGE_KEY = 'pactora.lolClause';
 const DEMO_LOL_CLAUSE =
   "Supplier's total aggregate liability under this Agreement shall not exceed the fees paid by Customer in the 12 months preceding the event giving rise to the claim. The foregoing cap shall not apply to fraud or wilful misconduct.";
 
-function num(value: string | null, fallback = 0) {
+function parseNum(value: string | null): number | null {
+  if (value === null || value === '') return null;
   const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function str(value: string | null, fallback = '') {
-  return value && value.length > 0 ? value : fallback;
+function parseStr(value: string | null): string | null {
+  return value && value.length > 0 ? value : null;
 }
 
 function money(n: number) {
@@ -240,7 +241,9 @@ function parseClause(clause: string): ParsedClauseResult {
   return result;
 }
 
-function deriveFromDeal(parsed: ParsedClauseResult, acv: number, termMonths: number): DerivedResult {
+function deriveFromDeal(parsed: ParsedClauseResult, acvArg: number | null, termMonthsArg: number | null): DerivedResult {
+  const acv = acvArg ?? 0;
+  const termMonths = termMonthsArg ?? 0;
   let impliedCapAmountGBP: number | null = null;
 
   switch (parsed.capType) {
@@ -321,11 +324,11 @@ function LolReviewContent() {
     trackEvent('analysis_started', '/review/lol');
   }, []);
 
-  const acv = num(searchParams.get('acv'), 25000);
-  const termMonths = num(searchParams.get('termMonths'), 12);
-  const insuranceCover = num(searchParams.get('insuranceCover'), 1000000);
-  const dataType = str(searchParams.get('dataType'), 'standard');
-  const queryClause = str(searchParams.get('lolClause'));
+  const acv = parseNum(searchParams.get('acv'));
+  const termMonths = parseNum(searchParams.get('termMonths'));
+  const insuranceCover = parseNum(searchParams.get('insuranceCover'));
+  const dataType = parseStr(searchParams.get('dataType'));
+  const queryClause = parseStr(searchParams.get('lolClause'));
 
   const [clause, setClause] = useState(DEMO_LOL_CLAUSE);
   const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(DEMO_LOL_CLAUSE));
@@ -348,10 +351,10 @@ function LolReviewContent() {
 
   const reviewQuery = useMemo(() => {
     const params = new URLSearchParams();
-    params.set('acv', String(acv));
-    params.set('termMonths', String(termMonths));
-    params.set('insuranceCover', String(insuranceCover));
-    params.set('dataType', dataType);
+    if (acv !== null) params.set('acv', String(acv));
+    if (termMonths !== null) params.set('termMonths', String(termMonths));
+    if (insuranceCover !== null) params.set('insuranceCover', String(insuranceCover));
+    if (dataType !== null) params.set('dataType', dataType);
 
     const explicitLolCap = searchParams.get('lolCap');
     if (explicitLolCap) {
@@ -408,14 +411,18 @@ function LolReviewContent() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acv)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Term: {termMonths} months
+              ACV: {acv !== null ? money(acv) : 'Not detected'}
             </span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Insurance: {money(insuranceCover)}
+              Term: {termMonths !== null ? `${termMonths} months` : 'Not detected'}
             </span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
+              Insurance: {insuranceCover !== null ? money(insuranceCover) : 'Not detected'}
+            </span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
+              Data: {dataType ?? 'Not detected'}
+            </span>
           </div>
         </div>
 
@@ -528,24 +535,30 @@ function LolReviewContent() {
                 {
                   label: 'Ask',
                   title: 'Cap at 1× ACV',
-                  script: `“We can do a cap of ${money(acv)}.”`,
+                  script: acv !== null
+                    ? `”We can do a cap of ${money(acv)}.”`
+                    : '”Propose a cap equal to 1× annual contract value.”',
                 },
                 {
                   label: 'Fallback',
                   title: 'Cap at 1.5× ACV',
-                  script: `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
+                  script: acv !== null
+                    ? `”If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`
+                    : '”If needed, we can stretch to 1.5× annual contract value.”',
                 },
                 hasNarrowingItem
                   ? {
                       label: 'Narrowing',
                       title: 'Cap applies to carve-outs except fraud/wilful misconduct',
                       script:
-                        '“We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
+                        '”We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
                     }
                   : {
                       label: 'Fallback',
                       title: 'Cap at 2× ACV',
-                      script: `“Final position is ${money(acv * 2)}.”`,
+                      script: acv !== null
+                        ? `”Final position is ${money(acv * 2)}.”`
+                        : '”Final position is 2× annual contract value.”',
                     },
               ]}
             />

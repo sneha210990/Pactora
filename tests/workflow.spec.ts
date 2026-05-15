@@ -97,10 +97,12 @@ test('Test 3: New Deal page loads and upload UI works', async ({ page }) => {
 test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
   await uploadContractAndConfirm(page);
 
+  // The dummy PDF contains ACV £25,000, 12-month term, £1,000,000 insurance.
+  // dataType is null (no personal/sensitive data language detected).
   await expect(page.locator('#acv')).toHaveValue('25000');
   await expect(page.locator('#termMonths')).toHaveValue('12');
   await expect(page.locator('#insuranceCover')).toHaveValue('1000000');
-  await expect(page.locator('#dataType')).toHaveValue('standard');
+  await expect(page.locator('#dataType')).toHaveValue('');
 });
 
 test('Test 5: Edited values carry through to LoL review', async ({ page }) => {
@@ -405,4 +407,44 @@ test('Test 13: Analyze API returns valid clause flag structure', async ({ reques
   // Contract above should trigger at least Liability Cap and Auto-Renewal
   const clauseTypes = body.analysis.flags.map((f) => f.clauseType);
   expect(clauseTypes.some((t) => t.toLowerCase().includes('liability') || t.toLowerCase().includes('cap'))).toBe(true);
+});
+
+test('Test 14: Stale state — uploading a second contract clears values from the first', async ({ page }) => {
+  await page.goto('/deals/new');
+
+  // Upload first contract — extracts real values
+  await page.setInputFiles('#contractUpload', dummyContractPath);
+  await expect(page.locator('#acv')).toHaveValue('25000');
+  await expect(page.locator('#termMonths')).toHaveValue('12');
+
+  // Intercept the extract API to simulate a second contract with no detected values
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        detectedValues: { acv: null, termMonths: null, insuranceCover: null, dataType: null },
+        contractText: 'This agreement contains no detectable commercial terms.',
+      }),
+    });
+  });
+
+  // Upload second contract (intercepted — returns null values)
+  await page.setInputFiles('#contractUpload', dummyDocxPath);
+
+  // Old values from the first contract must NOT persist
+  await expect(page.locator('#acv')).toHaveValue('');
+  await expect(page.locator('#termMonths')).toHaveValue('');
+  await expect(page.locator('#insuranceCover')).toHaveValue('');
+  await expect(page.locator('#dataType')).toHaveValue('');
+});
+
+test('Test 15: LOL review page shows "Not detected" when commercial values are absent', async ({ page }) => {
+  // Navigate with no commercial context params at all
+  await page.goto('/review/lol');
+
+  await expect(page.getByText('ACV: Not detected')).toBeVisible();
+  await expect(page.getByText('Term: Not detected')).toBeVisible();
+  await expect(page.getByText('Insurance: Not detected')).toBeVisible();
+  await expect(page.getByText('Data: Not detected')).toBeVisible();
 });

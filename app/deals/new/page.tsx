@@ -2,29 +2,27 @@
 
 import Link from 'next/link';
 import { ChangeEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { trackEvent } from '@/components/track-event';
-
-const DEFAULT_ACV = 25000;
-const DEFAULT_TERM_MONTHS = 12;
-const DEFAULT_INSURANCE_COVER = 1000000;
 
 type DetectedContractValues = {
   acv: number | null;
   termMonths: number | null;
   insuranceCover: number | null;
-  dataType: 'standard' | 'personal' | 'sensitive';
+  dataType: 'standard' | 'personal' | 'sensitive' | null;
 };
 
 export default function NewDealPage() {
+  const router = useRouter();
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [hasDetectedValues, setHasDetectedValues] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
-  const [acv, setAcv] = useState<number>(DEFAULT_ACV);
-  const [termMonths, setTermMonths] = useState<number>(DEFAULT_TERM_MONTHS);
-  const [insuranceCover, setInsuranceCover] = useState<number>(DEFAULT_INSURANCE_COVER);
-  const [dataType, setDataType] = useState<DetectedContractValues['dataType']>('standard');
+  const [acv, setAcv] = useState<number | null>(null);
+  const [termMonths, setTermMonths] = useState<number | null>(null);
+  const [insuranceCover, setInsuranceCover] = useState<number | null>(null);
+  const [dataType, setDataType] = useState<DetectedContractValues['dataType']>(null);
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'ready' | 'failed'>('idle');
 
   const runClauseAnalysis = async (text: string) => {
@@ -49,10 +47,20 @@ export default function NewDealPage() {
   };
 
   const applyDetectedValues = (detectedValues: DetectedContractValues) => {
-    setAcv(detectedValues.acv ?? DEFAULT_ACV);
-    setTermMonths(detectedValues.termMonths ?? DEFAULT_TERM_MONTHS);
-    setInsuranceCover(detectedValues.insuranceCover ?? DEFAULT_INSURANCE_COVER);
+    setAcv(detectedValues.acv);
+    setTermMonths(detectedValues.termMonths);
+    setInsuranceCover(detectedValues.insuranceCover);
     setDataType(detectedValues.dataType);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (acv !== null && acv > 0) params.set('acv', String(acv));
+    if (termMonths !== null && termMonths > 0) params.set('termMonths', String(termMonths));
+    if (insuranceCover !== null && insuranceCover > 0) params.set('insuranceCover', String(insuranceCover));
+    if (dataType !== null) params.set('dataType', dataType);
+    router.push(`/review/lol?${params.toString()}`);
   };
 
   const handleContractUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -151,7 +159,7 @@ export default function NewDealPage() {
           </div>
         </section>
 
-        <form action="/review/lol" method="GET">
+        <form onSubmit={handleFormSubmit}>
           <section className="border rounded-lg p-4 mb-6 border-zinc-800 bg-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -176,11 +184,11 @@ export default function NewDealPage() {
                 </label>
                 <input
                   id="acv"
-                  name="acv"
                   type="number"
-                  value={acv}
-                  onChange={(event) => setAcv(Number(event.target.value))}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
+                  value={acv ?? ''}
+                  placeholder="Not detected — enter manually if known"
+                  onChange={(event) => setAcv(event.target.value === '' ? null : Number(event.target.value))}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600 placeholder:text-zinc-600"
                 />
               </div>
 
@@ -190,11 +198,11 @@ export default function NewDealPage() {
                 </label>
                 <input
                   id="termMonths"
-                  name="termMonths"
                   type="number"
-                  value={termMonths}
-                  onChange={(event) => setTermMonths(Number(event.target.value))}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
+                  value={termMonths ?? ''}
+                  placeholder="Not detected — enter manually if known"
+                  onChange={(event) => setTermMonths(event.target.value === '' ? null : Number(event.target.value))}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600 placeholder:text-zinc-600"
                 />
               </div>
 
@@ -204,11 +212,11 @@ export default function NewDealPage() {
                 </label>
                 <input
                   id="insuranceCover"
-                  name="insuranceCover"
                   type="number"
-                  value={insuranceCover}
-                  onChange={(event) => setInsuranceCover(Number(event.target.value))}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
+                  value={insuranceCover ?? ''}
+                  placeholder="Not detected — enter manually if known"
+                  onChange={(event) => setInsuranceCover(event.target.value === '' ? null : Number(event.target.value))}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600 placeholder:text-zinc-600"
                 />
               </div>
 
@@ -218,11 +226,14 @@ export default function NewDealPage() {
                 </label>
                 <select
                   id="dataType"
-                  name="dataType"
-                  value={dataType}
-                  onChange={(event) => setDataType(event.target.value as DetectedContractValues['dataType'])}
+                  value={dataType ?? ''}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setDataType(v === '' ? null : v as 'standard' | 'personal' | 'sensitive');
+                  }}
                   className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-zinc-600"
                 >
+                  <option value="">Not detected</option>
                   <option value="standard">Standard</option>
                   <option value="personal">Personal data</option>
                   <option value="sensitive">Special category</option>
