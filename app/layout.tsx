@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import './globals.css';
 import { BetaNav } from '@/components/beta-nav';
+import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <DocumentAnalysisProvider>
         <div className="flex min-h-screen flex-col bg-black text-white">
           <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/70 backdrop-blur">
             <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
@@ -23,10 +25,16 @@ export default function RootLayout({
                 Pactora
               </Link>
 
-              <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+              <nav className="flex items-center justify-end gap-2 sm:gap-3">
+                <Link
+                  href="/how-it-works"
+                  className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
+                >
+                  How it works
+                </Link>
                 <Link
                   href="/security"
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
+                  className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
                 >
                   Security
                 </Link>
@@ -72,6 +80,7 @@ export default function RootLayout({
             </div>
           </footer>
         </div>
+        </DocumentAnalysisProvider>
       </body>
     </html>
   );

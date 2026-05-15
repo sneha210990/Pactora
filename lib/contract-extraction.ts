@@ -1,9 +1,31 @@
-export type ExtractedContractValues = {
-  acv: number | null;
-  termMonths: number | null;
-  insuranceCover: number | null;
-  dataType: 'standard' | 'personal' | 'sensitive' | null;
+export type ExtractionMethod = 'regex' | 'llm' | 'hybrid';
+
+export type ExtractedField<T> = {
+  value: T | null;
+  confidence: number | null;
+  evidence: string | null;
+  extractionMethod: ExtractionMethod | null;
 };
+
+export type ExtractedContractValues = {
+  acv: ExtractedField<number>;
+  termMonths: ExtractedField<number>;
+  insuranceCover: ExtractedField<number>;
+  dataType: ExtractedField<'standard' | 'personal' | 'sensitive'>;
+};
+
+function extractedField<T>(
+  value: T | null,
+  evidence: string | null,
+  confidence: number | null = value === null ? null : 0.82,
+): ExtractedField<T> {
+  return {
+    value,
+    confidence: value === null ? null : confidence,
+    evidence,
+    extractionMethod: value === null ? null : 'regex',
+  };
+}
 
 type PdfParseResult = { text?: string };
 type MammothResult = { value?: string };
@@ -46,7 +68,7 @@ function parseMoney(value: string): number {
   return Number(value.replace(/[^\d.]/g, ''));
 }
 
-function detectAmountByKeywords(lines: string[], keywords: string[]): number | null {
+function detectAmountByKeywords(lines: string[], keywords: string[]): ExtractedField<number> {
   for (const line of lines) {
     const normalizedLine = line.toLowerCase();
     const keyword = keywords.find((candidate) => normalizedLine.includes(candidate));
@@ -55,16 +77,16 @@ function detectAmountByKeywords(lines: string[], keywords: string[]): number | n
     const keywordIndex = normalizedLine.indexOf(keyword);
     const amountAfterKeyword = line.slice(keywordIndex).match(MONEY_REGEX)?.[0];
     if (amountAfterKeyword) {
-      return parseMoney(amountAfterKeyword);
+      return extractedField(parseMoney(amountAfterKeyword), line);
     }
 
     const amountOnLine = line.match(MONEY_REGEX)?.[0];
     if (amountOnLine) {
-      return parseMoney(amountOnLine);
+      return extractedField(parseMoney(amountOnLine), line, 0.72);
     }
   }
 
-  return null;
+  return extractedField<number>(null, null);
 }
 
 async function getPdfParser(): Promise<PdfParse> {
@@ -135,35 +157,42 @@ export function detectContractValues(text: string): ExtractedContractValues {
   const detectedInsurance = detectAmountByKeywords(lines, INSURANCE_KEYWORDS);
 
   let termMonths: number | null = null;
+  let termEvidence: string | null = null;
   const monthMatch = text.match(MONTH_TERM_REGEX);
   if (monthMatch) {
     termMonths = Number(monthMatch[1]);
+    termEvidence = monthMatch[0];
   } else {
     const yearMatch = text.match(YEAR_TERM_REGEX);
     if (yearMatch) {
       termMonths = Number(yearMatch[1]) * 12;
+      termEvidence = yearMatch[0];
     }
   }
 
   const normalizedText = text.toLowerCase();
-  let dataType: ExtractedContractValues['dataType'] = null;
+  let dataType: 'standard' | 'personal' | 'sensitive' | null = null;
+  let dataEvidence: string | null = null;
 
   if (
     normalizedText.includes('special category data') ||
     normalizedText.includes('sensitive personal data')
   ) {
     dataType = 'sensitive';
+    dataEvidence = 'special category data / sensitive personal data';
   } else if (normalizedText.includes('personal data')) {
     dataType = 'personal';
-  } else if (normalizedText.includes('standard data') || normalizedText.includes('non-personal')) {
+    dataEvidence = 'personal data';
+  } else if (normalizedText.includes('standard data')) {
     dataType = 'standard';
+    dataEvidence = 'standard data';
   }
 
   return {
     acv: detectedAcv,
-    termMonths,
+    termMonths: extractedField(termMonths, termEvidence),
     insuranceCover: detectedInsurance,
-    dataType,
+    dataType: extractedField(dataType, dataEvidence),
   };
 }
 

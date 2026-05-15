@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
+import { ReviewProgress } from '../components/review-progress';
+import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type OwnershipStructure = 'Vendor owns' | 'Customer owns' | 'Shared/retained ownership' | 'Unknown';
 type LicenceModel = 'Limited licence' | 'Perpetual/Broad licence' | 'Broad licence' | 'Unknown';
@@ -18,8 +20,6 @@ type ReviewResult = {
   redFlags: string[];
 };
 
-const CLAUSE_STORAGE_KEY = 'pactora.ipClause';
-const RISK_PARAM_KEYS = ['lolRisk', 'indemnitiesRisk', 'ipRisk', 'dataRisk', 'terminationRisk'] as const;
 
 function normalize(input: string) {
   return input.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -156,50 +156,24 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
 }
 
 function IpOwnershipReviewContent() {
-  const searchParams = useSearchParams();
+  const commercialContext = useDocumentCommercialContext();
+  const canonicalClause = useClauseByType('IP Ownership');
 
-  const acv = searchParams.get('acv');
-  const termMonths = searchParams.get('termMonths');
-  const insuranceCover = searchParams.get('insuranceCover');
-  const dataType = searchParams.get('dataType');
-  const lolCapParam = searchParams.get('lolCap');
+  const dataType = commercialContext.dataType;
+  const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
 
-  const acvAmount = num(acv);
-  const insuranceAmount = num(insuranceCover);
   const lolCap = num(lolCapParam);
 
-  const [clause, setClause] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    return window.localStorage.getItem(CLAUSE_STORAGE_KEY) ?? '';
-  });
+  const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
-  useEffect(() => {
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
-  }, [clause]);
-
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
-    if (acv) params.set('acv', acv);
-    if (termMonths) params.set('termMonths', termMonths);
-    if (insuranceCover) params.set('insuranceCover', insuranceCover);
-    if (dataType) params.set('dataType', dataType);
-    if (lolCapParam) params.set('lolCap', lolCapParam);
-    RISK_PARAM_KEYS.forEach((riskKey) => {
-      const value = searchParams.get(riskKey);
-      if (value) params.set(riskKey, value);
-    });
-    if (result?.riskRating) params.set('ipRisk', result.riskRating);
-    return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, lolCapParam, searchParams, result?.riskRating]);
+  const queryString = '';
 
   function runReview() {
     setResult(parseClause(clause));
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
   }
 
   function reset() {
-    window.localStorage.removeItem(CLAUSE_STORAGE_KEY);
     setClause('');
     setResult(null);
   }
@@ -226,6 +200,9 @@ function IpOwnershipReviewContent() {
           </Link>
         </div>
 
+        <ReviewProgress current="ip" />
+        <ActiveDocumentBanner />
+
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">IP Ownership Review</h1>
           <p className="mt-2 text-zinc-400">
@@ -233,18 +210,10 @@ function IpOwnershipReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {acvAmount !== null && acvAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acvAmount)}</span>
-            )}
-            {termMonths && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {termMonths} months</span>
-            )}
-            {insuranceAmount !== null && insuranceAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {money(insuranceAmount)}</span>
-            )}
-            {dataType && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
-            )}
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
             {lolCap !== null && lolCap > 0 && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}
@@ -382,7 +351,7 @@ function IpOwnershipReviewContent() {
           </Link>
           <Link
             href={`/review/data${queryString ? `?${queryString}` : ''}`}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+            className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
           >
             Continue to Data Protection
           </Link>

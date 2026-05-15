@@ -45,6 +45,8 @@ export type BetaEventType =
   | 'profile_completed'
   | 'contract_upload_started'
   | 'contract_uploaded'
+  | 'manual_clause_entry_started'
+  | 'manual_clause_entry_submitted'
   | 'analysis_started'
   | 'analysis_completed'
   | 'feedback_submitted'

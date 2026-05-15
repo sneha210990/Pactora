@@ -8,6 +8,7 @@ export type ClauseFlag = {
   problematicLanguage: string;
   plainEnglish: string;
   negotiationPoint: string;
+  clauseText?: string;
 };
 
 export type ClauseAnalysis = {
