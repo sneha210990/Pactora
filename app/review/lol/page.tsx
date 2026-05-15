@@ -229,7 +229,9 @@ function parseClause(clause: string): ParsedClauseResult {
   return result;
 }
 
-function deriveFromDeal(parsed: ParsedClauseResult, acv: number, termMonths: number): DerivedResult {
+function deriveFromDeal(parsed: ParsedClauseResult, acvArg: number | null, termMonthsArg: number | null): DerivedResult {
+  const acv = acvArg ?? 0;
+  const termMonths = termMonthsArg ?? 0;
   let impliedCapAmountGBP: number | null = null;
 
   switch (parsed.capType) {
@@ -522,7 +524,7 @@ function LolReviewContent() {
                       label: 'Narrowing',
                       title: 'Cap applies to carve-outs except fraud/wilful misconduct',
                       script:
-                        '“We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
+                        '”We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
                     }
                   : {
                       label: 'Fallback',

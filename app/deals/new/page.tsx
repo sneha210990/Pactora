@@ -142,6 +142,16 @@ export default function NewDealPage() {
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (acv !== null && acv > 0) params.set('acv', String(acv));
+    if (termMonths !== null && termMonths > 0) params.set('termMonths', String(termMonths));
+    if (insuranceCover !== null && insuranceCover > 0) params.set('insuranceCover', String(insuranceCover));
+    if (dataType !== null) params.set('dataType', dataType);
+    router.push(`/review/lol?${params.toString()}`);
+  };
+
   const handleContractUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
