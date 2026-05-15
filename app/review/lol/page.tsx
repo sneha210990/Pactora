@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
@@ -321,10 +322,12 @@ function LolReviewContent() {
     trackEvent('analysis_started', '/review/lol');
   }, []);
 
-  const acv = commercialContext.acv ?? 0;
-  const termMonths = commercialContext.termMonths ?? 0;
-  const insuranceCover = commercialContext.insuranceCover ?? 0;
-  const dataType = commercialContext.dataType ?? 'Not identified';
+  const acv = commercialContext.acv.value;
+  const termMonths = commercialContext.termMonths.value;
+  const insuranceCover = commercialContext.insuranceCover;
+  const dataType = commercialContext.dataType;
+  const derivedAcv = acv === null ? 0 : acv;
+  const derivedTermMonths = termMonths === null ? 0 : termMonths;
   const initialClause = canonicalClause?.text ?? '';
 
   const [clause, setClause] = useState(initialClause);
@@ -336,14 +339,14 @@ function LolReviewContent() {
   }, [initialClause]);
 
   const derived = useMemo(
-    () => deriveFromDeal(parsedResult, acv, termMonths),
-    [parsedResult, acv, termMonths],
+    () => deriveFromDeal(parsedResult, derivedAcv, derivedTermMonths),
+    [parsedResult, derivedAcv, derivedTermMonths],
   );
 
   function runReview() {
     const result = parseClause(clause);
     setParsedResult(result);
-    actions.setLiabilityCap(deriveFromDeal(result, acv, termMonths).impliedCapAmountGBP);
+    actions.setLiabilityCap(deriveFromDeal(result, derivedAcv, derivedTermMonths).impliedCapAmountGBP);
   }
 
   function resetClause() {
@@ -371,6 +374,7 @@ function LolReviewContent() {
         </div>
 
         <ReviewProgress current="lol" />
+        <ActiveDocumentBanner />
 
         <div className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Limitation of Liability Review</h1>
@@ -386,14 +390,14 @@ function LolReviewContent() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Term: {termMonths} months
+              Term: {formatOptionalMonthsField(commercialContext.termMonths)}
             </span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Insurance: {money(insuranceCover)}
+              Insurance: {formatOptionalMoneyField(insuranceCover)}
             </span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
           </div>
         </div>
 
@@ -506,12 +510,12 @@ function LolReviewContent() {
                 {
                   label: 'Ask',
                   title: 'Cap at 1× ACV',
-                  script: `“We can do a cap of ${money(acv)}.”`,
+                  script: acv === null ? '“ACV was not detected, so confirm deal value before proposing a numeric cap.”' : `“We can do a cap of ${money(acv)}.”`,
                 },
                 {
                   label: 'Fallback',
                   title: 'Cap at 1.5× ACV',
-                  script: `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
+                  script: acv === null ? '“Once ACV is confirmed, we can set a stepped fallback.”' : `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
                 },
                 hasNarrowingItem
                   ? {
@@ -523,7 +527,7 @@ function LolReviewContent() {
                   : {
                       label: 'Fallback',
                       title: 'Cap at 2× ACV',
-                      script: `“Final position is ${money(acv * 2)}.”`,
+                      script: acv === null ? '“Do not state a final numeric cap until ACV is confirmed.”' : `“Final position is ${money(acv * 2)}.”`,
                     },
               ]}
             />

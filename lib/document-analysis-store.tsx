@@ -9,7 +9,7 @@ import {
   useReducer,
 } from 'react';
 import type { ClauseFlag, RiskLevel } from '@/lib/clause-analysis';
-import type { ExtractedContractValues } from '@/lib/contract-extraction';
+import type { ExtractedContractValues, ExtractedField } from '@/lib/contract-extraction';
 
 export type Clause = {
   id: string;
@@ -41,8 +41,28 @@ export type Recommendation = {
   priority?: RiskLevel;
 };
 
+export type ExtractionWarning = {
+  field: string;
+  reason: string;
+};
+
+export type ActiveDocument = {
+  id: string;
+  fileName: string;
+  uploadedAt: string;
+};
+
+export type CommercialContext = {
+  acv: ExtractedField<number>;
+  termMonths: ExtractedField<number>;
+  insuranceCover: ExtractedField<number>;
+  dataType: ExtractedField<'standard' | 'personal' | 'sensitive'>;
+  liabilityCap: number | null;
+};
+
 export type DocumentAnalysisState = {
   documentId: string;
+  activeDocument: ActiveDocument | null;
   uploadStatus: 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
   documentMeta: {
     fileName?: string;
@@ -80,13 +100,8 @@ export type DocumentAnalysisState = {
     recommendations: boolean;
   };
   errors?: string[];
-  commercialContext?: {
-    acv?: number;
-    termMonths?: number;
-    insuranceCover?: number;
-    dataType?: ExtractedContractValues['dataType'];
-    liabilityCap?: number;
-  };
+  commercialContext: CommercialContext;
+  extractionWarnings: ExtractionWarning[];
   diagnostics?: {
     missingFields: string[];
     lastPayloadShape?: string[];
@@ -96,6 +111,7 @@ export type DocumentAnalysisState = {
 
 type Action =
   | { type: 'reset' }
+  | { type: 'resetReviewState' }
   | { type: 'uploadStarted'; file: { name: string; type: string } }
   | { type: 'extractionHydrated'; payload: ExtractionPayload }
   | { type: 'analysisStarted' }
@@ -119,7 +135,8 @@ type AnalysisPayload = {
   analyzedAt?: string;
 };
 
-const STORAGE_KEY = 'pactora.documentAnalysis.v1';
+const STORAGE_KEY = 'pactora.documentAnalysis.v2';
+const LEGACY_STORAGE_KEY = 'pactora.documentAnalysis.v1';
 
 const emptySteps: DocumentAnalysisState['processingSteps'] = {
   upload: false,
@@ -129,8 +146,23 @@ const emptySteps: DocumentAnalysisState['processingSteps'] = {
   recommendations: false,
 };
 
+function emptyExtractedField<T>(): ExtractedField<T> {
+  return { value: null, confidence: null, evidence: null, extractionMethod: null };
+}
+
+export function emptyCommercialContext(): CommercialContext {
+  return {
+    acv: emptyExtractedField<number>(),
+    termMonths: emptyExtractedField<number>(),
+    insuranceCover: emptyExtractedField<number>(),
+    dataType: emptyExtractedField<'standard' | 'personal' | 'sensitive'>(),
+    liabilityCap: null,
+  };
+}
+
 export const emptyDocumentAnalysisState: DocumentAnalysisState = {
   documentId: '',
+  activeDocument: null,
   uploadStatus: 'idle',
   documentMeta: {},
   extractedParties: {},
@@ -141,11 +173,18 @@ export const emptyDocumentAnalysisState: DocumentAnalysisState = {
   recommendations: [],
   processingSteps: emptySteps,
   errors: [],
-  commercialContext: {},
+  commercialContext: emptyCommercialContext(),
+  extractionWarnings: [],
   diagnostics: {
     missingFields: [],
     hydrationWarnings: [],
   },
+};
+
+type StoredDocumentEnvelope = {
+  version: 2;
+  activeDocumentId: string | null;
+  state: DocumentAnalysisState;
 };
 
 function stableDocumentId(fileName?: string) {
@@ -228,6 +267,65 @@ function toCanonicalAnalysis(state: DocumentAnalysisState, analysis: AnalysisPay
   };
 }
 
+
+function asExtractedField<T>(raw: unknown): ExtractedField<T> {
+  if (raw && typeof raw === 'object' && 'value' in raw) {
+    const candidate = raw as Partial<ExtractedField<T>>;
+    return {
+      value: (candidate.value ?? null) as T | null,
+      confidence: typeof candidate.confidence === 'number' ? candidate.confidence : null,
+      evidence: typeof candidate.evidence === 'string' ? candidate.evidence : null,
+      extractionMethod:
+        candidate.extractionMethod === 'regex' || candidate.extractionMethod === 'llm' || candidate.extractionMethod === 'hybrid'
+          ? candidate.extractionMethod
+          : null,
+    };
+  }
+
+  return {
+    value: raw === undefined ? null : (raw as T | null),
+    confidence: raw === undefined || raw === null ? null : 0.5,
+    evidence: null,
+    extractionMethod: raw === undefined || raw === null ? null : 'regex',
+  };
+}
+
+function normalizeCommercialContext(raw?: Partial<ExtractedContractValues> & { liabilityCap?: number | null }): CommercialContext {
+  return {
+    acv: asExtractedField<number>(raw?.acv),
+    termMonths: asExtractedField<number>(raw?.termMonths),
+    insuranceCover: asExtractedField<number>(raw?.insuranceCover),
+    dataType: asExtractedField<'standard' | 'personal' | 'sensitive'>(raw?.dataType),
+    liabilityCap: typeof raw?.liabilityCap === 'number' ? raw.liabilityCap : null,
+  };
+}
+
+function extractionWarningsFromContext(context: CommercialContext): ExtractionWarning[] {
+  const warnings: ExtractionWarning[] = [];
+  if (context.acv.value === null || (context.acv.confidence ?? 0) < 0.7) warnings.push({ field: 'acv', reason: 'ACV not confidently detected' });
+  if (context.termMonths.value === null || (context.termMonths.confidence ?? 0) < 0.7) warnings.push({ field: 'termMonths', reason: 'Contract term ambiguous' });
+  if (context.insuranceCover.value === null) warnings.push({ field: 'insuranceCover', reason: 'No insurance clause found' });
+  if (context.dataType.value === null) warnings.push({ field: 'dataType', reason: 'Data category not detected' });
+  return warnings;
+}
+
+function reviewStateReset(state: DocumentAnalysisState): DocumentAnalysisState {
+  // In legal tech, stale extracted facts can make a review look more certain than the evidence supports.
+  // Keep document identity and raw extraction, but clear every downstream judgement before re-running review.
+  return {
+    ...state,
+    clauses: [],
+    risks: [],
+    obligations: [],
+    recommendations: [],
+    summary: undefined,
+    confidenceScores: undefined,
+    commercialContext: emptyCommercialContext(),
+    extractionWarnings: [],
+    processingSteps: { ...emptySteps, upload: state.processingSteps.upload },
+  };
+}
+
 function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysisState {
   let next = state;
 
@@ -235,38 +333,46 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
     case 'reset':
       next = emptyDocumentAnalysisState;
       break;
-    case 'uploadStarted':
+    case 'resetReviewState':
+      next = reviewStateReset(state);
+      break;
+    case 'uploadStarted': {
+      const documentId = stableDocumentId(action.file.name);
+      const uploadedAt = new Date().toISOString();
+      // Starting a new document must sever all prior extracted and review state; stale legal facts are more dangerous than blanks.
       next = {
         ...emptyDocumentAnalysisState,
-        documentId: stableDocumentId(action.file.name),
+        documentId,
+        activeDocument: { id: documentId, fileName: action.file.name, uploadedAt },
         uploadStatus: 'uploading',
         documentMeta: {
           fileName: action.file.name,
           fileType: action.file.type,
-          uploadedAt: new Date().toISOString(),
+          uploadedAt,
         },
         processingSteps: { ...emptySteps, upload: true },
       };
       break;
+    }
     case 'extractionHydrated': {
-      const detected = action.payload.detectedValues;
+      const documentId = action.payload.documentId ?? state.documentId ?? stableDocumentId(action.payload.documentMeta?.fileName);
+      const fileName = action.payload.documentMeta?.fileName ?? state.documentMeta.fileName ?? 'Unknown document';
+      const uploadedAt = action.payload.documentMeta?.uploadedAt ?? state.documentMeta.uploadedAt ?? new Date().toISOString();
+      const commercialContext = normalizeCommercialContext(action.payload.detectedValues);
+      // Null is safer than fake defaults: review UI can say "Not detected" instead of inventing £0, 0 months, or standard data.
       next = {
-        ...state,
-        documentId: action.payload.documentId ?? state.documentId ?? stableDocumentId(action.payload.documentMeta?.fileName),
+        ...reviewStateReset(state),
+        documentId,
+        activeDocument: { id: documentId, fileName, uploadedAt },
         uploadStatus: 'processing',
-        documentMeta: { ...state.documentMeta, ...action.payload.documentMeta },
-        extractedParties: { ...state.extractedParties, ...action.payload.extractedParties },
-        extractedTerms: { ...state.extractedTerms, ...action.payload.extractedTerms },
-        summary: action.payload.summary ?? state.summary,
-        rawText: action.payload.contractText ?? state.rawText,
-        commercialContext: {
-          ...state.commercialContext,
-          acv: detected?.acv ?? state.commercialContext?.acv,
-          termMonths: detected?.termMonths ?? state.commercialContext?.termMonths,
-          insuranceCover: detected?.insuranceCover ?? state.commercialContext?.insuranceCover,
-          dataType: detected?.dataType ?? state.commercialContext?.dataType,
-        },
-        processingSteps: { ...state.processingSteps, upload: true, extraction: true },
+        documentMeta: { ...state.documentMeta, ...action.payload.documentMeta, fileName, uploadedAt },
+        extractedParties: { ...action.payload.extractedParties },
+        extractedTerms: { ...action.payload.extractedTerms },
+        summary: action.payload.summary,
+        rawText: action.payload.contractText,
+        commercialContext,
+        extractionWarnings: extractionWarningsFromContext(commercialContext),
+        processingSteps: { ...emptySteps, upload: true, extraction: true },
         errors: state.errors ?? [],
         diagnostics: {
           missingFields: [],
@@ -307,7 +413,7 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
         ...state,
         commercialContext: {
           ...state.commercialContext,
-          liabilityCap: action.value ?? undefined,
+          liabilityCap: action.value,
         },
       };
       break;
@@ -325,12 +431,40 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
   return next;
 }
 
+function normalizeStoredState(rawState: Partial<DocumentAnalysisState>): DocumentAnalysisState {
+  const state = { ...emptyDocumentAnalysisState, ...rawState };
+  const documentId = state.documentId || rawState.activeDocument?.id || '';
+  const uploadedAt = state.documentMeta.uploadedAt ?? rawState.activeDocument?.uploadedAt ?? '';
+  return {
+    ...state,
+    documentId,
+    activeDocument: documentId && (state.documentMeta.fileName || rawState.activeDocument?.fileName)
+      ? {
+          id: documentId,
+          fileName: state.documentMeta.fileName ?? rawState.activeDocument?.fileName ?? 'Unknown document',
+          uploadedAt,
+        }
+      : null,
+    commercialContext: normalizeCommercialContext(rawState.commercialContext as Partial<ExtractedContractValues> & { liabilityCap?: number | null }),
+    extractionWarnings: rawState.extractionWarnings ?? extractionWarningsFromContext(normalizeCommercialContext(rawState.commercialContext as Partial<ExtractedContractValues> & { liabilityCap?: number | null })),
+  };
+}
+
+function parseStoredState(raw: string): DocumentAnalysisState {
+  const parsed = JSON.parse(raw) as Partial<DocumentAnalysisState> | StoredDocumentEnvelope;
+  if ('version' in parsed && parsed.version === 2 && parsed.state) {
+    const state = normalizeStoredState(parsed.state);
+    return parsed.activeDocumentId === state.activeDocument?.id ? state : emptyDocumentAnalysisState;
+  }
+  return normalizeStoredState(parsed as Partial<DocumentAnalysisState>);
+}
+
 function readStoredState() {
   if (typeof window === 'undefined') return emptyDocumentAnalysisState;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return emptyDocumentAnalysisState;
-    return { ...emptyDocumentAnalysisState, ...(JSON.parse(raw) as DocumentAnalysisState) };
+    return parseStoredState(raw);
   } catch {
     console.warn('[PACTORA] Hydration mismatch: stored document analysis state could not be parsed');
     return emptyDocumentAnalysisState;
@@ -341,6 +475,7 @@ type StoreValue = {
   state: DocumentAnalysisState;
   actions: {
     reset: () => void;
+    resetReviewState: () => void;
     uploadStarted: (file: Pick<File, 'name' | 'type'>) => void;
     hydrateExtraction: (payload: ExtractionPayload) => void;
     analysisStarted: () => void;
@@ -357,11 +492,17 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
   const [state, dispatch] = useReducer(reducer, emptyDocumentAnalysisState, readStoredState);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const envelope: StoredDocumentEnvelope = {
+      version: 2,
+      activeDocumentId: state.activeDocument?.id ?? null,
+      state,
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
   }, [state]);
 
   const actions = useMemo<StoreValue['actions']>(() => ({
     reset: () => dispatch({ type: 'reset' }),
+    resetReviewState: () => dispatch({ type: 'resetReviewState' }),
     uploadStarted: (file) => dispatch({ type: 'uploadStarted', file: { name: file.name, type: file.type } }),
     hydrateExtraction: (payload) => dispatch({ type: 'extractionHydrated', payload }),
     analysisStarted: () => dispatch({ type: 'analysisStarted' }),
@@ -390,7 +531,12 @@ export function useDocumentAnalysisActions() {
 }
 
 export function useDocumentCommercialContext() {
-  return useDocumentAnalysis().commercialContext ?? {};
+  return useDocumentAnalysis().commercialContext;
+}
+
+export function extractedValue<T>(field: ExtractedField<T> | T | null | undefined): T | null {
+  if (field && typeof field === 'object' && 'value' in field) return field.value as T | null;
+  return field === undefined ? null : (field as T | null);
 }
 
 export function useClauseByType(clauseType: string) {
