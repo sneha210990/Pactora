@@ -95,6 +95,54 @@ function describeOverall(overallRisk: RiskLevel, knownRiskCount: number, capRati
   return `Current inputs indicate a comparatively low-risk position across reviewed areas.${ratioText}`;
 }
 
+const MAX_CLAUSE_AGENTS = 8;
+
+function computeRiskScore(flags: ClauseFlag[]): number {
+  if (flags.length === 0) return 0;
+  const weighted = flags.reduce((sum, f) => sum + riskScore(f.riskLevel), 0);
+  return Math.round((weighted / (MAX_CLAUSE_AGENTS * 3)) * 100);
+}
+
+function scoreColorClass(score: number): string {
+  if (score >= 60) return 'text-red-300';
+  if (score >= 30) return 'text-amber-300';
+  return 'text-emerald-300';
+}
+
+function scoreBorderClass(score: number): string {
+  if (score >= 60) return 'border-red-500/30 bg-red-500/5';
+  if (score >= 30) return 'border-amber-500/30 bg-amber-500/5';
+  return 'border-emerald-500/30 bg-emerald-500/5';
+}
+
+type Verdict = {
+  text: string;
+  detail: string;
+  colorClass: string;
+};
+
+function shouldSignVerdict(score: number, highCount: number): Verdict {
+  if (highCount >= 2 || score >= 60) {
+    return {
+      text: 'Review required',
+      detail: `${highCount} high-risk issue${highCount !== 1 ? 's' : ''} must be resolved before signature.`,
+      colorClass: 'text-red-300',
+    };
+  }
+  if (highCount === 1 || score >= 30) {
+    return {
+      text: 'Proceed with caution',
+      detail: 'At least one issue warrants negotiation before you commit.',
+      colorClass: 'text-amber-300',
+    };
+  }
+  return {
+    text: 'Acceptable risk',
+    detail: 'No critical blockers identified. Standard commercial terms apply.',
+    colorClass: 'text-emerald-300',
+  };
+}
+
 function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
   if (risk === 'High') return 'border-red-500/40 bg-red-500/10 text-red-200';
   if (risk === 'Medium') return 'border-amber-500/40 bg-amber-500/10 text-amber-200';
@@ -155,6 +203,10 @@ function SummaryContent() {
     plainEnglish: clause.explanation ?? 'Analysis incomplete',
     negotiationPoint: analysis.recommendations.find((recommendation) => recommendation.clauseType === clause.type)?.text ?? 'No recommendation generated',
   }));
+
+  const riskScore100 = useMemo(() => computeRiskScore(clauseFlags), [clauseFlags]);
+  const highFlags = useMemo(() => clauseFlags.filter((f) => f.riskLevel === 'High'), [clauseFlags]);
+  const verdict = useMemo(() => shouldSignVerdict(riskScore100, highFlags.length), [riskScore100, highFlags.length]);
 
   const rankedSections = useMemo(() => {
     return reviewSections
@@ -259,6 +311,26 @@ function SummaryContent() {
           </nav>
         </section>
 
+        <section className={`mt-8 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Should I sign?</p>
+              <p className={`mt-2 text-2xl font-bold ${clauseFlags.length > 0 ? verdict.colorClass : 'text-zinc-400'}`}>
+                {clauseFlags.length > 0 ? verdict.text : 'Insufficient data'}
+              </p>
+              <p className="mt-2 text-sm text-zinc-300">
+                {clauseFlags.length > 0 ? verdict.detail : 'Upload a contract and run AI analysis to generate a verdict.'}
+              </p>
+            </div>
+            {clauseFlags.length > 0 && (
+              <div className="shrink-0 text-right">
+                <span className={`text-5xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
+                <p className="mt-1 text-[11px] uppercase tracking-wide text-zinc-500">/ 100</p>
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Overall risk</h2>
@@ -322,6 +394,33 @@ function SummaryContent() {
             )}
           </div>
         </section>
+
+        {highFlags.length > 0 && (
+          <section className="mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-red-400">Minimum required fixes</h2>
+              <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-200">
+                {highFlags.length} blocker{highFlags.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <p className="mb-4 text-sm text-zinc-400">These High-risk issues are contract blockers. Each must be resolved or negotiated before signature.</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {highFlags.map((flag, i) => (
+                <div key={i} className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold text-zinc-200">{flag.clauseType}</span>
+                    <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold text-red-200">High</span>
+                  </div>
+                  <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
+                  <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Required fix</p>
+                    <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {clauseFlags.length > 0 ? (
           <section className="mt-8">
