@@ -57,17 +57,43 @@ type StoreCommercialContext = {
   liabilityCap?: number | null;
 };
 
-async function seedStore(page: Page, commercialContext: StoreCommercialContext) {
+type SeedClause = {
+  type: string;
+  riskLevel: 'High' | 'Medium' | 'Low';
+  text?: string;
+  explanation?: string;
+};
+
+async function seedStore(page: Page, commercialContext: StoreCommercialContext, seedClauses: SeedClause[] = []) {
+  const clauses = seedClauses.map((c, i) => ({
+    id: `test-clause-${i}`,
+    type: c.type,
+    riskLevel: c.riskLevel,
+    text: c.text ?? '',
+    explanation: c.explanation ?? '',
+  }));
+  const risks = seedClauses.map((c, i) => ({
+    id: `test-risk-${i}`,
+    clauseType: c.type,
+    level: c.riskLevel,
+    description: c.explanation ?? '',
+  }));
+  const recommendations = seedClauses.map((c, i) => ({
+    id: `test-rec-${i}`,
+    clauseType: c.type,
+    text: `Negotiate ${c.type}`,
+    priority: c.riskLevel,
+  }));
   const storeData = {
     documentId: 'playwright-test',
     uploadStatus: 'complete',
     documentMeta: { fileName: 'test-contract.pdf' },
     extractedParties: {},
     extractedTerms: {},
-    clauses: [],
-    risks: [],
+    clauses,
+    risks,
     obligations: [],
-    recommendations: [],
+    recommendations,
     processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
     errors: [],
     commercialContext,
@@ -889,4 +915,138 @@ test('Test 56: Tablet viewport smoke test across key pages', async ({ page }) =>
 
   await page.goto('/review/summary');
   await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
+});
+
+// ─── MVP-04: Should I sign? verdict ──────────────────────────────────────────
+
+test('Test 57: Summary shows Insufficient data verdict when no clause flags seeded', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 });
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Should I sign?')).toBeVisible();
+  await expect(page.getByText('Insufficient data')).toBeVisible();
+  // Score should not render when there are no flags
+  await expect(page.getByText('/ 100')).not.toBeVisible();
+});
+
+test('Test 58: Summary shows Review required verdict with two or more High-risk flags', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High', explanation: 'Cap is 0.1× ACV.' },
+    { type: 'Indemnities', riskLevel: 'High', explanation: 'Uncapped vendor indemnity.' },
+  ]);
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Review required')).toBeVisible();
+});
+
+test('Test 59: Summary shows Proceed with caution verdict with exactly one High flag', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High', explanation: 'Cap below ACV.' },
+    { type: 'IP Ownership', riskLevel: 'Low', explanation: 'Balanced terms.' },
+  ]);
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Proceed with caution')).toBeVisible();
+});
+
+test('Test 60: Summary shows Acceptable risk verdict with only Low-risk flags', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Governing Law', riskLevel: 'Low', explanation: 'Minor jurisdiction concern.' },
+  ]);
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Acceptable risk')).toBeVisible();
+});
+
+// ─── MVP-04: Risk score (0–100) ───────────────────────────────────────────────
+
+test('Test 61: Summary risk score renders as a number out of 100 for a known flag set', async ({ page }) => {
+  // 1 High (weight 3) + 1 Medium (weight 2) out of 8 agents max (max weight 24)
+  // score = round((3+2)/24 * 100) = round(20.83) = 21
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High', explanation: 'Cap below ACV.' },
+    { type: 'Indemnities', riskLevel: 'Medium', explanation: 'One-sided indemnity.' },
+  ]);
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('/ 100')).toBeVisible();
+  await expect(page.getByText('21')).toBeVisible();
+});
+
+// ─── MVP-04: Minimum required fixes ──────────────────────────────────────────
+
+test('Test 62: Minimum required fixes section appears and lists only High-risk clause types', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High', explanation: 'Cap below ACV.' },
+    { type: 'IP Ownership', riskLevel: 'Medium', explanation: 'Shared ownership.' },
+  ]);
+  await page.goto('/review/summary');
+
+  const blockersSection = page.locator('section').filter({ hasText: 'Minimum required fixes' });
+  await expect(blockersSection).toBeVisible();
+  await expect(blockersSection.getByText('1 blocker')).toBeVisible();
+  await expect(blockersSection.getByText('Liability Cap', { exact: true })).toBeVisible();
+  // Medium flag must not appear inside the blockers section (only in the full flags list below)
+  await expect(blockersSection.getByText('IP Ownership', { exact: true })).not.toBeVisible();
+});
+
+test('Test 63: Minimum required fixes section is absent when no High-risk flags are seeded', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Auto-Renewal', riskLevel: 'Medium', explanation: 'Short opt-out window.' },
+    { type: 'Governing Law', riskLevel: 'Low', explanation: 'Foreign jurisdiction.' },
+  ]);
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Minimum required fixes')).not.toBeVisible();
+});
+
+// ─── MVP-04: Negotiation email enabled path ───────────────────────────────────
+
+test('Test 64: Summary negotiation email button is enabled when clause flags are seeded', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High', explanation: 'Cap below ACV.' },
+  ]);
+  await page.goto('/review/summary');
+
+  const btn = page.getByRole('button', { name: /generate negotiation email/i });
+  await expect(btn).toBeEnabled();
+});
+
+// ─── AI-01: Progressive agent progress UI ────────────────────────────────────
+
+test('Test 65: Processing pipeline shows per-agent sub-list after analysis completes', async ({ page }) => {
+  // Mock the SSE analyze-agents route to emit agent_start for Liability Cap then complete
+  await page.route('/api/contracts/analyze-agents', async (route) => {
+    const events = [
+      'data: {"type":"agent_start","clauseType":"Liability Cap"}\n\n',
+      'data: {"type":"agent_result","clauseType":"Liability Cap","flag":null}\n\n',
+      'data: {"type":"analysis_complete","flags":[],"analyzedAt":"2026-01-01T00:00:00Z"}\n\n',
+    ].join('');
+    await route.fulfill({
+      status: 200,
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+      body: events,
+    });
+  });
+  // Mock extraction so the pipeline advances past the upload step
+  await page.route('/api/contracts/extract', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        contractText: 'This agreement limits liability to fees paid in the preceding twelve months.',
+        documentMeta: { fileName: 'test.txt', uploadedAt: new Date().toISOString() },
+      }),
+    });
+  });
+
+  await page.goto('/deals/new');
+  await page.fill('#manualClauses', 'This agreement limits liability to fees paid in the preceding twelve months.');
+  await page.click('button[type=submit]');
+
+  // Wait for the analysis to complete (pipeline status badge shows complete)
+  await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 15000 });
+
+  // The per-agent sub-list should be rendered — Liability Cap was emitted by the mock
+  await expect(page.getByText('Liability Cap').first()).toBeVisible();
 });
