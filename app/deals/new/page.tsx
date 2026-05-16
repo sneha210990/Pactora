@@ -9,6 +9,7 @@ import {
   useDocumentAnalysisActions,
 } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
+import { formatMoney } from '@/app/review/components/active-document-banner';
 import type { ExtractedContractValues } from '@/lib/contract-extraction';
 
 type ExtractionResponse = {
@@ -27,9 +28,8 @@ const processingStages: Array<{ key: keyof DocumentAnalysisState['processingStep
   { key: 'recommendations', label: 'Generating recommendations…' },
 ];
 
-function formatOptionalMoney(value?: number) {
-  if (!value) return '';
-  return String(value);
+function formatOptionalMoneyValue(value: number | null) {
+  return value === null ? '' : formatMoney(value);
 }
 
 function ProcessingPipeline({ analysis }: { analysis: DocumentAnalysisState }) {
@@ -67,7 +67,7 @@ export default function NewDealPage() {
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
 
-  const commercialContext = analysis.commercialContext ?? {};
+  const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';
   const canContinue = analysis.uploadStatus === 'complete' && hasAcceptedLegalNotice && hasConfirmedDataCaution;
   const runClauseAnalysis = async (text: string) => {
@@ -308,6 +308,17 @@ export default function NewDealPage() {
               </section>
             ) : null}
 
+            {analysis.extractionWarnings.length > 0 ? (
+              <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
+                <h2 className="font-semibold text-zinc-100">Extraction diagnostics</h2>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {analysis.extractionWarnings.map((warning) => (
+                    <li key={`${warning.field}-${warning.reason}`}>{warning.reason}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
               <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
               <h2 className="mt-1 text-lg font-medium text-white">Extracted commercial context</h2>
@@ -316,10 +327,10 @@ export default function NewDealPage() {
               </p>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <ReadOnlyField label="Annual contract value" value={formatOptionalMoney(commercialContext.acv)} empty="ACV not detected" />
-                <ReadOnlyField label="Initial term" value={commercialContext.termMonths ? `${commercialContext.termMonths} months` : ''} empty="Initial term not detected" />
-                <ReadOnlyField label="Insurance cover" value={formatOptionalMoney(commercialContext.insuranceCover)} empty="Insurance cover not detected" />
-                <ReadOnlyField label="Data type" value={commercialContext.dataType} empty="Data category not identified" />
+                <ReadOnlyField label="Annual contract value" value={formatOptionalMoneyValue(commercialContext.acv.value)} empty="Not detected" evidence={commercialContext.acv.evidence} />
+                <ReadOnlyField label="Initial term" value={commercialContext.termMonths.value === null ? '' : `${commercialContext.termMonths.value} months`} empty="Not detected" evidence={commercialContext.termMonths.evidence} />
+                <ReadOnlyField label="Insurance cover" value={formatOptionalMoneyValue(commercialContext.insuranceCover.value)} empty="Not detected" evidence={commercialContext.insuranceCover.evidence} />
+                <ReadOnlyField label="Data type" value={commercialContext.dataType.value ?? ''} empty="Not detected" evidence={commercialContext.dataType.evidence} />
                 <ReadOnlyField label="Governing law" value={analysis.extractedTerms.governingLaw} empty="No governing law identified" />
                 <ReadOnlyField label="Termination notice" value={analysis.extractedTerms.terminationNotice} empty="Clause not detected" />
               </div>
@@ -389,11 +400,12 @@ export default function NewDealPage() {
   );
 }
 
-function ReadOnlyField({ label, value, empty }: { label: string; value?: string; empty: string }) {
+function ReadOnlyField({ label, value, empty, evidence }: { label: string; value?: string; empty: string; evidence?: string | null }) {
   return (
     <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
       <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
       <div className={`mt-2 text-sm font-semibold ${value ? 'text-zinc-100' : 'text-zinc-500'}`}>{value || empty}</div>
+      {evidence ? <div className="mt-2 text-xs text-zinc-500">Evidence: {evidence}</div> : null}
     </div>
   );
 }

@@ -5,12 +5,14 @@ import type { ClauseFlag } from '@/lib/clause-analysis';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+type ExtractedFieldLike<T> = { value?: T | null };
+
 type CommercialContext = {
-  acv?: number;
-  termMonths?: number;
-  insuranceCover?: number;
-  dataType?: string;
-  liabilityCap?: number;
+  acv?: number | ExtractedFieldLike<number> | null;
+  termMonths?: number | ExtractedFieldLike<number> | null;
+  insuranceCover?: number | ExtractedFieldLike<number> | null;
+  dataType?: string | ExtractedFieldLike<string> | null;
+  liabilityCap?: number | null;
 };
 
 type RequestBody = {
@@ -35,13 +37,23 @@ Use commercial English. Be direct but collaborative — this is a negotiation, n
 
 Return only the email body. No markdown. No JSON. No preamble. No meta-commentary. Just the text of the email, ready to paste and send.`;
 
+function fieldValue<T>(field: T | ExtractedFieldLike<T> | null | undefined): T | null {
+  if (field && typeof field === 'object' && 'value' in field) return field.value ?? null;
+  return field as T | null;
+}
+
 function formatContext(ctx: CommercialContext): string {
   const parts: string[] = [];
-  if (ctx.acv) parts.push(`ACV: £${ctx.acv.toLocaleString('en-GB')}`);
-  if (ctx.termMonths) parts.push(`Term: ${ctx.termMonths} months`);
-  if (ctx.liabilityCap) parts.push(`Liability cap: £${ctx.liabilityCap.toLocaleString('en-GB')}`);
-  if (ctx.insuranceCover) parts.push(`Insurance cover: £${ctx.insuranceCover.toLocaleString('en-GB')}`);
-  if (ctx.dataType) parts.push(`Data type: ${ctx.dataType}`);
+  const acv = fieldValue(ctx.acv);
+  const termMonths = fieldValue(ctx.termMonths);
+  const insuranceCover = fieldValue(ctx.insuranceCover);
+  const dataType = fieldValue(ctx.dataType);
+
+  if (acv !== null) parts.push(`ACV: £${acv.toLocaleString('en-GB')}`);
+  if (termMonths !== null) parts.push(`Term: ${termMonths} months`);
+  if (ctx.liabilityCap !== null && ctx.liabilityCap !== undefined) parts.push(`Liability cap: £${ctx.liabilityCap.toLocaleString('en-GB')}`);
+  if (insuranceCover !== null) parts.push(`Insurance cover: £${insuranceCover.toLocaleString('en-GB')}`);
+  if (dataType !== null) parts.push(`Data type: ${dataType}`);
   return parts.length > 0 ? `Commercial context: ${parts.join(' | ')}\n\n` : '';
 }
 

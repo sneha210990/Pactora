@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
@@ -228,14 +229,9 @@ function DataProtectionReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Data Protection');
 
-  const acv = commercialContext.acv ? String(commercialContext.acv) : null;
-  const termMonths = commercialContext.termMonths ? String(commercialContext.termMonths) : null;
-  const insuranceCover = commercialContext.insuranceCover ? String(commercialContext.insuranceCover) : null;
-  const dataType = commercialContext.dataType ?? null;
+  const dataType = commercialContext.dataType;
   const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
 
-  const acvAmount = num(acv);
-  const insuranceAmount = num(insuranceCover);
   const lolCap = num(lolCapParam);
 
   const actions = useDocumentAnalysisActions();
@@ -280,6 +276,7 @@ function DataProtectionReviewContent() {
         </div>
 
         <ReviewProgress current="data" />
+        <ActiveDocumentBanner />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Data Protection Review</h1>
@@ -288,18 +285,10 @@ function DataProtectionReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {acvAmount !== null && acvAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acvAmount)}</span>
-            )}
-            {termMonths && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {termMonths} months</span>
-            )}
-            {insuranceAmount !== null && insuranceAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {money(insuranceAmount)}</span>
-            )}
-            {dataType && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
-            )}
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
             {lolCap !== null && lolCap > 0 && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}

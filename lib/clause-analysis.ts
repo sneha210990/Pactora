@@ -51,7 +51,9 @@ Risk level guidance:
   Low    — Minor concern worth flagging but acceptable in many commercial contexts`;
 
 export async function analyzeContractClauses(contractText: string): Promise<ClauseAnalysis> {
-  const client = new Anthropic();
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set in environment');
+  const client = new Anthropic({ apiKey });
 
   const truncatedText = contractText.slice(0, 120_000);
 
