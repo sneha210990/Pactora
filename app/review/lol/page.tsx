@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
-import { useSearchParams } from 'next/navigation';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ReviewProgress } from '../components/review-progress';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type CapType =
   | 'fixed_amount'
@@ -43,19 +46,6 @@ type DerivedResult = {
   capMultipleVsACV: number | null;
   badge: 'High risk' | 'Buyer-friendly' | 'Firm but common' | 'Seller-friendly';
 };
-
-const CLAUSE_STORAGE_KEY = 'pactora.lolClause';
-const DEMO_LOL_CLAUSE =
-  "Supplier's total aggregate liability under this Agreement shall not exceed the fees paid by Customer in the 12 months preceding the event giving rise to the claim. The foregoing cap shall not apply to fraud or wilful misconduct.";
-
-function num(value: string | null, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function str(value: string | null, fallback = '') {
-  return value && value.length > 0 ? value : fallback;
-}
 
 function money(n: number) {
   return new Intl.NumberFormat('en-GB', {
@@ -240,7 +230,9 @@ function parseClause(clause: string): ParsedClauseResult {
   return result;
 }
 
-function deriveFromDeal(parsed: ParsedClauseResult, acv: number, termMonths: number): DerivedResult {
+function deriveFromDeal(parsed: ParsedClauseResult, acvArg: number | null, termMonthsArg: number | null): DerivedResult {
+  const acv = acvArg ?? 0;
+  const termMonths = termMonthsArg ?? 0;
   let impliedCapAmountGBP: number | null = null;
 
   switch (parsed.capType) {
@@ -298,81 +290,109 @@ function badgeClass(badge: DerivedResult['badge']) {
   return 'bg-blue-500/15 text-blue-300';
 }
 
-function summaryRiskFromDerived(derived: DerivedResult): 'Low' | 'Medium' | 'High' {
-  if (derived.badge === 'High risk' || derived.capMultipleVsACV === null || derived.capMultipleVsACV < 1) return 'High';
-  if (derived.capMultipleVsACV <= 2) return 'Medium';
-  return 'Low';
-}
+
+
+const CARVEOUT_LABELS: Record<CarveoutLabel, string> = {
+  confidentiality: 'Confidentiality',
+  data_protection: 'Data protection',
+  ip: 'IP infringement',
+  fraud: 'Fraud',
+  wilful_misconduct: 'Wilful misconduct',
+  gross_negligence: 'Gross negligence',
+  injury_death: 'Personal injury / death',
+  payment_obligations: 'Payment obligations',
+};
 
 function labelForCapType(capType: CapType) {
-  if (capType === 'fixed_amount') return 'Fixed amount';
-  if (capType === 'fees_paid_window') return 'Fees paid (window)';
-  if (capType === 'fees_payable_total') return 'Fees payable (total term)';
-  if (capType === 'fees_payable_window') return 'Fees payable (window)';
-  if (capType === 'multiple_of_fees') return 'Multiple of fees';
-  if (capType === 'uncapped') return 'Uncapped';
-  return 'Unknown';
+  const labels: Record<CapType, string> = {
+    fixed_amount: 'Fixed amount',
+    fees_paid_window: 'Fees paid window',
+    fees_payable_total: 'Fees payable total',
+    fees_payable_window: 'Fees payable window',
+    multiple_of_fees: 'Multiple of fees',
+    uncapped: 'Uncapped',
+    unknown: 'Clause not detected',
+  };
+  return labels[capType];
+}
+
+function synthesizeLolFlag(
+  clauseText: string,
+  parsed: ParsedClauseResult,
+  derived: DerivedResult,
+  acv: number,
+): ClauseFlag {
+  const riskLevel: ClauseFlag['riskLevel'] =
+    derived.badge === 'High risk' || derived.badge === 'Buyer-friendly' ? 'High'
+    : derived.badge === 'Firm but common' ? 'Medium'
+    : 'Low';
+
+  const capDesc = labelForCapType(parsed.capType);
+  const amountDesc = derived.impliedCapAmountGBP !== null ? ` Implied cap: ${money(derived.impliedCapAmountGBP)}.` : '';
+  const ratioDesc = derived.capMultipleVsACV !== null ? ` Cap ratio: ${derived.capMultipleVsACV.toFixed(1)}× ACV.` : '';
+  const carveoutDesc =
+    parsed.carveoutsFound.length > 0
+      ? ` Carve-outs detected: ${parsed.carveoutsFound.map((c) => CARVEOUT_LABELS[c]).join(', ')}.`
+      : '';
+
+  return {
+    clauseType: 'Liability Cap',
+    riskLevel,
+    clauseText,
+    problematicLanguage: clauseText.slice(0, 300),
+    plainEnglish: `Liability cap type: ${capDesc}.${amountDesc}${ratioDesc}${carveoutDesc}`,
+    negotiationPoint: acv > 0
+      ? `Request a cap at 1× ACV (${money(acv)}). Negotiate removal of carve-outs that push exposure outside the cap, except fraud and wilful misconduct.`
+      : 'Request a cap at 1× annual contract value. Negotiate removal of carve-outs except fraud and wilful misconduct.',
+  };
 }
 
 function LolReviewContent() {
-  const searchParams = useSearchParams();
+  const commercialContext = useDocumentCommercialContext();
+  const actions = useDocumentAnalysisActions();
+  const canonicalClause = useClauseByType('Liability Cap');
 
   useEffect(() => {
     trackEvent('analysis_started', '/review/lol');
   }, []);
 
-  const acv = num(searchParams.get('acv'), 25000);
-  const termMonths = num(searchParams.get('termMonths'), 12);
-  const insuranceCover = num(searchParams.get('insuranceCover'), 1000000);
-  const dataType = str(searchParams.get('dataType'), 'standard');
-  const queryClause = str(searchParams.get('lolClause'));
+  const acv = commercialContext.acv.value;
+  const termMonths = commercialContext.termMonths.value;
+  const insuranceCover = commercialContext.insuranceCover;
+  const dataType = commercialContext.dataType;
+  const derivedAcv = acv === null ? 0 : acv;
+  const derivedTermMonths = termMonths === null ? 0 : termMonths;
+  const initialClause = canonicalClause?.text ?? '';
 
-  const [clause, setClause] = useState(DEMO_LOL_CLAUSE);
-  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(DEMO_LOL_CLAUSE));
+  const [clause, setClause] = useState(initialClause);
+  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
 
-  useEffect(() => {
-    const savedClause = window.localStorage.getItem(CLAUSE_STORAGE_KEY);
-    const initialClause = savedClause || queryClause || DEMO_LOL_CLAUSE;
-    setClause(initialClause);
-    setParsedResult(parseClause(initialClause));
-  }, [queryClause]);
-
-  useEffect(() => {
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
-  }, [clause]);
-
-  const derived = useMemo(
-    () => deriveFromDeal(parsedResult, acv, termMonths),
-    [parsedResult, acv, termMonths],
+  // Controlled textarea — initialize once from the store canonical clause.
+  // No sync effect, no derived-state reset: both will overwrite a Playwright
+  // fill() call mid-test, making the textarea revert to the canonical value.
+  // resetClause() re-reads canonicalClause?.text directly from the closure so
+  // it always uses the current store value even without a state sync loop.
+  const [clause, setClause] = useState(canonicalClause?.text ?? '');
+  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() =>
+    parseClause(canonicalClause?.text ?? ''),
   );
 
-  const reviewQuery = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set('acv', String(acv));
-    params.set('termMonths', String(termMonths));
-    params.set('insuranceCover', String(insuranceCover));
-    params.set('dataType', dataType);
-
-    const explicitLolCap = searchParams.get('lolCap');
-    if (explicitLolCap) {
-      params.set('lolCap', explicitLolCap);
-    } else if (derived.impliedCapAmountGBP !== null) {
-      params.set('lolCap', String(derived.impliedCapAmountGBP));
-    }
-    params.set('lolRisk', summaryRiskFromDerived(derived));
-
-    return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, searchParams, derived]);
+  const derived = useMemo(
+    () => deriveFromDeal(parsedResult, derivedAcv, derivedTermMonths),
+    [parsedResult, derivedAcv, derivedTermMonths],
+  );
 
   function runReview() {
-    setParsedResult(parseClause(clause));
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
+    const result = parseClause(clause);
+    const derivedResult = deriveFromDeal(result, acv, termMonths);
+    setParsedResult(result);
+    actions.setLiabilityCap(deriveFromDeal(result, derivedAcv, derivedTermMonths).impliedCapAmountGBP);
   }
 
   function resetClause() {
-    window.localStorage.removeItem(CLAUSE_STORAGE_KEY);
-    setClause(DEMO_LOL_CLAUSE);
-    setParsedResult(parseClause(DEMO_LOL_CLAUSE));
+    const canonical = canonicalClause?.text ?? '';
+    setClause(canonical);
+    setParsedResult(parseClause(canonical));
   }
 
   const hasNarrowingItem = parsedResult.carveoutsFound.some((x) =>
@@ -394,6 +414,9 @@ function LolReviewContent() {
           </Link>
         </div>
 
+        <ReviewProgress current="lol" />
+        <ActiveDocumentBanner />
+
         <div className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Limitation of Liability Review</h1>
           <p className="mt-2 text-zinc-400">
@@ -408,14 +431,14 @@ function LolReviewContent() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Term: {termMonths} months
+              Term: {formatOptionalMonthsField(commercialContext.termMonths)}
             </span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Insurance: {money(insuranceCover)}
+              Insurance: {formatOptionalMoneyField(insuranceCover)}
             </span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
           </div>
         </div>
 
@@ -429,9 +452,9 @@ function LolReviewContent() {
           </label>
           <textarea
             id="lolClause"
+            rows={8}
             value={clause}
             onChange={(e) => setClause(e.target.value)}
-            rows={8}
             className="mt-3 w-full rounded-lg border border-zinc-700 bg-black/40 p-3 text-sm text-zinc-100 placeholder:text-zinc-500"
           />
           <p className="mt-2 text-xs text-zinc-400">You can edit the extracted clause if needed.</p>
@@ -439,7 +462,7 @@ function LolReviewContent() {
             <button
               type="button"
               onClick={runReview}
-              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
             >
               Run review
             </button>
@@ -510,7 +533,7 @@ function LolReviewContent() {
                   {parsedResult.carveoutsFound.map((x) => (
                     <li key={x} className="flex gap-3 rounded-lg border border-zinc-800 bg-black/30 p-3">
                       <span className="mt-0.5 text-amber-300">⚠</span>
-                      <span>{x}</span>
+                      <span>{CARVEOUT_LABELS[x] ?? x}</span>
                     </li>
                   ))}
                 </ul>
@@ -528,24 +551,24 @@ function LolReviewContent() {
                 {
                   label: 'Ask',
                   title: 'Cap at 1× ACV',
-                  script: `“We can do a cap of ${money(acv)}.”`,
+                  script: acv === null ? '“ACV was not detected, so confirm deal value before proposing a numeric cap.”' : `“We can do a cap of ${money(acv)}.”`,
                 },
                 {
                   label: 'Fallback',
                   title: 'Cap at 1.5× ACV',
-                  script: `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
+                  script: acv === null ? '“Once ACV is confirmed, we can set a stepped fallback.”' : `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
                 },
                 hasNarrowingItem
                   ? {
                       label: 'Narrowing',
                       title: 'Cap applies to carve-outs except fraud/wilful misconduct',
                       script:
-                        '“We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
+                        '”We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
                     }
                   : {
                       label: 'Fallback',
                       title: 'Cap at 2× ACV',
-                      script: `“Final position is ${money(acv * 2)}.”`,
+                      script: acv === null ? '“Do not state a final numeric cap until ACV is confirmed.”' : `“Final position is ${money(acv * 2)}.”`,
                     },
               ]}
             />
@@ -553,7 +576,7 @@ function LolReviewContent() {
 
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
-              href={`/review/indemnities?${reviewQuery}`}
+              href="/review/indemnities"
               className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
             >
               Continue to Indemnities

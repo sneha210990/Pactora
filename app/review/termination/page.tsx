@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
+import { ReviewProgress } from '../components/review-progress';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type TerminationRight = 'Mutual' | 'One-sided' | 'Unknown';
 type CureRights = 'Present' | 'Absent' | 'Unknown';
@@ -19,8 +22,6 @@ type ReviewResult = {
   redFlags: string[];
 };
 
-const CLAUSE_STORAGE_KEY = 'pactora.terminationClause';
-const RISK_PARAM_KEYS = ['lolRisk', 'indemnitiesRisk', 'ipRisk', 'dataRisk', 'terminationRisk'] as const;
 
 function normalize(input: string) {
   return input.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -291,51 +292,50 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function synthesizeTerminationFlag(clauseText: string, result: ReviewResult): ClauseFlag {
+  const summary = `Termination right: ${result.terminationRight}. Notice period: ${result.noticePeriod}. Cure rights: ${result.cureRights}. Convenience termination: ${result.convenienceTermination ? 'Yes' : 'No'}. Post-termination obligations: ${result.postTerminationObligations}.`;
+  const negotiation =
+    result.terminationRight === 'One-sided' && result.convenienceTermination
+      ? 'Remove unilateral convenience termination or make it mutual with adequate notice. Convenience termination for one party only creates significant revenue risk.'
+      : result.cureRights === 'Absent'
+        ? 'Add a cure period (minimum 30 days) for remediable breaches before termination rights can be exercised.'
+        : result.noticePeriod !== 'Unknown' && isVeryShortNotice(result.noticePeriod)
+          ? 'Extend the notice period to at least 60–90 days to allow for customer transition and operational planning.'
+          : 'Narrow post-termination obligations to defined, time-limited data return and deletion duties. Avoid open-ended transition assistance.';
+  return {
+    clauseType: 'Termination',
+    riskLevel: result.riskRating,
+    clauseText,
+    problematicLanguage: result.redFlags.join(' ') || clauseText.slice(0, 200),
+    plainEnglish: summary,
+    negotiationPoint: negotiation,
+  };
+}
+
 function TerminationReviewContent() {
-  const searchParams = useSearchParams();
+  const commercialContext = useDocumentCommercialContext();
+  const canonicalClause = useClauseByType('Termination');
 
-  const acv = searchParams.get('acv');
-  const termMonths = searchParams.get('termMonths');
-  const insuranceCover = searchParams.get('insuranceCover');
-  const dataType = searchParams.get('dataType');
-  const lolCapParam = searchParams.get('lolCap');
+  const dataType = commercialContext.dataType;
+  const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
 
-  const acvAmount = num(acv);
-  const insuranceAmount = num(insuranceCover);
   const lolCap = num(lolCapParam);
 
-  const [clause, setClause] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    return window.localStorage.getItem(CLAUSE_STORAGE_KEY) ?? '';
-  });
+  const actions = useDocumentAnalysisActions();
+  const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
-  useEffect(() => {
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
-  }, [clause]);
-
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
-    if (acv) params.set('acv', acv);
-    if (termMonths) params.set('termMonths', termMonths);
-    if (insuranceCover) params.set('insuranceCover', insuranceCover);
-    if (dataType) params.set('dataType', dataType);
-    if (lolCapParam) params.set('lolCap', lolCapParam);
-    RISK_PARAM_KEYS.forEach((riskKey) => {
-      const value = searchParams.get(riskKey);
-      if (value) params.set(riskKey, value);
-    });
-    if (result?.riskRating) params.set('terminationRisk', result.riskRating);
-    return params.toString();
-  }, [acv, termMonths, insuranceCover, dataType, lolCapParam, searchParams, result?.riskRating]);
+  const queryString = '';
 
   function runReview() {
-    setResult(parseClause(clause));
-    window.localStorage.setItem(CLAUSE_STORAGE_KEY, clause);
+    const parsed = parseClause(clause);
+    setResult(parsed);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeTerminationFlag(clause, parsed));
+    }
   }
 
   function reset() {
-    window.localStorage.removeItem(CLAUSE_STORAGE_KEY);
     setClause('');
     setResult(null);
   }
@@ -354,6 +354,9 @@ function TerminationReviewContent() {
           </Link>
         </div>
 
+        <ReviewProgress current="termination" />
+        <ActiveDocumentBanner />
+
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Termination Review</h1>
           <p className="mt-2 text-zinc-400">
@@ -361,18 +364,10 @@ function TerminationReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {acvAmount !== null && acvAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acvAmount)}</span>
-            )}
-            {termMonths && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {termMonths} months</span>
-            )}
-            {insuranceAmount !== null && insuranceAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {money(insuranceAmount)}</span>
-            )}
-            {dataType && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
-            )}
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
             {lolCap !== null && lolCap > 0 && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}
@@ -505,8 +500,8 @@ function TerminationReviewContent() {
           <Link href={`/review/data${queryString ? `?${queryString}` : ''}`} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900">
             Back
           </Link>
-          <Link href={`/review/summary${queryString ? `?${queryString}` : ''}`} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">
-            Continue
+          <Link href={`/review/summary${queryString ? `?${queryString}` : ''}`} className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
+            Continue to Summary
           </Link>
         </div>
       </div>
