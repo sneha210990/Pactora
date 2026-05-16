@@ -227,7 +227,7 @@ export function detectContractValues(text: string): ExtractedContractValues {
 
   const detectedAcv =
     detectAmountByKeywords(lines, ACV_KEYWORDS) ??
-    detectAmountByKeywords(lines, MONTHLY_FEE_KEYWORDS, true);
+    detectAmountByKeywords(lines, MONTHLY_FEE_KEYWORDS);
   const detectedInsurance = detectAmountByKeywords(lines, INSURANCE_KEYWORDS);
 
   let termMonths: number | null = null;

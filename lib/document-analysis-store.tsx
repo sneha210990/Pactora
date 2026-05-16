@@ -9,6 +9,7 @@ import {
   useReducer,
 } from 'react';
 import type { ClauseFlag, RiskLevel } from '@/lib/clause-analysis';
+export type { ClauseFlag };
 import type { ExtractedContractValues, ExtractedField } from '@/lib/contract-extraction';
 
 export type Clause = {
@@ -102,6 +103,7 @@ export type DocumentAnalysisState = {
   errors?: string[];
   commercialContext: CommercialContext;
   extractionWarnings: ExtractionWarning[];
+  manualFlags?: ClauseFlag[];
   diagnostics?: {
     missingFields: string[];
     lastPayloadShape?: string[];
@@ -176,6 +178,7 @@ export const emptyDocumentAnalysisState: DocumentAnalysisState = {
   errors: [],
   commercialContext: emptyCommercialContext(),
   extractionWarnings: [],
+  manualFlags: [],
   diagnostics: {
     missingFields: [],
     hydrationWarnings: [],
