@@ -367,16 +367,6 @@ function LolReviewContent() {
   const [clause, setClause] = useState(initialClause);
   const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
 
-  // Controlled textarea — initialize once from the store canonical clause.
-  // No sync effect, no derived-state reset: both will overwrite a Playwright
-  // fill() call mid-test, making the textarea revert to the canonical value.
-  // resetClause() re-reads canonicalClause?.text directly from the closure so
-  // it always uses the current store value even without a state sync loop.
-  const [clause, setClause] = useState(canonicalClause?.text ?? '');
-  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() =>
-    parseClause(canonicalClause?.text ?? ''),
-  );
-
   const derived = useMemo(
     () => deriveFromDeal(parsedResult, derivedAcv, derivedTermMonths),
     [parsedResult, derivedAcv, derivedTermMonths],
@@ -384,9 +374,12 @@ function LolReviewContent() {
 
   function runReview() {
     const result = parseClause(clause);
-    const derivedResult = deriveFromDeal(result, acv, termMonths);
+    const derivedResult = deriveFromDeal(result, derivedAcv, derivedTermMonths);
     setParsedResult(result);
-    actions.setLiabilityCap(deriveFromDeal(result, derivedAcv, derivedTermMonths).impliedCapAmountGBP);
+    actions.setLiabilityCap(derivedResult.impliedCapAmountGBP);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeLolFlag(clause, result, derivedResult, derivedAcv));
+    }
   }
 
   function resetClause() {
