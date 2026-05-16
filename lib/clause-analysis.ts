@@ -105,7 +105,7 @@ export async function analyzeContractClauses(contractText: string): Promise<Clau
     });
 
   return {
-    flags,
+    flags: Array.isArray(parsed.flags) ? parsed.flags : [],
     analyzedAt: new Date().toISOString(),
   };
 }
