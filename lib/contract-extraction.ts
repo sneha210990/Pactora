@@ -1,9 +1,31 @@
-export type ExtractedContractValues = {
-  acv: number | null;
-  termMonths: number | null;
-  insuranceCover: number | null;
-  dataType: 'standard' | 'personal' | 'sensitive';
+export type ExtractionMethod = 'regex' | 'llm' | 'hybrid';
+
+export type ExtractedField<T> = {
+  value: T | null;
+  confidence: number | null;
+  evidence: string | null;
+  extractionMethod: ExtractionMethod | null;
 };
+
+export type ExtractedContractValues = {
+  acv: ExtractedField<number>;
+  termMonths: ExtractedField<number>;
+  insuranceCover: ExtractedField<number>;
+  dataType: ExtractedField<'standard' | 'personal' | 'sensitive'>;
+};
+
+function extractedField<T>(
+  value: T | null,
+  evidence: string | null,
+  confidence: number | null = value === null ? null : 0.82,
+): ExtractedField<T> {
+  return {
+    value,
+    confidence: value === null ? null : confidence,
+    evidence,
+    extractionMethod: value === null ? null : 'regex',
+  };
+}
 
 type PdfParseResult = { text?: string };
 type MammothResult = { value?: string };
@@ -118,37 +140,25 @@ function parseMoney(value: string): number {
   return hasK ? n * 1000 : n;
 }
 
-function firstMoneyOnLine(line: string): number | null {
-  const match = line.match(MONEY_REGEX)?.[0];
-  return match ? parseMoney(match) : null;
-}
+function detectAmountByKeywords(lines: string[], keywords: string[]): ExtractedField<number> {
+  for (const line of lines) {
+    const normalizedLine = line.toLowerCase();
+    const keyword = keywords.find((candidate) => normalizedLine.includes(candidate));
+    if (!keyword) continue;
 
-// Returns the amount and whether it was expressed as a monthly figure.
-function detectAmountByKeywords(
-  lines: string[],
-  keywords: string[],
-  multiplyMonthly = false,
-): number | null {
-  for (let i = 0; i < lines.length; i++) {
-    const normalizedLine = lines[i].toLowerCase();
-    if (!keywords.some((kw) => normalizedLine.includes(kw))) continue;
+    const keywordIndex = normalizedLine.indexOf(keyword);
+    const amountAfterKeyword = line.slice(keywordIndex).match(MONEY_REGEX)?.[0];
+    if (amountAfterKeyword) {
+      return extractedField(parseMoney(amountAfterKeyword), line);
+    }
 
-    // Check current line, then immediately adjacent lines (value often on next/prev line in tables)
-    const candidates = [lines[i], lines[i + 1] ?? '', lines[i + 2] ?? '', lines[i - 1] ?? ''];
-
-    for (const candidate of candidates) {
-      const amount = firstMoneyOnLine(candidate);
-      if (!amount) continue;
-
-      if (multiplyMonthly) return amount * 12;
-
-      // If the same line/nearby line has "per month" wording, annualise
-      if (PER_MONTH_SUFFIX.test(candidate)) return amount * 12;
-
-      return amount;
+    const amountOnLine = line.match(MONEY_REGEX)?.[0];
+    if (amountOnLine) {
+      return extractedField(parseMoney(amountOnLine), line, 0.72);
     }
   }
-  return null;
+
+  return extractedField<number>(null, null);
 }
 
 async function getPdfParser(): Promise<PdfParse> {
@@ -221,33 +231,42 @@ export function detectContractValues(text: string): ExtractedContractValues {
   const detectedInsurance = detectAmountByKeywords(lines, INSURANCE_KEYWORDS);
 
   let termMonths: number | null = null;
+  let termEvidence: string | null = null;
   const monthMatch = text.match(MONTH_TERM_REGEX);
   if (monthMatch) {
     termMonths = Number(monthMatch[1]);
+    termEvidence = monthMatch[0];
   } else {
     const yearMatch = text.match(YEAR_TERM_REGEX);
     if (yearMatch) {
       termMonths = Number(yearMatch[1]) * 12;
+      termEvidence = yearMatch[0];
     }
   }
 
   const normalizedText = text.toLowerCase();
-  let dataType: ExtractedContractValues['dataType'] = 'standard';
+  let dataType: 'standard' | 'personal' | 'sensitive' | null = null;
+  let dataEvidence: string | null = null;
 
   if (
     normalizedText.includes('special category data') ||
     normalizedText.includes('sensitive personal data')
   ) {
     dataType = 'sensitive';
+    dataEvidence = 'special category data / sensitive personal data';
   } else if (normalizedText.includes('personal data')) {
     dataType = 'personal';
+    dataEvidence = 'personal data';
+  } else if (normalizedText.includes('standard data')) {
+    dataType = 'standard';
+    dataEvidence = 'standard data';
   }
 
   return {
     acv: detectedAcv,
-    termMonths,
+    termMonths: extractedField(termMonths, termEvidence),
     insuranceCover: detectedInsurance,
-    dataType,
+    dataType: extractedField(dataType, dataEvidence),
   };
 }
 

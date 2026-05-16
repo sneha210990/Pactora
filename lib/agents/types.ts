@@ -1,7 +1,7 @@
 import type { ClauseFlag } from '@/lib/clause-analysis';
 
-// All clause types covered by specialist agents — now at parity with the
-// legacy monolithic /api/contracts/analyze endpoint (8 categories).
+// All clause types covered by specialist agents.
+// The first five have dedicated review pages; the last three surface in AI Clause Analysis.
 export const PACTORA_CLAUSE_AGENTS = [
   'Liability Cap',
   'Indemnities',
@@ -9,7 +9,7 @@ export const PACTORA_CLAUSE_AGENTS = [
   'Data Protection',
   'Termination Rights',
   'Auto-Renewal',
-  'Fee Escalation',
+  'Fee Increases',
   'Governing Law',
 ] as const;
 

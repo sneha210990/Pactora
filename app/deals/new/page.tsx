@@ -9,6 +9,7 @@ import {
   useDocumentAnalysisActions,
 } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
+import { formatMoney } from '@/app/review/components/active-document-banner';
 import type { ExtractedContractValues } from '@/lib/contract-extraction';
 
 type ExtractionResponse = {
@@ -27,9 +28,8 @@ const processingStages: Array<{ key: keyof DocumentAnalysisState['processingStep
   { key: 'recommendations', label: 'Generating recommendations…' },
 ];
 
-function formatOptionalMoney(value?: number) {
-  if (!value) return '';
-  return String(value);
+function formatOptionalMoneyValue(value: number | null) {
+  return value === null ? '' : formatMoney(value);
 }
 
 function ProcessingPipeline({ analysis }: { analysis: DocumentAnalysisState }) {
@@ -76,7 +76,7 @@ export default function NewDealPage() {
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
 
-  const commercialContext = analysis.commercialContext ?? {};
+  const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';
   const canContinue = analysis.uploadStatus === 'complete' && hasAcceptedLegalNotice && hasConfirmedDataCaution;
   const runClauseAnalysis = async (text: string) => {
@@ -307,86 +307,115 @@ export default function NewDealPage() {
           </div>
         </section>
 
-        {warnings.length > 0 ? (
-          <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-            <h2 className="font-semibold">Partial analysis warning</h2>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {warnings.map((warning) => <li key={warning}>{warning}</li>)}
-            </ul>
-          </section>
-        ) : null}
+        {analysis.uploadStatus === 'complete' && (
+          <>
+            {warnings.length > 0 ? (
+              <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+                <h2 className="font-semibold">Partial analysis warning</h2>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                </ul>
+              </section>
+            ) : null}
 
-        <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-          <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
-          <h2 className="mt-1 text-lg font-medium text-white">Extracted commercial context</h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Empty fields mean the parser did not identify that value. Pactora will not substitute fake defaults.
-          </p>
+            {analysis.extractionWarnings.length > 0 ? (
+              <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
+                <h2 className="font-semibold text-zinc-100">Extraction diagnostics</h2>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {analysis.extractionWarnings.map((warning) => (
+                    <li key={`${warning.field}-${warning.reason}`}>{warning.reason}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <ReadOnlyField label="Annual contract value" value={formatOptionalMoney(commercialContext.acv)} empty="ACV not detected" />
-            <ReadOnlyField label="Initial term" value={commercialContext.termMonths ? `${commercialContext.termMonths} months` : ''} empty="Initial term not detected" />
-            <ReadOnlyField label="Insurance cover" value={formatOptionalMoney(commercialContext.insuranceCover)} empty="Insurance cover not detected" />
-            <ReadOnlyField label="Data type" value={commercialContext.dataType} empty="Data category not identified" />
-            <ReadOnlyField label="Governing law" value={analysis.extractedTerms.governingLaw} empty="No governing law identified" />
-            <ReadOnlyField label="Termination notice" value={analysis.extractedTerms.terminationNotice} empty="Clause not detected" />
-          </div>
-        </section>
+            <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
+              <h2 className="mt-1 text-lg font-medium text-white">Extracted commercial context</h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Empty fields mean the parser did not identify that value. Pactora will not substitute fake defaults.
+              </p>
 
-        <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-          <p className="text-xs uppercase tracking-wide text-zinc-500">Step 3 of 3</p>
-          <h2 className="mt-1 text-lg font-medium text-white">Acknowledgment</h2>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <ReadOnlyField label="Annual contract value" value={formatOptionalMoneyValue(commercialContext.acv.value)} empty="Not detected" evidence={commercialContext.acv.evidence} />
+                <ReadOnlyField label="Initial term" value={commercialContext.termMonths.value === null ? '' : `${commercialContext.termMonths.value} months`} empty="Not detected" evidence={commercialContext.termMonths.evidence} />
+                <ReadOnlyField label="Insurance cover" value={formatOptionalMoneyValue(commercialContext.insuranceCover.value)} empty="Not detected" evidence={commercialContext.insuranceCover.evidence} />
+                <ReadOnlyField label="Data type" value={commercialContext.dataType.value ?? ''} empty="Not detected" evidence={commercialContext.dataType.evidence} />
+                <ReadOnlyField label="Governing law" value={analysis.extractedTerms.governingLaw} empty="No governing law identified" />
+                <ReadOnlyField label="Termination notice" value={analysis.extractedTerms.terminationNotice} empty="Clause not detected" />
+              </div>
+            </section>
 
-          <div className="mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
-              <li>Pactora provides decision-support software for commercial contract review.</li>
-              <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
-              <li>Outputs may be incomplete or inaccurate and should be validated.</li>
-              <li>Use qualified human and legal review where appropriate before material decisions.</li>
-              <li>You must be authorised to upload or paste the document and its contents.</li>
-            </ul>
-            <p className="mt-4 text-zinc-300">
-              Read our <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Terms</Link>,{' '}
-              <Link href="/privacy" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Privacy Notice</Link>,{' '}
-              <Link href="/security" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Security</Link> and{' '}
-              <Link href="/subprocessors" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Subprocessors</Link>.
-            </p>
-          </div>
+            <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 3 of 3</p>
+              <h2 className="mt-1 text-lg font-medium text-white">Acknowledgment</h2>
 
-          <div className="mt-4 space-y-3">
-            <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-              <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
-              <span>I confirm that I am authorised to upload or paste this material and understand Pactora outputs may be incomplete or inaccurate.</span>
-            </label>
-            <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-              <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
-              <span>I understand extracted values are parser outputs and should be checked before legal or commercial decisions.</span>
-            </label>
-          </div>
-        </section>
+              <div className="mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">Legal notice</h3>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-200">
+                  <li>Pactora provides decision-support software for commercial contract review.</li>
+                  <li>Pactora does not provide legal advice or create a lawyer-client relationship.</li>
+                  <li>Outputs may be incomplete or inaccurate and should be validated.</li>
+                  <li>Use qualified human and legal review where appropriate before material decisions.</li>
+                  <li>You must be authorised to upload or paste the document and its contents.</li>
+                </ul>
+                <p className="mt-4 text-zinc-300">
+                  Read our <Link href="/terms" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Terms</Link>,{' '}
+                  <Link href="/privacy" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Privacy Notice</Link>,{' '}
+                  <Link href="/security" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Security</Link> and{' '}
+                  <Link href="/subprocessors" className="text-amber-200 underline decoration-amber-400/60 underline-offset-4 hover:text-amber-100">Subprocessors</Link>.
+                </p>
+              </div>
 
-        <div className="flex justify-end">
-          {canContinue ? (
-            <Link href="/review/lol" className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">
-              Continue to Liability review
-            </Link>
-          ) : (
-            <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
-              Complete input and acknowledgments
-            </button>
-          )}
-        </div>
+              <div className="mt-4 space-y-3">
+                <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
+                  <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+                  <span>I confirm that I am authorised to upload or paste this material and understand Pactora outputs may be incomplete or inaccurate.</span>
+                </label>
+                <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
+                  <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+                  <span>I understand extracted values are parser outputs and should be checked before legal or commercial decisions.</span>
+                </label>
+              </div>
+            </section>
+
+            {!canContinue && (
+              <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">
+                <p className="font-medium text-zinc-100">Before you can continue:</p>
+                <ul className="mt-2 space-y-1">
+                  <li className={hasAcceptedLegalNotice ? 'text-emerald-400' : 'text-zinc-400'}>
+                    {hasAcceptedLegalNotice ? '✓' : '○'} Confirm authorisation and accuracy notice
+                  </li>
+                  <li className={hasConfirmedDataCaution ? 'text-emerald-400' : 'text-zinc-400'}>
+                    {hasConfirmedDataCaution ? '✓' : '○'} Confirm data caution
+                  </li>
+                </ul>
+              </div>
+            )}
+            <div className="flex justify-end">
+              {canContinue ? (
+                <Link href="/review/lol" className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
+                  Continue to Liability review
+                </Link>
+              ) : (
+                <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
+                  Continue to Liability review
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </main>
   );
 }
 
-function ReadOnlyField({ label, value, empty }: { label: string; value?: string; empty: string }) {
+function ReadOnlyField({ label, value, empty, evidence }: { label: string; value?: string; empty: string; evidence?: string | null }) {
   return (
     <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
       <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
       <div className={`mt-2 text-sm font-semibold ${value ? 'text-zinc-100' : 'text-zinc-500'}`}>{value || empty}</div>
+      {evidence ? <div className="mt-2 text-xs text-zinc-500">Evidence: {evidence}</div> : null}
     </div>
   );
 }

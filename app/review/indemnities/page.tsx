@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
-import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
+import { ReviewProgress } from '../components/review-progress';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
 type TriggerScope = 'IP' | 'Data' | 'Third-party claims' | 'Broad breach' | 'Unknown';
@@ -166,27 +169,48 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function synthesizeIndemnitiesFlag(clauseText: string, result: ReviewResult): ClauseFlag {
+  const summary = `Directionality: ${result.directionality}. Trigger scope: ${result.triggerScope}. Cap interaction: ${result.capInteraction}.`;
+  const negotiation =
+    result.capInteraction === 'Potentially outside cap'
+      ? 'Negotiate to bring the indemnity within the liability cap, except for fraud and wilful misconduct. Remove "notwithstanding" override language.'
+      : result.directionality === 'One-sided'
+        ? 'Request mutual indemnity obligations or narrow the one-sided obligation to specific, defined triggers (IP infringement or data breach).'
+        : 'Confirm indemnity trigger scope is limited to IP infringement and data protection breaches. Ensure indemnity sits within the cap.';
+  return {
+    clauseType: 'Indemnities',
+    riskLevel: result.riskRating,
+    clauseText,
+    problematicLanguage: result.redFlags.join(' ') || clauseText.slice(0, 200),
+    plainEnglish: summary,
+    negotiationPoint: negotiation,
+  };
+}
+
 function IndemnitiesReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Indemnities');
 
-  const acv = commercialContext.acv ? String(commercialContext.acv) : null;
-  const termMonths = commercialContext.termMonths ? String(commercialContext.termMonths) : null;
-  const insuranceCover = commercialContext.insuranceCover ? String(commercialContext.insuranceCover) : null;
-  const dataType = commercialContext.dataType ?? null;
+  const acv = commercialContext.acv.value === null ? null : String(commercialContext.acv.value);
+  const dataType = commercialContext.dataType;
   const lolCap = commercialContext.liabilityCap ?? null;
   const acvAmount = num(acv);
 
   const ladderBaseCap = lolCap !== null && lolCap > 0 ? lolCap : acvAmount !== null && acvAmount > 0 ? acvAmount : null;
   const ladderStretchCap = acvAmount !== null && acvAmount > 0 ? Math.round(acvAmount * 1.5) : null;
 
+  const actions = useDocumentAnalysisActions();
   const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
   const queryString = '';
 
   function runReview() {
-    setResult(parseClause(clause));
+    const parsed = parseClause(clause);
+    setResult(parsed);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeIndemnitiesFlag(clause, parsed));
+    }
   }
 
   function reset() {
@@ -211,6 +235,9 @@ function IndemnitiesReviewContent() {
           </Link>
         </div>
 
+        <ReviewProgress current="indemnities" />
+        <ActiveDocumentBanner />
+
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Indemnities Review</h1>
           <p className="mt-2 text-zinc-400">
@@ -218,18 +245,10 @@ function IndemnitiesReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {acvAmount !== null && acvAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acvAmount)}</span>
-            )}
-            {termMonths && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {termMonths} months</span>
-            )}
-            {insuranceCover && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {money(Number(insuranceCover))}</span>
-            )}
-            {dataType && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
-            )}
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
               {ladderBaseCap !== null ? `Liability cap: ${money(ladderBaseCap)}` : 'Liability cap: not provided'}
             </span>
@@ -364,7 +383,7 @@ function IndemnitiesReviewContent() {
           </Link>
           <Link
             href={`/review/ip${queryString ? `?${queryString}` : ''}`}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+            className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
           >
             Continue to IP Ownership
           </Link>

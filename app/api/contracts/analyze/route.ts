@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     const analysis = await analyzeContractClauses(body.text);
     return NextResponse.json({ analysis });
   } catch (error) {
+    console.error('[analyze] error:', error);
     const message = error instanceof Error ? error.message : 'Unable to analyse contract.';
     return NextResponse.json({ error: message }, { status: 500 });
   }
