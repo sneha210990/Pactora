@@ -156,6 +156,8 @@ function SummaryContent() {
     negotiationPoint: analysis.recommendations.find((recommendation) => recommendation.clauseType === clause.type)?.text ?? 'No recommendation generated',
   }));
 
+  const effectiveFlags: ClauseFlag[] = clauseFlags.length > 0 ? clauseFlags : (analysis.manualFlags ?? []);
+
   const rankedSections = useMemo(() => {
     return reviewSections
       .map((section) => {
@@ -176,7 +178,7 @@ function SummaryContent() {
   const overallRisk: RiskLevel = knownRisks.some((section) => section.risk === 'High') || averageRisk >= 2.4 ? 'High' : averageRisk >= 1.7 ? 'Medium' : 'Low';
 
   async function generateEmail() {
-    if (clauseFlags.length === 0) return;
+    if (effectiveFlags.length === 0) return;
     setEmailGenerating(true);
     setEmailError('');
     setEmailCopied(false);
@@ -185,7 +187,7 @@ function SummaryContent() {
       const response = await fetch('/api/contracts/negotiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flags: clauseFlags, commercialContext: analysis.commercialContext }),
+        body: JSON.stringify({ flags: effectiveFlags, commercialContext: analysis.commercialContext }),
       });
       const data = (await response.json()) as { email?: string; error?: string };
       if (!response.ok || !data.email) {
@@ -305,10 +307,10 @@ function SummaryContent() {
               <div className="mt-4 flex flex-col gap-2">
                 <button
                   onClick={generateEmail}
-                  disabled={emailGenerating || clauseFlags.length === 0}
+                  disabled={emailGenerating || effectiveFlags.length === 0}
                   className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300"
                 >
-                  {emailGenerating ? 'Generating…' : clauseFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
+                  {emailGenerating ? 'Generating…' : effectiveFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
                 </button>
                 {emailError ? <p className="text-xs text-red-300">{emailError}</p> : null}
               </div>
@@ -316,24 +318,26 @@ function SummaryContent() {
           </div>
         </section>
 
-        {clauseFlags.length > 0 ? (
+        {effectiveFlags.length > 0 ? (
           <section className="mt-8">
             <div className="mb-4 flex items-center gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">AI Clause Analysis</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
+                {clauseFlags.length > 0 ? 'AI Clause Analysis' : 'Manual Review Findings'}
+              </h2>
               <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
-                {clauseFlags.length} {clauseFlags.length === 1 ? 'flag' : 'flags'}
+                {effectiveFlags.length} {effectiveFlags.length === 1 ? 'flag' : 'flags'}
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {clauseFlags.map((flag, i) => (
+              {effectiveFlags.map((flag, i) => (
                 <ClauseFlagCard key={i} flag={flag} />
               ))}
             </div>
           </section>
         ) : (
           <section className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">AI Clause Analysis</h2>
-            <p className="mt-2 text-sm text-zinc-500">Analysis incomplete — no clause risks detected from the uploaded document.</p>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Clause Analysis</h2>
+            <p className="mt-2 text-sm text-zinc-500">No flags yet — run each review section to build a complete picture.</p>
           </section>
         )}
 

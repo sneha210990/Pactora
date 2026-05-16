@@ -6,6 +6,7 @@ import { trackEvent } from '@/components/track-event';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type CapType =
@@ -315,6 +316,37 @@ function labelForCapType(capType: CapType) {
   return labels[capType];
 }
 
+function synthesizeLolFlag(
+  clauseText: string,
+  parsed: ParsedClauseResult,
+  derived: DerivedResult,
+  acv: number,
+): ClauseFlag {
+  const riskLevel: ClauseFlag['riskLevel'] =
+    derived.badge === 'High risk' || derived.badge === 'Buyer-friendly' ? 'High'
+    : derived.badge === 'Firm but common' ? 'Medium'
+    : 'Low';
+
+  const capDesc = labelForCapType(parsed.capType);
+  const amountDesc = derived.impliedCapAmountGBP !== null ? ` Implied cap: ${money(derived.impliedCapAmountGBP)}.` : '';
+  const ratioDesc = derived.capMultipleVsACV !== null ? ` Cap ratio: ${derived.capMultipleVsACV.toFixed(1)}× ACV.` : '';
+  const carveoutDesc =
+    parsed.carveoutsFound.length > 0
+      ? ` Carve-outs detected: ${parsed.carveoutsFound.map((c) => CARVEOUT_LABELS[c]).join(', ')}.`
+      : '';
+
+  return {
+    clauseType: 'Liability Cap',
+    riskLevel,
+    clauseText,
+    problematicLanguage: clauseText.slice(0, 300),
+    plainEnglish: `Liability cap type: ${capDesc}.${amountDesc}${ratioDesc}${carveoutDesc}`,
+    negotiationPoint: acv > 0
+      ? `Request a cap at 1× ACV (${money(acv)}). Negotiate removal of carve-outs that push exposure outside the cap, except fraud and wilful misconduct.`
+      : 'Request a cap at 1× annual contract value. Negotiate removal of carve-outs except fraud and wilful misconduct.',
+  };
+}
+
 function LolReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const actions = useDocumentAnalysisActions();
@@ -335,10 +367,15 @@ function LolReviewContent() {
   const [clause, setClause] = useState(initialClause);
   const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
 
-  useEffect(() => {
-    setClause(initialClause);
-    setParsedResult(parseClause(initialClause));
-  }, [initialClause]);
+  // Controlled textarea — initialize once from the store canonical clause.
+  // No sync effect, no derived-state reset: both will overwrite a Playwright
+  // fill() call mid-test, making the textarea revert to the canonical value.
+  // resetClause() re-reads canonicalClause?.text directly from the closure so
+  // it always uses the current store value even without a state sync loop.
+  const [clause, setClause] = useState(canonicalClause?.text ?? '');
+  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() =>
+    parseClause(canonicalClause?.text ?? ''),
+  );
 
   const derived = useMemo(
     () => deriveFromDeal(parsedResult, derivedAcv, derivedTermMonths),
@@ -347,13 +384,15 @@ function LolReviewContent() {
 
   function runReview() {
     const result = parseClause(clause);
+    const derivedResult = deriveFromDeal(result, acv, termMonths);
     setParsedResult(result);
     actions.setLiabilityCap(deriveFromDeal(result, derivedAcv, derivedTermMonths).impliedCapAmountGBP);
   }
 
   function resetClause() {
-    setClause(initialClause);
-    setParsedResult(parseClause(initialClause));
+    const canonical = canonicalClause?.text ?? '';
+    setClause(canonical);
+    setParsedResult(parseClause(canonical));
   }
 
   const hasNarrowingItem = parsedResult.carveoutsFound.some((x) =>
@@ -413,9 +452,9 @@ function LolReviewContent() {
           </label>
           <textarea
             id="lolClause"
+            rows={8}
             value={clause}
             onChange={(e) => setClause(e.target.value)}
-            rows={8}
             className="mt-3 w-full rounded-lg border border-zinc-700 bg-black/40 p-3 text-sm text-zinc-100 placeholder:text-zinc-500"
           />
           <p className="mt-2 text-xs text-zinc-400">You can edit the extracted clause if needed.</p>

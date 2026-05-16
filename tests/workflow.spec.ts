@@ -767,18 +767,41 @@ test('Test 45: Summary risk score derives from liability cap vs ACV ratio', asyn
   await expect(page.getByText('Liability cap: £5,000')).toBeVisible();
 });
 
-test('Test 46: Summary page email capture form submits and shows confirmation', async ({ page }) => {
-  await seedStore(page, { acv: 50000, termMonths: 12 });
+test('Test 46: Summary negotiation email button is enabled when manual flags are seeded', async ({ page }) => {
+  const storeData = {
+    documentId: 'playwright-test',
+    uploadStatus: 'complete',
+    documentMeta: { fileName: 'test-contract.pdf' },
+    extractedParties: {},
+    extractedTerms: {},
+    clauses: [],
+    risks: [],
+    obligations: [],
+    recommendations: [],
+    processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
+    errors: [],
+    commercialContext: { acv: 50000, termMonths: 12 },
+    manualFlags: [
+      {
+        clauseType: 'Liability Cap',
+        riskLevel: 'High',
+        clauseText: 'Liability is limited to £1,000.',
+        problematicLanguage: 'Liability is limited to £1,000.',
+        plainEnglish: 'Liability cap type: Fixed amount. Implied cap: £1,000. Cap ratio: 0.0× ACV.',
+        negotiationPoint: 'Request a cap at 1× ACV (£50,000).',
+      },
+    ],
+    diagnostics: { missingFields: [], hydrationWarnings: [] },
+  };
+  await page.addInitScript((args: { key: string; value: string }) => {
+    window.localStorage.setItem(args.key, args.value);
+  }, { key: STORAGE_KEY, value: JSON.stringify(storeData) });
   await page.goto('/review/summary');
 
-  const emailInput = page.getByPlaceholder('you@company.com');
-  await emailInput.fill('test@example.com');
-  await page.getByRole('button', { name: 'Notify me' }).click();
-
-  // Should show either success or error — not crash or 5xx
-  await expect(
-    page.getByText(/list|subscri|later/i).first()
-  ).toBeVisible({ timeout: 15000 });
+  // With manual flags seeded, the button should be enabled and labelled correctly.
+  const btn = page.getByRole('button', { name: /generate negotiation email/i });
+  await expect(btn).toBeVisible();
+  await expect(btn).toBeEnabled();
 });
 
 // ─── Navigation and direct access ─────────────────────────────────────────────

@@ -5,7 +5,8 @@ import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { ReviewProgress } from '../components/review-progress';
-import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type DataRole = 'Controller' | 'Processor' | 'Joint' | 'Unknown';
 type NotificationWindow = '24h' | '48h' | '72h' | 'Unknown';
@@ -204,6 +205,26 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function synthesizeDataFlag(clauseText: string, result: ReviewResult): ClauseFlag {
+  const summary = `Data role: ${result.dataRole}. Notification window: ${result.notificationWindow}. Sub-processor risk: ${result.subProcessorRisk}. Cap interaction: ${result.capInteraction}. Security scope: ${result.securityScope}.`;
+  const negotiation =
+    result.capInteraction === 'Outside cap'
+      ? 'Data protection liability must sit inside the agreed liability cap, except where law mandates otherwise. Remove language placing data breach claims outside the cap.'
+      : result.notificationWindow === '24h'
+        ? 'Request 72-hour breach notification aligned with GDPR Article 33. 24-hour windows create unrealistic operational obligations.'
+        : result.subProcessorRisk === 'High'
+          ? 'Sub-processor liability should be proportionate and tied to reasonable oversight controls, not open-ended strict liability.'
+          : 'Ensure security obligations reference reasonable, industry-standard technical and organisational measures rather than absolute outcomes.';
+  return {
+    clauseType: 'Data Protection',
+    riskLevel: result.riskRating,
+    clauseText,
+    problematicLanguage: result.redFlags.join(' ') || clauseText.slice(0, 200),
+    plainEnglish: summary,
+    negotiationPoint: negotiation,
+  };
+}
+
 function DataProtectionReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Data Protection');
@@ -213,13 +234,18 @@ function DataProtectionReviewContent() {
 
   const lolCap = num(lolCapParam);
 
+  const actions = useDocumentAnalysisActions();
   const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
   const queryString = '';
 
   function runReview() {
-    setResult(parseClause(clause));
+    const parsed = parseClause(clause);
+    setResult(parsed);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeDataFlag(clause, parsed));
+    }
   }
 
   function reset() {

@@ -5,7 +5,8 @@ import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { ReviewProgress } from '../components/review-progress';
-import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type OwnershipStructure = 'Vendor owns' | 'Customer owns' | 'Shared/retained ownership' | 'Unknown';
 type LicenceModel = 'Limited licence' | 'Perpetual/Broad licence' | 'Broad licence' | 'Unknown';
@@ -155,6 +156,24 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function synthesizeIPFlag(clauseText: string, result: ReviewResult): ClauseFlag {
+  const summary = `Ownership: ${result.ownershipStructure}. Licence model: ${result.licenceModel}. Strategic risk: ${result.strategicRisk}.`;
+  const negotiation =
+    result.ownershipStructure === 'Vendor owns' || result.ownershipStructure === 'Customer owns'
+      ? 'Each party should retain its pre-existing IP. Any background IP licence should be limited to use of the service for the contract purpose only.'
+      : result.licenceModel === 'Perpetual/Broad licence' || result.licenceModel === 'Broad licence'
+        ? 'Remove perpetual, sublicensable, or transferable licence rights. Licence scope should be limited and tied to the contract purpose.'
+        : 'Confirm IP ownership positions and ensure any licence is non-exclusive, limited, and revocable on termination.';
+  return {
+    clauseType: 'IP Ownership',
+    riskLevel: result.riskRating,
+    clauseText,
+    problematicLanguage: result.redFlags.join(' ') || clauseText.slice(0, 200),
+    plainEnglish: summary,
+    negotiationPoint: negotiation,
+  };
+}
+
 function IpOwnershipReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('IP Ownership');
@@ -164,13 +183,18 @@ function IpOwnershipReviewContent() {
 
   const lolCap = num(lolCapParam);
 
+  const actions = useDocumentAnalysisActions();
   const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
   const queryString = '';
 
   function runReview() {
-    setResult(parseClause(clause));
+    const parsed = parseClause(clause);
+    setResult(parsed);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeIPFlag(clause, parsed));
+    }
   }
 
   function reset() {

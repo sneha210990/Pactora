@@ -118,7 +118,8 @@ type Action =
   | { type: 'analysisHydrated'; analysis: AnalysisPayload }
   | { type: 'analysisFailed'; error: string }
   | { type: 'setError'; error: string }
-  | { type: 'setLiabilityCap'; value: number | null };
+  | { type: 'setLiabilityCap'; value: number | null }
+  | { type: 'setManualReviewFlag'; flag: ClauseFlag };
 
 type ExtractionPayload = {
   documentId?: string;
@@ -417,6 +418,12 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
         },
       };
       break;
+    case 'setManualReviewFlag': {
+      const existing = state.manualFlags ?? [];
+      const others = existing.filter((f) => f.clauseType !== action.flag.clauseType);
+      next = { ...state, manualFlags: [...others, action.flag] };
+      break;
+    }
   }
 
   next = {
@@ -483,6 +490,7 @@ type StoreValue = {
     analysisFailed: (error: string) => void;
     setError: (error: string) => void;
     setLiabilityCap: (value: number | null) => void;
+    setManualReviewFlag: (flag: ClauseFlag) => void;
   };
 };
 
@@ -510,6 +518,7 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
     analysisFailed: (error) => dispatch({ type: 'analysisFailed', error }),
     setError: (error) => dispatch({ type: 'setError', error }),
     setLiabilityCap: (value) => dispatch({ type: 'setLiabilityCap', value }),
+    setManualReviewFlag: (flag) => dispatch({ type: 'setManualReviewFlag', flag }),
   }), []);
 
   const value = useMemo(() => ({ state, actions }), [actions, state]);

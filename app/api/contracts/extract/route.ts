@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { detectContractValues, extractContractText } from '@/lib/contract-extraction';
+import { extractContractValuesWithAI } from '@/lib/ai-extraction';
 
 export const runtime = 'nodejs';
 
@@ -14,7 +15,7 @@ function detectCanonicalTerms(text: string) {
   return {
     effectiveDate: extractTerm(/effective date[:\s]+([^\n.;]+)/i, text),
     governingLaw: extractTerm(/governed by (?:and construed in accordance with )?(?:the laws of )?([^\n.;]+)/i, text),
-    terminationNotice: extractTerm(/(\d+\s+(?:days?|months?)['’]?\s+(?:prior\s+)?(?:written\s+)?notice)/i, text),
+    terminationNotice: extractTerm(/(\d+\s+(?:days?|months?)['']?\s+(?:prior\s+)?(?:written\s+)?notice)/i, text),
     renewalTerm: extractTerm(/renew(?:s|al)?[^\n.]*?(\d+\s+(?:days?|months?|years?))/i, text),
   };
 }
@@ -24,12 +25,60 @@ type ManualExtractionRequest = {
   sourceName?: unknown;
 };
 
-function buildExtractionPayload(
+// Runs AI extraction (Haiku) and regex extraction in parallel.
+// AI values win when present; regex provides the fallback.
+// If AI fails entirely, the function returns regex-only results — the product
+// always delivers something, never an error because of AI unavailability.
+async function mergeExtractionValues(text: string) {
+  const regexValues = detectContractValues(text);
+  const regexTerms = detectCanonicalTerms(text);
+
+  // Fire Haiku in parallel with the (already-completed) regex pass.
+  const aiResult = await extractContractValuesWithAI(text).catch((err: unknown) => {
+    console.warn('[extract] Haiku extraction failed, using regex fallback:', err instanceof Error ? err.message : err);
+    return null;
+  });
+
+  const detectedValues = {
+    // Numeric fields: AI wins on any non-null value; regex serves as fallback.
+    acv: aiResult?.acv ?? regexValues.acv,
+    termMonths: aiResult?.termMonths ?? regexValues.termMonths,
+    insuranceCover: aiResult?.insuranceCover ?? regexValues.insuranceCover,
+    // dataType: AI wins — it understands GDPR context better than keyword matching.
+    dataType: aiResult?.dataType ?? regexValues.dataType,
+    // liabilityCap: AI-only field; regex has no equivalent.
+    liabilityCap: aiResult?.liabilityCap ?? null,
+    // currency: AI-only field.
+    currency: aiResult?.currency ?? ('GBP' as const),
+  };
+
+  const extractedTerms = {
+    effectiveDate: regexTerms.effectiveDate ?? undefined,
+    // AI wins on governing law and termination notice (more context-aware than regex).
+    governingLaw: aiResult?.governingLaw ?? regexTerms.governingLaw ?? undefined,
+    terminationNotice: aiResult?.terminationNotice ?? regexTerms.terminationNotice ?? undefined,
+    renewalTerm: aiResult?.renewalTerm ?? regexTerms.renewalTerm ?? undefined,
+  };
+
+  console.log('[extract] extraction sources:', {
+    acv: aiResult?.acv != null ? 'ai' : regexValues.acv != null ? 'regex' : 'null',
+    termMonths: aiResult?.termMonths != null ? 'ai' : regexValues.termMonths != null ? 'regex' : 'null',
+    insuranceCover: aiResult?.insuranceCover != null ? 'ai' : regexValues.insuranceCover != null ? 'regex' : 'null',
+    dataType: aiResult?.dataType != null ? 'ai' : 'regex',
+    liabilityCap: aiResult?.liabilityCap != null ? 'ai' : 'null',
+    governingLaw: aiResult?.governingLaw != null ? 'ai' : regexTerms.governingLaw != null ? 'regex' : 'null',
+    terminationNotice: aiResult?.terminationNotice != null ? 'ai' : regexTerms.terminationNotice != null ? 'regex' : 'null',
+    aiAvailable: aiResult !== null,
+  });
+
+  return { detectedValues, extractedTerms };
+}
+
+async function buildExtractionPayload(
   text: string,
   documentMeta: { fileName: string; fileType: string; uploadedAt: string },
 ) {
-  const detectedValues = detectContractValues(text);
-  const extractedTerms = detectCanonicalTerms(text);
+  const { detectedValues, extractedTerms } = await mergeExtractionValues(text);
   const documentId = crypto.randomUUID();
 
   console.log('[extract] parser payload shape:', {
@@ -66,7 +115,7 @@ async function extractFromManualText(request: Request) {
 
   console.log('[extract] manualText.length:', text.length);
 
-  return NextResponse.json(buildExtractionPayload(text, {
+  return NextResponse.json(await buildExtractionPayload(text, {
     fileName: sourceName,
     fileType: 'text/plain',
     uploadedAt: new Date().toISOString(),
@@ -95,7 +144,7 @@ async function extractFromUploadedFile(request: Request) {
   const buffer = Buffer.from(await uploaded.arrayBuffer());
   const text = await extractContractText(uploaded.name, buffer, uploaded.type);
 
-  return NextResponse.json(buildExtractionPayload(text, {
+  return NextResponse.json(await buildExtractionPayload(text, {
     fileName: uploaded.name,
     fileType: uploaded.type,
     uploadedAt: new Date().toISOString(),
