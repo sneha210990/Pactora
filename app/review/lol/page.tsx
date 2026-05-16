@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type CapType =
@@ -312,6 +313,37 @@ function labelForCapType(capType: CapType) {
   return labels[capType];
 }
 
+function synthesizeLolFlag(
+  clauseText: string,
+  parsed: ParsedClauseResult,
+  derived: DerivedResult,
+  acv: number,
+): ClauseFlag {
+  const riskLevel: ClauseFlag['riskLevel'] =
+    derived.badge === 'High risk' || derived.badge === 'Buyer-friendly' ? 'High'
+    : derived.badge === 'Firm but common' ? 'Medium'
+    : 'Low';
+
+  const capDesc = labelForCapType(parsed.capType);
+  const amountDesc = derived.impliedCapAmountGBP !== null ? ` Implied cap: ${money(derived.impliedCapAmountGBP)}.` : '';
+  const ratioDesc = derived.capMultipleVsACV !== null ? ` Cap ratio: ${derived.capMultipleVsACV.toFixed(1)}× ACV.` : '';
+  const carveoutDesc =
+    parsed.carveoutsFound.length > 0
+      ? ` Carve-outs detected: ${parsed.carveoutsFound.map((c) => CARVEOUT_LABELS[c]).join(', ')}.`
+      : '';
+
+  return {
+    clauseType: 'Liability Cap',
+    riskLevel,
+    clauseText,
+    problematicLanguage: clauseText.slice(0, 300),
+    plainEnglish: `Liability cap type: ${capDesc}.${amountDesc}${ratioDesc}${carveoutDesc}`,
+    negotiationPoint: acv > 0
+      ? `Request a cap at 1× ACV (${money(acv)}). Negotiate removal of carve-outs that push exposure outside the cap, except fraud and wilful misconduct.`
+      : 'Request a cap at 1× annual contract value. Negotiate removal of carve-outs except fraud and wilful misconduct.',
+  };
+}
+
 function LolReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const actions = useDocumentAnalysisActions();
@@ -343,8 +375,12 @@ function LolReviewContent() {
 
   function runReview() {
     const result = parseClause(clause);
+    const derivedResult = deriveFromDeal(result, acv, termMonths);
     setParsedResult(result);
-    actions.setLiabilityCap(deriveFromDeal(result, acv, termMonths).impliedCapAmountGBP);
+    actions.setLiabilityCap(derivedResult.impliedCapAmountGBP);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeLolFlag(clause, result, derivedResult, acv));
+    }
   }
 
   function resetClause() {

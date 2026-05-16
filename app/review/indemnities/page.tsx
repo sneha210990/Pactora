@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
-import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
 type TriggerScope = 'IP' | 'Data' | 'Third-party claims' | 'Broad breach' | 'Unknown';
@@ -167,6 +168,24 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function synthesizeIndemnitiesFlag(clauseText: string, result: ReviewResult): ClauseFlag {
+  const summary = `Directionality: ${result.directionality}. Trigger scope: ${result.triggerScope}. Cap interaction: ${result.capInteraction}.`;
+  const negotiation =
+    result.capInteraction === 'Potentially outside cap'
+      ? 'Negotiate to bring the indemnity within the liability cap, except for fraud and wilful misconduct. Remove "notwithstanding" override language.'
+      : result.directionality === 'One-sided'
+        ? 'Request mutual indemnity obligations or narrow the one-sided obligation to specific, defined triggers (IP infringement or data breach).'
+        : 'Confirm indemnity trigger scope is limited to IP infringement and data protection breaches. Ensure indemnity sits within the cap.';
+  return {
+    clauseType: 'Indemnities',
+    riskLevel: result.riskRating,
+    clauseText,
+    problematicLanguage: result.redFlags.join(' ') || clauseText.slice(0, 200),
+    plainEnglish: summary,
+    negotiationPoint: negotiation,
+  };
+}
+
 function IndemnitiesReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Indemnities');
@@ -181,13 +200,18 @@ function IndemnitiesReviewContent() {
   const ladderBaseCap = lolCap !== null && lolCap > 0 ? lolCap : acvAmount !== null && acvAmount > 0 ? acvAmount : null;
   const ladderStretchCap = acvAmount !== null && acvAmount > 0 ? Math.round(acvAmount * 1.5) : null;
 
+  const actions = useDocumentAnalysisActions();
   const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
   const queryString = '';
 
   function runReview() {
-    setResult(parseClause(clause));
+    const parsed = parseClause(clause);
+    setResult(parsed);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeIndemnitiesFlag(clause, parsed));
+    }
   }
 
   function reset() {
