@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
-import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type TerminationRight = 'Mutual' | 'One-sided' | 'Unknown';
 type CureRights = 'Present' | 'Absent' | 'Unknown';
@@ -290,6 +291,26 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function synthesizeTerminationFlag(clauseText: string, result: ReviewResult): ClauseFlag {
+  const summary = `Termination right: ${result.terminationRight}. Notice period: ${result.noticePeriod}. Cure rights: ${result.cureRights}. Convenience termination: ${result.convenienceTermination ? 'Yes' : 'No'}. Post-termination obligations: ${result.postTerminationObligations}.`;
+  const negotiation =
+    result.terminationRight === 'One-sided' && result.convenienceTermination
+      ? 'Remove unilateral convenience termination or make it mutual with adequate notice. Convenience termination for one party only creates significant revenue risk.'
+      : result.cureRights === 'Absent'
+        ? 'Add a cure period (minimum 30 days) for remediable breaches before termination rights can be exercised.'
+        : result.noticePeriod !== 'Unknown' && isVeryShortNotice(result.noticePeriod)
+          ? 'Extend the notice period to at least 60–90 days to allow for customer transition and operational planning.'
+          : 'Narrow post-termination obligations to defined, time-limited data return and deletion duties. Avoid open-ended transition assistance.';
+  return {
+    clauseType: 'Termination',
+    riskLevel: result.riskRating,
+    clauseText,
+    problematicLanguage: result.redFlags.join(' ') || clauseText.slice(0, 200),
+    plainEnglish: summary,
+    negotiationPoint: negotiation,
+  };
+}
+
 function TerminationReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Termination');
@@ -304,13 +325,18 @@ function TerminationReviewContent() {
   const insuranceAmount = num(insuranceCover);
   const lolCap = num(lolCapParam);
 
+  const actions = useDocumentAnalysisActions();
   const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
   const queryString = '';
 
   function runReview() {
-    setResult(parseClause(clause));
+    const parsed = parseClause(clause);
+    setResult(parsed);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeTerminationFlag(clause, parsed));
+    }
   }
 
   function reset() {
