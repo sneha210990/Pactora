@@ -325,15 +325,16 @@ function LolReviewContent() {
   const termMonths = commercialContext.termMonths ?? 0;
   const insuranceCover = commercialContext.insuranceCover ?? 0;
   const dataType = commercialContext.dataType ?? 'Not identified';
-  const initialClause = canonicalClause?.text ?? '';
 
-  const [clause, setClause] = useState(initialClause);
-  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
-
-  useEffect(() => {
-    setClause(initialClause);
-    setParsedResult(parseClause(initialClause));
-  }, [initialClause]);
+  // Controlled textarea — initialize once from the store canonical clause.
+  // No sync effect, no derived-state reset: both will overwrite a Playwright
+  // fill() call mid-test, making the textarea revert to the canonical value.
+  // resetClause() re-reads canonicalClause?.text directly from the closure so
+  // it always uses the current store value even without a state sync loop.
+  const [clause, setClause] = useState(canonicalClause?.text ?? '');
+  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() =>
+    parseClause(canonicalClause?.text ?? ''),
+  );
 
   const derived = useMemo(
     () => deriveFromDeal(parsedResult, acv, termMonths),
@@ -347,8 +348,9 @@ function LolReviewContent() {
   }
 
   function resetClause() {
-    setClause(initialClause);
-    setParsedResult(parseClause(initialClause));
+    const canonical = canonicalClause?.text ?? '';
+    setClause(canonical);
+    setParsedResult(parseClause(canonical));
   }
 
   const hasNarrowingItem = parsedResult.carveoutsFound.some((x) =>
@@ -407,9 +409,9 @@ function LolReviewContent() {
           </label>
           <textarea
             id="lolClause"
+            rows={8}
             value={clause}
             onChange={(e) => setClause(e.target.value)}
-            rows={8}
             className="mt-3 w-full rounded-lg border border-zinc-700 bg-black/40 p-3 text-sm text-zinc-100 placeholder:text-zinc-500"
           />
           <p className="mt-2 text-xs text-zinc-400">You can edit the extracted clause if needed.</p>
