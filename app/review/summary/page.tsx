@@ -7,6 +7,7 @@ import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import { useDocumentAnalysis } from '@/lib/document-analysis-store';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
+import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
@@ -268,9 +269,7 @@ function SummaryContent() {
           <Link href="/" className="text-sm text-zinc-300 hover:text-white">
             Pactora
           </Link>
-          <Link href="/deals/new" className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900">
-            New review
-          </Link>
+          <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
 
         <ReviewProgress current="summary" />
