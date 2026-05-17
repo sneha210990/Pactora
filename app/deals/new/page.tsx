@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import {
   DocumentAnalysisState,
@@ -100,19 +100,6 @@ export default function NewDealPage() {
   useEffect(() => {
     sessionStorage.setItem('pactora.manualClauseText', manualClauseText);
   }, [manualClauseText]);
-
-  // On mount: if a completed analysis is already in the store (e.g. coming from a
-  // review page with stale state), clear it so the intake form always starts blank.
-  const actionsRef = useRef(actions);
-  actionsRef.current = actions;
-  useEffect(() => {
-    if (actionsRef.current && analysis.uploadStatus === 'complete') {
-      actionsRef.current.reset();
-      sessionStorage.removeItem('pactora.manualClauseText');
-      setManualClauseText('');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
