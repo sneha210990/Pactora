@@ -121,7 +121,8 @@ type Action =
   | { type: 'analysisFailed'; error: string }
   | { type: 'setError'; error: string }
   | { type: 'setLiabilityCap'; value: number | null }
-  | { type: 'setManualReviewFlag'; flag: ClauseFlag };
+  | { type: 'setManualReviewFlag'; flag: ClauseFlag }
+  | { type: 'appendFlag'; flag: ClauseFlag };
 
 type ExtractionPayload = {
   documentId?: string;
@@ -427,6 +428,34 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
       next = { ...state, manualFlags: [...others, action.flag] };
       break;
     }
+    case 'appendFlag': {
+      const flag = action.flag;
+      const idx = state.clauses.length;
+      const docId = state.documentId || 'document';
+      const newClause: Clause = {
+        id: `${docId}-clause-${idx}`,
+        type: flag.clauseType,
+        text: flag.clauseText ?? flag.problematicLanguage,
+        riskLevel: flag.riskLevel,
+        explanation: flag.plainEnglish,
+      };
+      const newRisk: Risk = {
+        id: `${docId}-risk-${idx}`,
+        clauseType: flag.clauseType,
+        level: flag.riskLevel,
+        description: flag.plainEnglish,
+      };
+      const newRecs: Recommendation[] = flag.negotiationPoint
+        ? [{ id: `${docId}-recommendation-${state.recommendations.length}`, clauseType: flag.clauseType, text: flag.negotiationPoint, priority: flag.riskLevel }]
+        : [];
+      next = {
+        ...state,
+        clauses: [...state.clauses, newClause],
+        risks: [...state.risks, newRisk],
+        recommendations: [...state.recommendations, ...newRecs],
+      };
+      break;
+    }
   }
 
   next = {
@@ -494,6 +523,7 @@ type StoreValue = {
     setError: (error: string) => void;
     setLiabilityCap: (value: number | null) => void;
     setManualReviewFlag: (flag: ClauseFlag) => void;
+    appendFlag: (flag: ClauseFlag) => void;
   };
 };
 
@@ -522,6 +552,7 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
     setError: (error) => dispatch({ type: 'setError', error }),
     setLiabilityCap: (value) => dispatch({ type: 'setLiabilityCap', value }),
     setManualReviewFlag: (flag) => dispatch({ type: 'setManualReviewFlag', flag }),
+    appendFlag: (flag) => dispatch({ type: 'appendFlag', flag }),
   }), []);
 
   const value = useMemo(() => ({ state, actions }), [actions, state]);

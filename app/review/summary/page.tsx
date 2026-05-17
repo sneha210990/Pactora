@@ -225,6 +225,10 @@ function SummaryContent() {
   const averageRisk = knownRisks.length > 0 ? knownRisks.reduce((sum, section) => sum + riskScore(section.risk), 0) / knownRisks.length : 0;
   const overallRisk: RiskLevel = knownRisks.some((section) => section.risk === 'High') || averageRisk >= 2.4 ? 'High' : averageRisk >= 1.7 ? 'Medium' : 'Low';
 
+  const riskScore100 = computeRiskScore(clauseFlags);
+  const highFlags = clauseFlags.filter((f) => f.riskLevel === 'High');
+  const verdict = shouldSignVerdict(riskScore100, highFlags.length);
+
   async function generateEmail() {
     if (effectiveFlags.length === 0) return;
     setEmailGenerating(true);
