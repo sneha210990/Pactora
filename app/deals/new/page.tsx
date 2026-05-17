@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import {
+  clearPersistedState,
   DocumentAnalysisState,
   useDocumentAnalysis,
   useDocumentAnalysisActions,
@@ -100,6 +101,19 @@ export default function NewDealPage() {
   useEffect(() => {
     sessionStorage.setItem('pactora.manualClauseText', manualClauseText);
   }, [manualClauseText]);
+
+  // Show a banner if stale data from a previous review is present on arrival.
+  const [showStaleBanner, setShowStaleBanner] = useState<boolean>(
+    () => analysis.uploadStatus === 'complete'
+  );
+
+  function handleStartFresh() {
+    clearPersistedState();
+    sessionStorage.removeItem('pactora.manualClauseText');
+    actions.reset();
+    setManualClauseText('');
+    setShowStaleBanner(false);
+  }
 
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
@@ -276,6 +290,27 @@ export default function NewDealPage() {
             Upload your draft contract or paste key clauses manually, confirm the extracted commercial context, then continue to Liability review.
           </p>
         </header>
+
+        {showStaleBanner && (
+          <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-amber-100">
+                Data from a previous review is still loaded.{' '}
+                <button onClick={handleStartFresh} className="underline hover:text-white">
+                  Start fresh
+                </button>{' '}
+                — or clear your browser cache / site data if it persists.
+              </p>
+              <button
+                onClick={() => setShowStaleBanner(false)}
+                className="shrink-0 text-amber-400 hover:text-amber-100"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
           <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1 of 3</p>
