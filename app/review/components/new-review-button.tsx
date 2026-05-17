@@ -1,7 +1,8 @@
 'use client';
 
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { useDocumentAnalysisActions } from '@/lib/document-analysis-store';
+import { clearPersistedState, useDocumentAnalysisActions } from '@/lib/document-analysis-store';
 
 interface NewReviewButtonProps {
   className?: string;
@@ -13,8 +14,17 @@ export function NewReviewButton({ className, children = 'New review' }: NewRevie
   const { reset } = useDocumentAnalysisActions();
 
   function handleClick() {
-    reset();
+    // Clear localStorage synchronously before navigating so that even a
+    // hard reload during navigation won't restore stale contract data.
+    clearPersistedState();
     sessionStorage.removeItem('pactora.manualClauseText');
+
+    // Flush the in-memory store reset synchronously before router.push,
+    // so the new page reads empty state from context on its first render.
+    flushSync(() => {
+      reset();
+    });
+
     router.push('/deals/new');
   }
 
