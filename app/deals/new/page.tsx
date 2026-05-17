@@ -171,6 +171,7 @@ export default function NewDealPage() {
             } else if (event.type === 'analysis_complete' && Array.isArray(event.flags)) {
               actions.hydrateAnalysis({
                 flags: event.flags,
+                crossClauseRisks: event.crossClauseRisks ?? [],
                 analyzedAt: event.analyzedAt ?? new Date().toISOString(),
               });
               sessionStorage.removeItem('pactora.manualClauseText');

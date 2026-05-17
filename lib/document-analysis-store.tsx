@@ -10,6 +10,8 @@ import {
 } from 'react';
 import type { ClauseFlag, RiskLevel } from '@/lib/clause-analysis';
 export type { ClauseFlag };
+import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
+export type { CrossClauseRisk };
 import type { ExtractedContractValues, ExtractedField } from '@/lib/contract-extraction';
 
 export type Clause = {
@@ -104,6 +106,7 @@ export type DocumentAnalysisState = {
   commercialContext: CommercialContext;
   extractionWarnings: ExtractionWarning[];
   manualFlags?: ClauseFlag[];
+  crossClauseRisks?: CrossClauseRisk[];
   diagnostics?: {
     missingFields: string[];
     lastPayloadShape?: string[];
@@ -136,6 +139,7 @@ type ExtractionPayload = {
 
 type AnalysisPayload = {
   flags?: ClauseFlag[];
+  crossClauseRisks?: CrossClauseRisk[];
   analyzedAt?: string;
 };
 
@@ -190,6 +194,7 @@ export const emptyDocumentAnalysisState: DocumentAnalysisState = {
   commercialContext: emptyCommercialContext(),
   extractionWarnings: [],
   manualFlags: [],
+  crossClauseRisks: [],
   diagnostics: {
     missingFields: [],
     hydrationWarnings: [],
@@ -261,6 +266,7 @@ function toCanonicalAnalysis(state: DocumentAnalysisState, analysis: AnalysisPay
     clauses,
     risks,
     recommendations,
+    crossClauseRisks: analysis.crossClauseRisks ?? [],
     confidenceScores: {
       ...state.confidenceScores,
       clauses: flags.length > 0 ? 0.8 : undefined,
