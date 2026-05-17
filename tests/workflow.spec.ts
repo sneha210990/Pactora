@@ -155,17 +155,17 @@ test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
   await uploadContractAndConfirm(page);
 
   await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
-  await expect(page.getByText('25000', { exact: true })).toBeVisible();
+  await expect(page.getByText('£25,000', { exact: true })).toBeVisible();
   await expect(page.getByText('12 months', { exact: true })).toBeVisible();
-  await expect(page.getByText('1000000', { exact: true })).toBeVisible();
-  await expect(page.getByText('standard', { exact: true })).toBeVisible();
+  await expect(page.getByText('£1,000,000', { exact: true })).toBeVisible();
+  await expect(page.getByText('Not detected', { exact: true }).first()).toBeVisible();
 });
 
 test('Test 5: Commercial context carries through to LoL review', async ({ page }) => {
   await seedStore(page, { acv: 12345, termMonths: 24 });
   await page.goto('/deals/new');
 
-  await expect(page.getByText('12345', { exact: true })).toBeVisible();
+  await expect(page.getByText('£12,345', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
 
   await page
@@ -234,9 +234,9 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await page.goto('/deals/new');
   await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
 
-  await expect(page.getByText('50000', { exact: true })).toBeVisible();
+  await expect(page.getByText('£50,000', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
-  await expect(page.getByText('2000000', { exact: true })).toBeVisible();
+  await expect(page.getByText('£2,000,000', { exact: true })).toBeVisible();
   await expect(page.getByText('personal', { exact: true })).toBeVisible();
 
   await page
@@ -338,9 +338,9 @@ test('Test 10: DOCX upload parses correctly and populates deal context fields', 
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 
   await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
-  await expect(page.getByText('30000', { exact: true })).toBeVisible();
+  await expect(page.getByText('£30,000', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
-  await expect(page.getByText('2000000', { exact: true })).toBeVisible();
+  await expect(page.getByText('£2,000,000', { exact: true })).toBeVisible();
   await expect(page.getByText('personal', { exact: true })).toBeVisible();
 });
 
@@ -793,13 +793,41 @@ test('Test 45: Summary risk score derives from liability cap vs ACV ratio', asyn
   await expect(page.getByText('Liability cap: £5,000')).toBeVisible();
 });
 
-test('Test 46: Summary negotiation email button is present and interactive', async ({ page }) => {
-  await seedStore(page, { acv: 50000, termMonths: 12 });
+test('Test 46: Summary negotiation email button is enabled when manual flags are seeded', async ({ page }) => {
+  const storeData = {
+    documentId: 'playwright-test',
+    uploadStatus: 'complete',
+    documentMeta: { fileName: 'test-contract.pdf' },
+    extractedParties: {},
+    extractedTerms: {},
+    clauses: [],
+    risks: [],
+    obligations: [],
+    recommendations: [],
+    processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
+    errors: [],
+    commercialContext: { acv: 50000, termMonths: 12 },
+    manualFlags: [
+      {
+        clauseType: 'Liability Cap',
+        riskLevel: 'High',
+        clauseText: 'Liability is limited to £1,000.',
+        problematicLanguage: 'Liability is limited to £1,000.',
+        plainEnglish: 'Liability cap type: Fixed amount. Implied cap: £1,000. Cap ratio: 0.0× ACV.',
+        negotiationPoint: 'Request a cap at 1× ACV (£50,000).',
+      },
+    ],
+    diagnostics: { missingFields: [], hydrationWarnings: [] },
+  };
+  await page.addInitScript((args: { key: string; value: string }) => {
+    window.localStorage.setItem(args.key, args.value);
+  }, { key: STORAGE_KEY, value: JSON.stringify(storeData) });
   await page.goto('/review/summary');
 
-  // Button exists. With no clause flags in seeded store it is disabled.
-  const btn = page.getByRole('button', { name: /generate negotiation email|no flags to include/i });
+  // With manual flags seeded, the button should be enabled and labelled correctly.
+  const btn = page.getByRole('button', { name: /generate negotiation email/i });
   await expect(btn).toBeVisible();
+  await expect(btn).toBeEnabled();
 });
 
 // ─── Navigation and direct access ─────────────────────────────────────────────
@@ -872,9 +900,11 @@ test('Test 52: Continue button stays disabled until both checkboxes are ticked',
 test('Test 53: Review pages correctly show empty commercial context when nothing seeded', async ({ page }) => {
   await page.goto('/review/lol');
 
-  // Commercial context chips appear but with zero values (ACV = £0)
-  const acvChip = page.locator('text=ACV:').first();
-  await expect(acvChip).toBeVisible();
+  await expect(page.getByText('ACV: Not detected')).toBeVisible();
+  await expect(page.getByText('Term: Not detected')).toBeVisible();
+  await expect(page.getByText('Insurance: Not detected')).toBeVisible();
+  await expect(page.getByText('Data: Not detected')).toBeVisible();
+  await expect(page.getByText('£0')).not.toBeVisible();
 });
 
 test('Test 54: LoL page displays all four commercial context chips from store', async ({ page }) => {
@@ -898,9 +928,82 @@ test('Test 55: LoL negotiation ladder shows ACV-based scripts', async ({ page })
   await expect(page.getByText('£40,000').first()).toBeVisible();
 });
 
+
+
+test('Test 56: Uploading a second document clears stale extracted ACV and changes active document', async ({ page }) => {
+  let extractionCount = 0;
+  await page.route('**/api/contracts/analyze-agents', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {\"type\":\"analysis_complete\",\"flags\":[]}\n\n',
+    });
+  });
+  await page.route('**/api/contracts/extract', async (route) => {
+    extractionCount += 1;
+    const isSecondDocument = extractionCount === 2;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        documentId: isSecondDocument ? 'contract-b' : 'contract-a',
+        documentMeta: {
+          fileName: isSecondDocument ? 'contract-b.pdf' : 'contract-a.pdf',
+          fileType: 'application/pdf',
+          uploadedAt: isSecondDocument ? '2026-05-15T10:05:00.000Z' : '2026-05-15T10:00:00.000Z',
+        },
+        detectedValues: {
+          acv: {
+            value: isSecondDocument ? null : 100000,
+            confidence: isSecondDocument ? null : 0.9,
+            evidence: isSecondDocument ? null : 'Annual contract value: £100,000',
+            extractionMethod: isSecondDocument ? null : 'regex',
+          },
+          termMonths: { value: 12, confidence: 0.8, evidence: '12 months', extractionMethod: 'regex' },
+          insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
+          dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
+        },
+        extractedTerms: {},
+        contractText: isSecondDocument
+          ? 'Contract B has a 12 months term but no annual contract value.'
+          : 'Contract A annual contract value: £100,000. Term: 12 months.',
+      }),
+    });
+  });
+
+  await page.goto('/deals/new');
+  await page.setInputFiles('#contractUpload', {
+    name: 'contract-a.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('contract-a'),
+  });
+  await expect(page.getByText('£100,000', { exact: true })).toBeVisible();
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
+  await expect(page.getByText('Active document: contract-a.pdf')).toBeVisible();
+  await expect(page.getByText('ACV: £100,000')).toBeVisible();
+
+  await page.goto('/deals/new');
+  await page.setInputFiles('#contractUpload', {
+    name: 'contract-b.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('contract-b'),
+  });
+  await expect(page.getByText('Not detected', { exact: true }).first()).toBeVisible();
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
+
+  await expect(page.getByText('Active document: contract-b.pdf')).toBeVisible();
+  await expect(page.getByText('ACV: Not detected')).toBeVisible();
+  await expect(page.getByText('£100,000')).not.toBeVisible();
+  await expect(page.getByText('£0')).not.toBeVisible();
+});
+
 // ─── Tablet viewport smoke test ───────────────────────────────────────────────
 
-test('Test 56: Tablet viewport smoke test across key pages', async ({ page }) => {
+test('Test 57: Tablet viewport smoke test across key pages', async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 1024 });
 
   await page.goto('/');

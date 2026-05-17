@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type CapType =
@@ -228,7 +230,9 @@ function parseClause(clause: string): ParsedClauseResult {
   return result;
 }
 
-function deriveFromDeal(parsed: ParsedClauseResult, acv: number, termMonths: number): DerivedResult {
+function deriveFromDeal(parsed: ParsedClauseResult, acvArg: number | null, termMonthsArg: number | null): DerivedResult {
+  const acv = acvArg ?? 0;
+  const termMonths = termMonthsArg ?? 0;
   let impliedCapAmountGBP: number | null = null;
 
   switch (parsed.capType) {
@@ -312,6 +316,37 @@ function labelForCapType(capType: CapType) {
   return labels[capType];
 }
 
+function synthesizeLolFlag(
+  clauseText: string,
+  parsed: ParsedClauseResult,
+  derived: DerivedResult,
+  acv: number,
+): ClauseFlag {
+  const riskLevel: ClauseFlag['riskLevel'] =
+    derived.badge === 'High risk' || derived.badge === 'Buyer-friendly' ? 'High'
+    : derived.badge === 'Firm but common' ? 'Medium'
+    : 'Low';
+
+  const capDesc = labelForCapType(parsed.capType);
+  const amountDesc = derived.impliedCapAmountGBP !== null ? ` Implied cap: ${money(derived.impliedCapAmountGBP)}.` : '';
+  const ratioDesc = derived.capMultipleVsACV !== null ? ` Cap ratio: ${derived.capMultipleVsACV.toFixed(1)}× ACV.` : '';
+  const carveoutDesc =
+    parsed.carveoutsFound.length > 0
+      ? ` Carve-outs detected: ${parsed.carveoutsFound.map((c) => CARVEOUT_LABELS[c]).join(', ')}.`
+      : '';
+
+  return {
+    clauseType: 'Liability Cap',
+    riskLevel,
+    clauseText,
+    problematicLanguage: clauseText.slice(0, 300),
+    plainEnglish: `Liability cap type: ${capDesc}.${amountDesc}${ratioDesc}${carveoutDesc}`,
+    negotiationPoint: acv > 0
+      ? `Request a cap at 1× ACV (${money(acv)}). Negotiate removal of carve-outs that push exposure outside the cap, except fraud and wilful misconduct.`
+      : 'Request a cap at 1× annual contract value. Negotiate removal of carve-outs except fraud and wilful misconduct.',
+  };
+}
+
 function LolReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const actions = useDocumentAnalysisActions();
@@ -321,30 +356,30 @@ function LolReviewContent() {
     trackEvent('analysis_started', '/review/lol');
   }, []);
 
-  const acv = commercialContext.acv ?? 0;
-  const termMonths = commercialContext.termMonths ?? 0;
-  const insuranceCover = commercialContext.insuranceCover ?? 0;
-  const dataType = commercialContext.dataType ?? 'Not identified';
+  const acv = commercialContext.acv.value;
+  const termMonths = commercialContext.termMonths.value;
+  const insuranceCover = commercialContext.insuranceCover;
+  const dataType = commercialContext.dataType;
+  const derivedAcv = acv === null ? 0 : acv;
+  const derivedTermMonths = termMonths === null ? 0 : termMonths;
+  const initialClause = canonicalClause?.text ?? '';
 
-  // Controlled textarea — initialize once from the store canonical clause.
-  // No sync effect, no derived-state reset: both will overwrite a Playwright
-  // fill() call mid-test, making the textarea revert to the canonical value.
-  // resetClause() re-reads canonicalClause?.text directly from the closure so
-  // it always uses the current store value even without a state sync loop.
-  const [clause, setClause] = useState(canonicalClause?.text ?? '');
-  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() =>
-    parseClause(canonicalClause?.text ?? ''),
-  );
+  const [clause, setClause] = useState(initialClause);
+  const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
 
   const derived = useMemo(
-    () => deriveFromDeal(parsedResult, acv, termMonths),
-    [parsedResult, acv, termMonths],
+    () => deriveFromDeal(parsedResult, derivedAcv, derivedTermMonths),
+    [parsedResult, derivedAcv, derivedTermMonths],
   );
 
   function runReview() {
     const result = parseClause(clause);
+    const derivedResult = deriveFromDeal(result, derivedAcv, derivedTermMonths);
     setParsedResult(result);
-    actions.setLiabilityCap(deriveFromDeal(result, acv, termMonths).impliedCapAmountGBP);
+    actions.setLiabilityCap(derivedResult.impliedCapAmountGBP);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeLolFlag(clause, result, derivedResult, derivedAcv));
+    }
   }
 
   function resetClause() {
@@ -373,6 +408,7 @@ function LolReviewContent() {
         </div>
 
         <ReviewProgress current="lol" />
+        <ActiveDocumentBanner />
 
         <div className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Limitation of Liability Review</h1>
@@ -388,14 +424,14 @@ function LolReviewContent() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Term: {termMonths} months
+              Term: {formatOptionalMonthsField(commercialContext.termMonths)}
             </span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              Insurance: {money(insuranceCover)}
+              Insurance: {formatOptionalMoneyField(insuranceCover)}
             </span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
           </div>
         </div>
 
@@ -508,24 +544,24 @@ function LolReviewContent() {
                 {
                   label: 'Ask',
                   title: 'Cap at 1× ACV',
-                  script: `“We can do a cap of ${money(acv)}.”`,
+                  script: acv === null ? '“ACV was not detected, so confirm deal value before proposing a numeric cap.”' : `“We can do a cap of ${money(acv)}.”`,
                 },
                 {
                   label: 'Fallback',
                   title: 'Cap at 1.5× ACV',
-                  script: `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
+                  script: acv === null ? '“Once ACV is confirmed, we can set a stepped fallback.”' : `“If needed, we can stretch to ${money(Math.round(acv * 1.5))}.”`,
                 },
                 hasNarrowingItem
                   ? {
                       label: 'Narrowing',
                       title: 'Cap applies to carve-outs except fraud/wilful misconduct',
                       script:
-                        '“We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
+                        '”We can only accept carve-outs if they remain within the cap, except fraud and wilful misconduct.”',
                     }
                   : {
                       label: 'Fallback',
                       title: 'Cap at 2× ACV',
-                      script: `“Final position is ${money(acv * 2)}.”`,
+                      script: acv === null ? '“Do not state a final numeric cap until ACV is confirmed.”' : `“Final position is ${money(acv * 2)}.”`,
                     },
               ]}
             />

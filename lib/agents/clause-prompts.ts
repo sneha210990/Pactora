@@ -24,6 +24,9 @@ import type { PactoraClauseType } from './types';
 //   Fee Increases         │ —                                │ Pactora-custom
 //   Governing Law         │ —                                │ Pactora-custom
 //   IP Ownership          │ ip_assignment (partial)          │ GAP — see note below
+//   Auto-Renewal          │ (none)                           │ PACTORA-CUSTOM
+//   Fee Escalation        │ (none)                           │ PACTORA-CUSTOM
+//   Governing Law         │ (none)                           │ PACTORA-CUSTOM
 //
 // IP Ownership gap:
 //   claude-for-legal's ip_assignment covers standard IP assignment and work-for-hire

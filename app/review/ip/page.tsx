@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { ReviewProgress } from '../components/review-progress';
-import { useClauseByType, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import type { ClauseFlag } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 
 type OwnershipStructure = 'Vendor owns' | 'Customer owns' | 'Shared/retained ownership' | 'Unknown';
 type LicenceModel = 'Limited licence' | 'Perpetual/Broad licence' | 'Broad licence' | 'Unknown';
@@ -154,27 +156,45 @@ function ReviewCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+function synthesizeIPFlag(clauseText: string, result: ReviewResult): ClauseFlag {
+  const summary = `Ownership: ${result.ownershipStructure}. Licence model: ${result.licenceModel}. Strategic risk: ${result.strategicRisk}.`;
+  const negotiation =
+    result.ownershipStructure === 'Vendor owns' || result.ownershipStructure === 'Customer owns'
+      ? 'Each party should retain its pre-existing IP. Any background IP licence should be limited to use of the service for the contract purpose only.'
+      : result.licenceModel === 'Perpetual/Broad licence' || result.licenceModel === 'Broad licence'
+        ? 'Remove perpetual, sublicensable, or transferable licence rights. Licence scope should be limited and tied to the contract purpose.'
+        : 'Confirm IP ownership positions and ensure any licence is non-exclusive, limited, and revocable on termination.';
+  return {
+    clauseType: 'IP Ownership',
+    riskLevel: result.riskRating,
+    clauseText,
+    problematicLanguage: result.redFlags.join(' ') || clauseText.slice(0, 200),
+    plainEnglish: summary,
+    negotiationPoint: negotiation,
+  };
+}
+
 function IpOwnershipReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('IP Ownership');
 
-  const acv = commercialContext.acv ? String(commercialContext.acv) : null;
-  const termMonths = commercialContext.termMonths ? String(commercialContext.termMonths) : null;
-  const insuranceCover = commercialContext.insuranceCover ? String(commercialContext.insuranceCover) : null;
-  const dataType = commercialContext.dataType ?? null;
+  const dataType = commercialContext.dataType;
   const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
 
-  const acvAmount = num(acv);
-  const insuranceAmount = num(insuranceCover);
   const lolCap = num(lolCapParam);
 
+  const actions = useDocumentAnalysisActions();
   const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
 
   const queryString = '';
 
   function runReview() {
-    setResult(parseClause(clause));
+    const parsed = parseClause(clause);
+    setResult(parsed);
+    if (clause.trim()) {
+      actions.setManualReviewFlag(synthesizeIPFlag(clause, parsed));
+    }
   }
 
   function reset() {
@@ -205,6 +225,7 @@ function IpOwnershipReviewContent() {
         </div>
 
         <ReviewProgress current="ip" />
+        <ActiveDocumentBanner />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">IP Ownership Review</h1>
@@ -213,18 +234,10 @@ function IpOwnershipReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {acvAmount !== null && acvAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acvAmount)}</span>
-            )}
-            {termMonths && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {termMonths} months</span>
-            )}
-            {insuranceAmount !== null && insuranceAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {money(insuranceAmount)}</span>
-            )}
-            {dataType && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
-            )}
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
             {lolCap !== null && lolCap > 0 && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}

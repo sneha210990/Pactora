@@ -1,12 +1,31 @@
-export type ExtractedContractValues = {
-  acv: number | null;
-  termMonths: number | null;
-  insuranceCover: number | null;
-  dataType: 'standard' | 'personal' | 'sensitive';
-  // Fields populated by AI extraction (Haiku); absent when AI is unavailable.
-  liabilityCap?: number | null;
-  currency?: 'GBP' | 'USD' | 'EUR' | 'other';
+export type ExtractionMethod = 'regex' | 'llm' | 'hybrid';
+
+export type ExtractedField<T> = {
+  value: T | null;
+  confidence: number | null;
+  evidence: string | null;
+  extractionMethod: ExtractionMethod | null;
 };
+
+export type ExtractedContractValues = {
+  acv: ExtractedField<number>;
+  termMonths: ExtractedField<number>;
+  insuranceCover: ExtractedField<number>;
+  dataType: ExtractedField<'standard' | 'personal' | 'sensitive'>;
+};
+
+function extractedField<T>(
+  value: T | null,
+  evidence: string | null,
+  confidence: number | null = value === null ? null : 0.82,
+): ExtractedField<T> {
+  return {
+    value,
+    confidence: value === null ? null : confidence,
+    evidence,
+    extractionMethod: value === null ? null : 'regex',
+  };
+}
 
 type PdfParseResult = { text?: string };
 type MammothResult = { value?: string };
@@ -31,25 +50,97 @@ type Mammoth = {
 };
 
 const ACV_KEYWORDS = [
+  // Explicit ACV / ARR labels
   'acv',
+  'annual contract value',
+  'annual recurring revenue',
+  'arr',
+  // Annual fee variants (most specific first)
+  'annual subscription fee',
+  'annual subscription price',
+  'annual subscription',
+  'annual licence fee',
+  'annual license fee',
+  'annual service fee',
+  'annual services fee',
+  'annual platform fee',
+  'annual software fee',
+  'annual saas fee',
   'annual fee',
   'annual fees',
-  'annual subscription fee',
+  'annual charge',
+  'annual charges',
+  'annual price',
+  'annual payment',
+  'annual payments',
+  // Generic subscription / licence terms (will be checked with nearby amounts)
+  'subscription fee',
+  'subscription fees',
+  'subscription price',
+  'subscription cost',
+  'licence fee',
+  'licence fees',
+  'license fee',
+  'license fees',
+  'platform fee',
+  'platform fees',
+  'platform licence',
+  'platform license',
+  'saas fee',
+  'saas subscription',
+  'software subscription',
+  'software fee',
+  'service fee',
+  'service fees',
+  'services fee',
+  'services fees',
+  'recurring fee',
+  'recurring fees',
+  // Order / contract value labels
   'contract value',
-  'annual contract value',
+  'total contract value',
+  'order value',
+  'total order value',
+  'total annual value',
+  'total value',
+  'total annual fee',
+  'total annual fees',
+  'total fees',
 ];
 
 const INSURANCE_KEYWORDS = ['insurance', 'insurance coverage', 'insurance cover', 'coverage'];
 
-const MONEY_REGEX = /(?:£|\$)\s?\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g;
+// Monthly labels — matched amounts will be multiplied by 12 to get ACV
+const MONTHLY_FEE_KEYWORDS = [
+  'monthly subscription fee',
+  'monthly subscription',
+  'monthly licence fee',
+  'monthly license fee',
+  'monthly service fee',
+  'monthly platform fee',
+  'monthly saas fee',
+  'monthly fee',
+  'monthly fees',
+  'monthly charge',
+  'monthly charges',
+  'monthly payment',
+  'monthly amount',
+];
+
+// Matches: £75,000  $90,000  €50,000  GBP 75,000  USD 90k  £50K etc.
+const MONEY_REGEX = /(?:[£$€]|(?:GBP|USD|EUR)\s?)[\s]?\d{1,3}(?:,\d{3})*(?:\.\d{2})?(?:\s*[kK]\b)?/g;
 const MONTH_TERM_REGEX = /(\d{1,3})\s*(months?|mos?)/i;
 const YEAR_TERM_REGEX = /(\d{1,3})\s*(years?|yrs?)/i;
+// Detects "per month / /month / pm / p.m." after an amount on the same line
+const PER_MONTH_SUFFIX = /per[\s-]?month|\/\s*month|\bpm\b|p\.m\.|per\s+mo\b/i;
 
 function parseMoney(value: string): number {
-  return Number(value.replace(/[^\d.]/g, ''));
+  const hasK = /[kK]\s*$/.test(value.trim());
+  const n = Number(value.replace(/[^\d.]/g, ''));
+  return hasK ? n * 1000 : n;
 }
 
-function detectAmountByKeywords(lines: string[], keywords: string[]): number | null {
+function detectAmountByKeywords(lines: string[], keywords: string[]): ExtractedField<number> {
   for (const line of lines) {
     const normalizedLine = line.toLowerCase();
     const keyword = keywords.find((candidate) => normalizedLine.includes(candidate));
@@ -58,16 +149,16 @@ function detectAmountByKeywords(lines: string[], keywords: string[]): number | n
     const keywordIndex = normalizedLine.indexOf(keyword);
     const amountAfterKeyword = line.slice(keywordIndex).match(MONEY_REGEX)?.[0];
     if (amountAfterKeyword) {
-      return parseMoney(amountAfterKeyword);
+      return extractedField(parseMoney(amountAfterKeyword), line);
     }
 
     const amountOnLine = line.match(MONEY_REGEX)?.[0];
     if (amountOnLine) {
-      return parseMoney(amountOnLine);
+      return extractedField(parseMoney(amountOnLine), line, 0.72);
     }
   }
 
-  return null;
+  return extractedField<number>(null, null);
 }
 
 async function getPdfParser(): Promise<PdfParse> {
@@ -134,37 +225,48 @@ export function detectContractValues(text: string): ExtractedContractValues {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const detectedAcv = detectAmountByKeywords(lines, ACV_KEYWORDS);
+  const detectedAcv =
+    detectAmountByKeywords(lines, ACV_KEYWORDS) ??
+    detectAmountByKeywords(lines, MONTHLY_FEE_KEYWORDS);
   const detectedInsurance = detectAmountByKeywords(lines, INSURANCE_KEYWORDS);
 
   let termMonths: number | null = null;
+  let termEvidence: string | null = null;
   const monthMatch = text.match(MONTH_TERM_REGEX);
   if (monthMatch) {
     termMonths = Number(monthMatch[1]);
+    termEvidence = monthMatch[0];
   } else {
     const yearMatch = text.match(YEAR_TERM_REGEX);
     if (yearMatch) {
       termMonths = Number(yearMatch[1]) * 12;
+      termEvidence = yearMatch[0];
     }
   }
 
   const normalizedText = text.toLowerCase();
-  let dataType: ExtractedContractValues['dataType'] = 'standard';
+  let dataType: 'standard' | 'personal' | 'sensitive' | null = null;
+  let dataEvidence: string | null = null;
 
   if (
     normalizedText.includes('special category data') ||
     normalizedText.includes('sensitive personal data')
   ) {
     dataType = 'sensitive';
+    dataEvidence = 'special category data / sensitive personal data';
   } else if (normalizedText.includes('personal data')) {
     dataType = 'personal';
+    dataEvidence = 'personal data';
+  } else if (normalizedText.includes('standard data')) {
+    dataType = 'standard';
+    dataEvidence = 'standard data';
   }
 
   return {
     acv: detectedAcv,
-    termMonths,
+    termMonths: extractedField(termMonths, termEvidence),
     insuranceCover: detectedInsurance,
-    dataType,
+    dataType: extractedField(dataType, dataEvidence),
   };
 }
 

@@ -6,6 +6,7 @@ import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import { useDocumentAnalysis } from '@/lib/document-analysis-store';
+import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { ReviewProgress } from '../components/review-progress';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
@@ -189,11 +190,10 @@ function SummaryContent() {
   }, []);
 
 
-  const acvAmount = analysis.commercialContext?.acv ?? null;
-  const termMonths = analysis.commercialContext?.termMonths ?? null;
-  const insuranceAmount = analysis.commercialContext?.insuranceCover ?? null;
-  const dataType = analysis.commercialContext?.dataType ?? null;
-  const lolCap = analysis.commercialContext?.liabilityCap ?? null;
+  const commercialContext = analysis.commercialContext;
+  const acvAmount = commercialContext.acv.value;
+  const dataType = commercialContext.dataType;
+  const lolCap = commercialContext.liabilityCap;
   const capRatio = lolCap !== null && acvAmount !== null && acvAmount > 0 ? lolCap / acvAmount : null;
   const inferredLolRisk = deriveLolRisk(lolCap, acvAmount);
   const clauseFlags: ClauseFlag[] = analysis.clauses.map((clause) => ({
@@ -204,9 +204,7 @@ function SummaryContent() {
     negotiationPoint: analysis.recommendations.find((recommendation) => recommendation.clauseType === clause.type)?.text ?? 'No recommendation generated',
   }));
 
-  const riskScore100 = useMemo(() => computeRiskScore(clauseFlags), [clauseFlags]);
-  const highFlags = useMemo(() => clauseFlags.filter((f) => f.riskLevel === 'High'), [clauseFlags]);
-  const verdict = useMemo(() => shouldSignVerdict(riskScore100, highFlags.length), [riskScore100, highFlags.length]);
+  const effectiveFlags: ClauseFlag[] = clauseFlags.length > 0 ? clauseFlags : (analysis.manualFlags ?? []);
 
   const rankedSections = useMemo(() => {
     return reviewSections
@@ -228,7 +226,7 @@ function SummaryContent() {
   const overallRisk: RiskLevel = knownRisks.some((section) => section.risk === 'High') || averageRisk >= 2.4 ? 'High' : averageRisk >= 1.7 ? 'Medium' : 'Low';
 
   async function generateEmail() {
-    if (clauseFlags.length === 0) return;
+    if (effectiveFlags.length === 0) return;
     setEmailGenerating(true);
     setEmailError('');
     setEmailCopied(false);
@@ -237,7 +235,7 @@ function SummaryContent() {
       const response = await fetch('/api/contracts/negotiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ flags: clauseFlags, commercialContext: analysis.commercialContext }),
+        body: JSON.stringify({ flags: effectiveFlags, commercialContext: analysis.commercialContext }),
       });
       const data = (await response.json()) as { email?: string; error?: string };
       if (!response.ok || !data.email) {
@@ -272,24 +270,17 @@ function SummaryContent() {
         </div>
 
         <ReviewProgress current="summary" />
+        <ActiveDocumentBanner />
 
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Deal Summary</h1>
           <p className="mt-2 text-zinc-400">A final view of the commercial and legal risk across the contract.</p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {acvAmount !== null && acvAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {money(acvAmount)}</span>
-            )}
-            {termMonths && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {termMonths} months</span>
-            )}
-            {insuranceAmount !== null && insuranceAmount > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {money(insuranceAmount)}</span>
-            )}
-            {dataType && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {dataType}</span>
-            )}
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
             {lolCap !== null && lolCap > 0 && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}
@@ -384,10 +375,10 @@ function SummaryContent() {
               <div className="mt-4 flex flex-col gap-2">
                 <button
                   onClick={generateEmail}
-                  disabled={emailGenerating || clauseFlags.length === 0}
+                  disabled={emailGenerating || effectiveFlags.length === 0}
                   className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300"
                 >
-                  {emailGenerating ? 'Generating…' : clauseFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
+                  {emailGenerating ? 'Generating…' : effectiveFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
                 </button>
                 {emailError ? <p className="text-xs text-red-300">{emailError}</p> : null}
               </div>
@@ -395,51 +386,26 @@ function SummaryContent() {
           </div>
         </section>
 
-        {highFlags.length > 0 && (
+        {effectiveFlags.length > 0 ? (
           <section className="mt-8">
             <div className="mb-4 flex items-center gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-red-400">Minimum required fixes</h2>
-              <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-200">
-                {highFlags.length} blocker{highFlags.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <p className="mb-4 text-sm text-zinc-400">These High-risk issues are contract blockers. Each must be resolved or negotiated before signature.</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {highFlags.map((flag, i) => (
-                <div key={i} className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-zinc-200">{flag.clauseType}</span>
-                    <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold text-red-200">High</span>
-                  </div>
-                  <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
-                  <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
-                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Required fix</p>
-                    <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {clauseFlags.length > 0 ? (
-          <section className="mt-8">
-            <div className="mb-4 flex items-center gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">AI Clause Analysis</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
+                {clauseFlags.length > 0 ? 'AI Clause Analysis' : 'Manual Review Findings'}
+              </h2>
               <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
-                {clauseFlags.length} {clauseFlags.length === 1 ? 'flag' : 'flags'}
+                {effectiveFlags.length} {effectiveFlags.length === 1 ? 'flag' : 'flags'}
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {clauseFlags.map((flag, i) => (
+              {effectiveFlags.map((flag, i) => (
                 <ClauseFlagCard key={i} flag={flag} />
               ))}
             </div>
           </section>
         ) : (
           <section className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">AI Clause Analysis</h2>
-            <p className="mt-2 text-sm text-zinc-500">Analysis incomplete — no clause risks detected from the uploaded document.</p>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Clause Analysis</h2>
+            <p className="mt-2 text-sm text-zinc-500">No flags yet — run each review section to build a complete picture.</p>
           </section>
         )}
 
