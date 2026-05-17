@@ -96,6 +96,54 @@ function describeOverall(overallRisk: RiskLevel, knownRiskCount: number, capRati
   return `Current inputs indicate a comparatively low-risk position across reviewed areas.${ratioText}`;
 }
 
+const MAX_CLAUSE_AGENTS = 8;
+
+function computeRiskScore(flags: ClauseFlag[]): number {
+  if (flags.length === 0) return 0;
+  const weighted = flags.reduce((sum, f) => sum + riskScore(f.riskLevel), 0);
+  return Math.round((weighted / (MAX_CLAUSE_AGENTS * 3)) * 100);
+}
+
+function scoreColorClass(score: number): string {
+  if (score >= 60) return 'text-red-300';
+  if (score >= 30) return 'text-amber-300';
+  return 'text-emerald-300';
+}
+
+function scoreBorderClass(score: number): string {
+  if (score >= 60) return 'border-red-500/30 bg-red-500/5';
+  if (score >= 30) return 'border-amber-500/30 bg-amber-500/5';
+  return 'border-emerald-500/30 bg-emerald-500/5';
+}
+
+type Verdict = {
+  text: string;
+  detail: string;
+  colorClass: string;
+};
+
+function shouldSignVerdict(score: number, highCount: number): Verdict {
+  if (highCount >= 2 || score >= 60) {
+    return {
+      text: 'Review required',
+      detail: `${highCount} high-risk issue${highCount !== 1 ? 's' : ''} must be resolved before signature.`,
+      colorClass: 'text-red-300',
+    };
+  }
+  if (highCount === 1 || score >= 30) {
+    return {
+      text: 'Proceed with caution',
+      detail: 'At least one issue warrants negotiation before you commit.',
+      colorClass: 'text-amber-300',
+    };
+  }
+  return {
+    text: 'Acceptable risk',
+    detail: 'No critical blockers identified. Standard commercial terms apply.',
+    colorClass: 'text-emerald-300',
+  };
+}
+
 function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
   if (risk === 'High') return 'border-red-500/40 bg-red-500/10 text-red-200';
   if (risk === 'Medium') return 'border-amber-500/40 bg-amber-500/10 text-amber-200';
@@ -252,6 +300,26 @@ function SummaryContent() {
               ))}
             </div>
           </nav>
+        </section>
+
+        <section className={`mt-8 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Should I sign?</p>
+              <p className={`mt-2 text-2xl font-bold ${clauseFlags.length > 0 ? verdict.colorClass : 'text-zinc-400'}`}>
+                {clauseFlags.length > 0 ? verdict.text : 'Insufficient data'}
+              </p>
+              <p className="mt-2 text-sm text-zinc-300">
+                {clauseFlags.length > 0 ? verdict.detail : 'Upload a contract and run AI analysis to generate a verdict.'}
+              </p>
+            </div>
+            {clauseFlags.length > 0 && (
+              <div className="shrink-0 text-right">
+                <span className={`text-5xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
+                <p className="mt-1 text-[11px] uppercase tracking-wide text-zinc-500">/ 100</p>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">

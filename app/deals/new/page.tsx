@@ -11,6 +11,10 @@ import {
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import { formatMoney } from '@/app/review/components/active-document-banner';
 import type { ExtractedContractValues } from '@/lib/contract-extraction';
+import { PACTORA_CLAUSE_AGENTS, type AgentEvent, type PactoraClauseType } from '@/lib/agents/types';
+
+type AgentStatus = 'active' | 'done' | 'error';
+type AgentProgressMap = Partial<Record<PactoraClauseType, AgentStatus>>;
 
 type ExtractionResponse = {
   documentId?: string;
@@ -32,8 +36,9 @@ function formatOptionalMoneyValue(value: number | null) {
   return value === null ? '' : formatMoney(value);
 }
 
-function ProcessingPipeline({ analysis }: { analysis: DocumentAnalysisState }) {
+function ProcessingPipeline({ analysis, agentProgress }: { analysis: DocumentAnalysisState; agentProgress?: AgentProgressMap }) {
   if (analysis.uploadStatus === 'idle') return null;
+  const showAgents = agentProgress && Object.keys(agentProgress).length > 0;
 
   return (
     <div className="mt-5 rounded-xl border border-zinc-800 bg-black/30 p-4">
@@ -45,9 +50,31 @@ function ProcessingPipeline({ analysis }: { analysis: DocumentAnalysisState }) {
       </div>
       <ol className="space-y-2 text-sm">
         {processingStages.map((stage) => (
-          <li key={stage.key} className="flex items-center gap-3 text-zinc-300">
-            <span className={`h-2.5 w-2.5 rounded-full ${analysis.processingSteps[stage.key] ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-            <span>{stage.label}</span>
+          <li key={stage.key} className="flex flex-col">
+            <div className="flex items-center gap-3 text-zinc-300">
+              <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${analysis.processingSteps[stage.key] ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+              <span>{stage.label}</span>
+            </div>
+            {stage.key === 'clauseDetection' && showAgents && (
+              <ol className="ml-6 mt-1.5 space-y-1">
+                {PACTORA_CLAUSE_AGENTS.map((agent) => {
+                  const status = agentProgress![agent];
+                  const dotClass = !status
+                    ? 'bg-zinc-700'
+                    : status === 'active'
+                    ? 'animate-pulse bg-amber-400'
+                    : status === 'done'
+                    ? 'bg-emerald-400'
+                    : 'bg-red-400';
+                  return (
+                    <li key={agent} className="flex items-center gap-2 text-xs text-zinc-400">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
+                      <span>{agent}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
           </li>
         ))}
         <li className="flex items-center gap-3 text-zinc-300">
@@ -75,11 +102,13 @@ export default function NewDealPage() {
   }, [manualClauseText]);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
+  const [agentProgress, setAgentProgress] = useState<AgentProgressMap>({});
 
   const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';
   const canContinue = analysis.uploadStatus === 'complete' && hasAcceptedLegalNotice && hasConfirmedDataCaution;
   const runClauseAnalysis = async (text: string) => {
+    setAgentProgress({});
     actions.analysisStarted();
     try {
       const res = await fetch('/api/contracts/analyze-agents', {
@@ -95,8 +124,9 @@ export default function NewDealPage() {
 
       if (!res.body) throw new Error('No response stream from analysis.');
 
-      // Read the SSE stream — each agent emits an event as it finishes.
-      // We wait for 'analysis_complete' which carries the full flags array.
+      // Read the SSE stream. Each agent emits agent_start, then agent_result or agent_error.
+      // We append each flag immediately on agent_result for progressive rendering,
+      // then hydrateAnalysis on analysis_complete to set the final canonical state.
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -115,12 +145,15 @@ export default function NewDealPage() {
           const json = part.slice(6).trim();
           if (!json) continue;
           try {
-            const event = JSON.parse(json) as {
-              type: string;
-              flags?: ClauseFlag[];
-              analyzedAt?: string;
-            };
-            if (event.type === 'analysis_complete' && Array.isArray(event.flags)) {
+            const event = JSON.parse(json) as AgentEvent;
+            if (event.type === 'agent_start') {
+              setAgentProgress((prev) => ({ ...prev, [event.clauseType]: 'active' }));
+            } else if (event.type === 'agent_result') {
+              if (event.flag) actions.appendFlag(event.flag);
+              setAgentProgress((prev) => ({ ...prev, [event.clauseType]: 'done' }));
+            } else if (event.type === 'agent_error') {
+              setAgentProgress((prev) => ({ ...prev, [event.clauseType]: 'error' }));
+            } else if (event.type === 'analysis_complete' && Array.isArray(event.flags)) {
               actions.hydrateAnalysis({
                 flags: event.flags,
                 analyzedAt: event.analyzedAt ?? new Date().toISOString(),
@@ -303,7 +336,7 @@ export default function NewDealPage() {
                 <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC under 20 MB, or paste at least 20 characters of clause text.</p>
               </div>
             ) : null}
-            <ProcessingPipeline analysis={analysis} />
+            <ProcessingPipeline analysis={analysis} agentProgress={agentProgress} />
           </div>
         </section>
 
