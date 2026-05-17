@@ -225,9 +225,17 @@ export function detectContractValues(text: string): ExtractedContractValues {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const detectedAcv =
-    detectAmountByKeywords(lines, ACV_KEYWORDS) ??
-    detectAmountByKeywords(lines, MONTHLY_FEE_KEYWORDS);
+  const acvResult = detectAmountByKeywords(lines, ACV_KEYWORDS);
+  let detectedAcv: ExtractedField<number>;
+  if (acvResult.value !== null) {
+    detectedAcv = acvResult;
+  } else {
+    const monthlyResult = detectAmountByKeywords(lines, MONTHLY_FEE_KEYWORDS);
+    detectedAcv =
+      monthlyResult.value !== null
+        ? { ...monthlyResult, value: monthlyResult.value * 12 }
+        : monthlyResult;
+  }
   const detectedInsurance = detectAmountByKeywords(lines, INSURANCE_KEYWORDS);
 
   let termMonths: number | null = null;
