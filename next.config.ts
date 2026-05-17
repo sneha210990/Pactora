@@ -2,11 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['pdf-parse', 'mammoth'],
-  // pdf-parse loads pdf.js via a dynamic require() path that Vercel's bundler
-  // cannot statically trace. This forces all pdf-parse files to be included
-  // in the serverless function bundle so the runtime require succeeds.
+  // Both pdf-parse and mammoth are loaded via dynamic createRequire() calls that
+  // Vercel's static file tracer cannot follow. These entries force all their files
+  // into the serverless bundle so the runtime require() succeeds.
+  // Key uses the App Router server-output path (app/…/route), not the URL path.
   outputFileTracingIncludes: {
-    '/api/contracts/extract': ['./node_modules/pdf-parse/**/*'],
+    'app/api/contracts/extract/route': [
+      './node_modules/pdf-parse/**/*',
+      './node_modules/mammoth/**/*',
+    ],
   },
 };
 
