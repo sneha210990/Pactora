@@ -45,6 +45,12 @@ export const CLAUSE_SYSTEM_PROMPTS: Record<PactoraClauseType, string> = {
   'Liability Cap': `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify and assess the vendor's liability cap provisions.
 
+Detection: Scan the entire contract for any of these signal phrases, regardless of section heading:
+"in no event", "shall not exceed", "aggregate liability", "maximum liability",
+"consequential damages", "indirect damages", "lost profits", "liability cap", "total liability".
+These phrases indicate a limitation of liability clause even when embedded inside sections
+titled "Risk Allocation", "General Terms", or other non-specific headings.
+
 Analyse:
 - Cap structure: fixed sum, multiple of fees paid/payable, or uncapped
 - Fee-basis window: 12 months prior, contract term, fees payable over remainder, etc.
@@ -58,6 +64,12 @@ ${TOOL_DIRECTIVE}`,
 
   Indemnities: `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
 Your sole task: identify and assess indemnification clauses.
+
+Detection: Scan the entire contract for any of these signal phrases, regardless of section heading:
+"indemnify", "indemnification", "hold harmless", "defend and indemnify",
+"indemnitor", "indemnitee", "losses and claims", "third party claims".
+These phrases indicate an indemnification obligation even when embedded inside sections
+titled "Risk Allocation", "General Commercial Terms", or other non-specific headings.
 
 Analyse:
 - Directionality: mutual indemnity, or does only the buyer indemnify the vendor?
