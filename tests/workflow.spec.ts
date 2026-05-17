@@ -847,7 +847,7 @@ test('Test 48: Back navigation from LoL review returns to deals/new', async ({ p
   await seedStore(page, { acv: 10000, termMonths: 12 });
   await page.goto('/review/lol');
 
-  await page.getByRole('link', { name: 'Back to New review' }).click();
+  await page.getByRole('button', { name: 'Back to New review' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
   await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
 });
@@ -872,7 +872,7 @@ test('Test 51: New review link from summary returns to deals intake', async ({ p
   await seedStore(page, { acv: 50000, termMonths: 24 });
   await page.goto('/review/summary');
 
-  await page.getByRole('link', { name: 'New review' }).click();
+  await page.getByRole('button', { name: 'New review' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
 });
 
@@ -1152,4 +1152,73 @@ test('Test 65: Processing pipeline shows per-agent sub-list after analysis compl
 
   // The per-agent sub-list should be rendered — Liability Cap was emitted by the mock
   await expect(page.getByText('Liability Cap').first()).toBeVisible();
+});
+
+// ─── BUG-01: New review clears stale contract data ────────────────────────────
+
+test('Test 66: New review button clears stale contract data and returns a blank intake page', async ({ page }) => {
+  const staleEnvelope = {
+    version: 2,
+    activeDocumentId: 'playwright-test-old',
+    state: {
+      documentId: 'playwright-test-old',
+      uploadStatus: 'complete',
+      activeDocument: { id: 'playwright-test-old', fileName: 'old-contract.pdf', uploadedAt: '2026-01-01T00:00:00Z' },
+      documentMeta: { fileName: 'old-contract.pdf', uploadedAt: '2026-01-01T00:00:00Z' },
+      extractedTerms: { governingLaw: 'English Law', terminationNotice: '90 days' },
+      extractedParties: {},
+      clauses: [],
+      risks: [],
+      obligations: [],
+      recommendations: [],
+      processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
+      errors: [],
+      commercialContext: {
+        acv: { value: 99999, confidence: 0.9, evidence: null, extractionMethod: 'llm' },
+        termMonths: { value: 36, confidence: 0.9, evidence: null, extractionMethod: 'llm' },
+        insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
+        dataType: { value: 'standard', confidence: 0.9, evidence: null, extractionMethod: 'llm' },
+        liabilityCap: null,
+      },
+      extractionWarnings: [],
+      manualFlags: [],
+      diagnostics: { missingFields: [], hydrationWarnings: [] },
+    },
+  };
+
+  // Navigate to summary, then seed localStorage via evaluate (not addInitScript,
+  // which would re-run on each page load including the hard reload after "New review").
+  await page.goto('/review/summary');
+  await page.evaluate((envelope) => {
+    window.localStorage.setItem('pactora.documentAnalysis.v2', JSON.stringify(envelope));
+  }, staleEnvelope);
+
+  // Reload to let the provider pick up the seeded state.
+  await page.reload();
+
+  // Confirm the old contract data is visible — the seed worked.
+  await expect(page.getByText('old-contract.pdf')).toBeVisible();
+  await expect(page.getByText('£99,999')).toBeVisible();
+
+  // Click "New review" to start fresh.
+  await page.getByRole('button', { name: 'New review' }).click();
+
+  // Hard navigation: wait for the new page to finish loading.
+  await page.waitForURL(/\/deals\/new/, { waitUntil: 'domcontentloaded' });
+
+  // Old contract data must be gone.
+  await expect(page.getByText('old-contract.pdf')).not.toBeVisible();
+  await expect(page.getByText('£99,999')).not.toBeVisible();
+  await expect(page.getByText('English Law')).not.toBeVisible();
+
+  // Steps 2 & 3 (extracted context + acknowledgment) are only shown when
+  // uploadStatus === 'complete'. After reset they must not appear.
+  await expect(page.getByRole('heading', { name: 'Extracted commercial context', level: 2 })).not.toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Acknowledgment', level: 2 })).not.toBeVisible();
+
+  // The blank upload form (Step 1) must be visible.
+  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+  await expect(page.locator('#contractUpload')).toBeVisible();
+
+  assertNoImportantAppIssues(page);
 });

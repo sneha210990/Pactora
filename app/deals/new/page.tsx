@@ -100,6 +100,7 @@ export default function NewDealPage() {
   useEffect(() => {
     sessionStorage.setItem('pactora.manualClauseText', manualClauseText);
   }, [manualClauseText]);
+
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
   const [agentProgress, setAgentProgress] = useState<AgentProgressMap>({});

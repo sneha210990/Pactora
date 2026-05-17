@@ -142,6 +142,16 @@ type AnalysisPayload = {
 const STORAGE_KEY = 'pactora.documentAnalysis.v2';
 const LEGACY_STORAGE_KEY = 'pactora.documentAnalysis.v1';
 
+export function clearPersistedState() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // ignore storage errors
+  }
+}
+
 const emptySteps: DocumentAnalysisState['processingSteps'] = {
   upload: false,
   extraction: false,
