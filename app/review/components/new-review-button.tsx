@@ -1,8 +1,6 @@
 'use client';
 
-import { flushSync } from 'react-dom';
-import { useRouter } from 'next/navigation';
-import { clearPersistedState, useDocumentAnalysisActions } from '@/lib/document-analysis-store';
+import { clearPersistedState } from '@/lib/document-analysis-store';
 
 interface NewReviewButtonProps {
   className?: string;
@@ -10,22 +8,14 @@ interface NewReviewButtonProps {
 }
 
 export function NewReviewButton({ className, children = 'New review' }: NewReviewButtonProps) {
-  const router = useRouter();
-  const { reset } = useDocumentAnalysisActions();
-
   function handleClick() {
-    // Clear localStorage synchronously before navigating so that even a
-    // hard reload during navigation won't restore stale contract data.
+    // Clear persisted state synchronously, then do a hard navigation so the
+    // React app re-initialises from scratch. This avoids any React 19 concurrent
+    // rendering race where the new page renders before the in-memory reset
+    // propagates through the context tree.
     clearPersistedState();
     sessionStorage.removeItem('pactora.manualClauseText');
-
-    // Flush the in-memory store reset synchronously before router.push,
-    // so the new page reads empty state from context on its first render.
-    flushSync(() => {
-      reset();
-    });
-
-    router.push('/deals/new');
+    window.location.href = '/deals/new';
   }
 
   return (

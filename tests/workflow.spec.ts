@@ -1157,41 +1157,44 @@ test('Test 65: Processing pipeline shows per-agent sub-list after analysis compl
 // ─── BUG-01: New review clears stale contract data ────────────────────────────
 
 test('Test 66: New review button clears stale contract data and returns a blank intake page', async ({ page }) => {
-  // Seed a completed contract review using the v2 envelope format the app actually writes.
-  await page.addInitScript(() => {
-    const envelope = {
-      version: 2,
-      activeDocumentId: 'playwright-test-old',
-      state: {
-        documentId: 'playwright-test-old',
-        uploadStatus: 'complete',
-        activeDocument: { id: 'playwright-test-old', fileName: 'old-contract.pdf', uploadedAt: '2026-01-01T00:00:00Z' },
-        documentMeta: { fileName: 'old-contract.pdf', uploadedAt: '2026-01-01T00:00:00Z' },
-        extractedTerms: { governingLaw: 'English Law', terminationNotice: '90 days' },
-        extractedParties: {},
-        clauses: [],
-        risks: [],
-        obligations: [],
-        recommendations: [],
-        processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
-        errors: [],
-        commercialContext: {
-          acv: { value: 99999, confidence: 0.9, evidence: null, extractionMethod: 'llm' },
-          termMonths: { value: 36, confidence: 0.9, evidence: null, extractionMethod: 'llm' },
-          insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
-          dataType: { value: 'standard', confidence: 0.9, evidence: null, extractionMethod: 'llm' },
-          liabilityCap: null,
-        },
-        extractionWarnings: [],
-        manualFlags: [],
-        diagnostics: { missingFields: [], hydrationWarnings: [] },
+  const staleEnvelope = {
+    version: 2,
+    activeDocumentId: 'playwright-test-old',
+    state: {
+      documentId: 'playwright-test-old',
+      uploadStatus: 'complete',
+      activeDocument: { id: 'playwright-test-old', fileName: 'old-contract.pdf', uploadedAt: '2026-01-01T00:00:00Z' },
+      documentMeta: { fileName: 'old-contract.pdf', uploadedAt: '2026-01-01T00:00:00Z' },
+      extractedTerms: { governingLaw: 'English Law', terminationNotice: '90 days' },
+      extractedParties: {},
+      clauses: [],
+      risks: [],
+      obligations: [],
+      recommendations: [],
+      processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
+      errors: [],
+      commercialContext: {
+        acv: { value: 99999, confidence: 0.9, evidence: null, extractionMethod: 'llm' },
+        termMonths: { value: 36, confidence: 0.9, evidence: null, extractionMethod: 'llm' },
+        insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
+        dataType: { value: 'standard', confidence: 0.9, evidence: null, extractionMethod: 'llm' },
+        liabilityCap: null,
       },
-    };
-    window.localStorage.setItem('pactora.documentAnalysis.v2', JSON.stringify(envelope));
-  });
+      extractionWarnings: [],
+      manualFlags: [],
+      diagnostics: { missingFields: [], hydrationWarnings: [] },
+    },
+  };
 
-  // Navigate to the summary page (the last step of a completed review).
+  // Navigate to summary, then seed localStorage via evaluate (not addInitScript,
+  // which would re-run on each page load including the hard reload after "New review").
   await page.goto('/review/summary');
+  await page.evaluate((envelope) => {
+    window.localStorage.setItem('pactora.documentAnalysis.v2', JSON.stringify(envelope));
+  }, staleEnvelope);
+
+  // Reload to let the provider pick up the seeded state.
+  await page.reload();
 
   // Confirm the old contract data is visible — the seed worked.
   await expect(page.getByText('old-contract.pdf')).toBeVisible();
@@ -1200,8 +1203,8 @@ test('Test 66: New review button clears stale contract data and returns a blank 
   // Click "New review" to start fresh.
   await page.getByRole('button', { name: 'New review' }).click();
 
-  // Should land on the intake page.
-  await expect(page).toHaveURL(/\/deals\/new/);
+  // Hard navigation: wait for the new page to finish loading.
+  await page.waitForURL(/\/deals\/new/, { waitUntil: 'domcontentloaded' });
 
   // Old contract data must be gone.
   await expect(page.getByText('old-contract.pdf')).not.toBeVisible();
