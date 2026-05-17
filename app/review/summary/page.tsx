@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
+import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 import { useDocumentAnalysis } from '@/lib/document-analysis-store';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
@@ -174,6 +175,41 @@ function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
   );
 }
 
+function crossClauseRiskClass(risk: CrossClauseRisk['riskLevel']) {
+  if (risk === 'High') return 'border-red-500/40 bg-red-500/10';
+  if (risk === 'Medium') return 'border-amber-500/40 bg-amber-500/10';
+  return 'border-emerald-500/40 bg-emerald-500/10';
+}
+
+function crossClauseRiskBadgeClass(risk: CrossClauseRisk['riskLevel']) {
+  if (risk === 'High') return 'border-red-500/40 bg-red-500/10 text-red-200';
+  if (risk === 'Medium') return 'border-amber-500/40 bg-amber-500/10 text-amber-200';
+  return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
+}
+
+function CrossClauseRiskCard({ risk }: { risk: CrossClauseRisk }) {
+  return (
+    <div className={`rounded-xl border p-5 ${crossClauseRiskClass(risk.riskLevel)}`}>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+            {risk.primaryClause} ↔ {risk.relatedClause}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-zinc-100">{risk.headline}</p>
+        </div>
+        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${crossClauseRiskBadgeClass(risk.riskLevel)}`}>
+          {risk.riskLevel}
+        </span>
+      </div>
+      <p className="text-sm text-zinc-300">{risk.plainEnglish}</p>
+      <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Negotiation point</p>
+        <p className="text-xs text-zinc-300">{risk.negotiationPoint}</p>
+      </div>
+    </div>
+  );
+}
+
 function SummaryContent() {
   const analysis = useDocumentAnalysis();
 
@@ -225,6 +261,8 @@ function SummaryContent() {
   const knownRisks = rankedSections.filter((section) => section.risk !== null) as Array<(typeof rankedSections)[number] & { risk: RiskLevel }>;
   const averageRisk = knownRisks.length > 0 ? knownRisks.reduce((sum, section) => sum + riskScore(section.risk), 0) / knownRisks.length : 0;
   const overallRisk: RiskLevel = knownRisks.some((section) => section.risk === 'High') || averageRisk >= 2.4 ? 'High' : averageRisk >= 1.7 ? 'Medium' : 'Low';
+
+  const crossClauseRisks: CrossClauseRisk[] = analysis.crossClauseRisks ?? [];
 
   const riskScore100 = computeRiskScore(clauseFlags);
   const highFlags = clauseFlags.filter((f) => f.riskLevel === 'High');
@@ -388,6 +426,22 @@ function SummaryContent() {
             )}
           </div>
         </section>
+
+        {crossClauseRisks.length > 0 && (
+          <section className="mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
+              <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2.5 py-0.5 text-xs text-orange-300">
+                {crossClauseRisks.length} interaction{crossClauseRisks.length !== 1 ? 's' : ''} detected
+              </span>
+            </div>
+            <div className="flex flex-col gap-4">
+              {crossClauseRisks.map((risk) => (
+                <CrossClauseRiskCard key={risk.id} risk={risk} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {effectiveFlags.length > 0 ? (
           <section className="mt-8">

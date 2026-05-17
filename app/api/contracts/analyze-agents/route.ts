@@ -30,6 +30,7 @@
 
 import { NextResponse } from 'next/server';
 import { runClauseAgent } from '@/lib/agents/run-clause-agent';
+import { detectCrossClauseRisks } from '@/lib/agents/cross-clause-engine';
 import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
 import type { AgentEvent, PactoraClauseType } from '@/lib/agents/types';
 import type { ClauseFlag } from '@/lib/clause-analysis';
@@ -78,9 +79,12 @@ export async function POST(request: Request) {
 
       await Promise.allSettled(agentPromises);
 
+      const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
+
       emit({
         type: 'analysis_complete',
         flags: collectedFlags,
+        crossClauseRisks,
         analyzedAt: new Date().toISOString(),
       });
 
