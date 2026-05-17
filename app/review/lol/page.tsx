@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
@@ -399,12 +400,7 @@ function LolReviewContent() {
           <Link href="/" className="text-sm text-zinc-300 hover:text-white">
             Pactora
           </Link>
-          <Link
-            href="/deals/new"
-            className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
-          >
-            New review
-          </Link>
+          <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
 
         <ReviewProgress current="lol" />
@@ -574,12 +570,9 @@ function LolReviewContent() {
             >
               Continue to Indemnities
             </Link>
-            <Link
-              href="/deals/new"
-              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
-            >
+            <NewReviewButton className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">
               Back to New review
-            </Link>
+            </NewReviewButton>
             <Link
               href="/"
               className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
