@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     'app/api/contracts/extract/route': [
       './node_modules/pdf-parse/**/*',
+      './node_modules/node-ensure/**/*',
       './node_modules/mammoth/**/*',
     ],
   },
