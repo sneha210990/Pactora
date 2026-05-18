@@ -213,9 +213,10 @@ async function getPdfParser(): Promise<PdfParse> {
 }
 
 async function getMammoth(): Promise<Mammoth> {
-  const { createRequire } = await import('module');
-  const runtimeRequire = createRequire(process.cwd() + '/');
-  const loaded = runtimeRequire('mammoth') as Mammoth | { default: Mammoth };
+  // Standard dynamic import — lets Next.js/Turbopack bundle mammoth and all
+  // its transitive deps automatically, avoiding manual dep tracking in next.config.ts.
+  // Node.js ESM can import CJS modules via import(), so no createRequire needed.
+  const loaded = await import('mammoth') as Mammoth | { default: Mammoth };
   return 'extractRawText' in loaded ? loaded : loaded.default;
 }
 
