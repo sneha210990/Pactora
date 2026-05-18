@@ -6,7 +6,7 @@ import { CLAUSE_AGENT_TOOLS } from './tools';
 
 const MODEL = 'claude-sonnet-4-6';
 
-// Extended thinking is enabled selectively for the two legally complex clause types:
+// Extended thinking is enabled selectively for the three legally complex clause types:
 //
 //   IP Ownership — requires multi-step reasoning across data-rights grants, feedback
 //     licences, derived-work ownership, anonymisation carve-outs, and perpetual/
@@ -17,10 +17,16 @@ const MODEL = 'claude-sonnet-4-6';
 //     across complex multi-party drafting, and evaluating trigger scope across
 //     cross-referenced clause groups. Errors here carry the highest financial risk.
 //
-// The remaining six clause types (Liability Cap, Data Protection, Termination Rights,
+//   Liability Cap — cap provisions span multiple sub-clauses, carve-outs, and
+//     cross-references that interact non-obviously (e.g. a mutual cap with a
+//     one-sided data-breach carve-out). Detection failure is the primary reported
+//     issue; extended thinking improves recall across non-standard phrasings.
+//
+// The remaining five clause types (Data Protection, Termination Rights,
 // Auto-Renewal, Fee Increases, Governing Law) involve pattern recognition more than
 // multi-step legal chains — standard inference is sufficient and cheaper.
 const EXTENDED_THINKING_CLAUSE_TYPES = new Set<PactoraClauseType>([
+  'Liability Cap',
   'IP Ownership',
   'Indemnities',
 ]);

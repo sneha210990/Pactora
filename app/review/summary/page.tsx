@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { EmailCaptureBanner } from '@/components/email-capture-banner';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
@@ -362,6 +363,8 @@ function SummaryContent() {
             )}
           </div>
         </section>
+
+        {user === null && clauseFlags.length > 0 && <EmailCaptureBanner />}
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">

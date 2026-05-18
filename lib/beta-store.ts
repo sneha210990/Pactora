@@ -50,6 +50,7 @@ export type BetaEventType =
   | 'analysis_started'
   | 'analysis_completed'
   | 'feedback_submitted'
+  | 'email_captured'
   | 'logout';
 
 export type BetaEvent = {
