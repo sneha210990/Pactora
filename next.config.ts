@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
       './node_modules/pdf-parse/**/*',
       './node_modules/node-ensure/**/*',
       './node_modules/mammoth/**/*',
+      // mammoth transitive dependencies — Vercel's static tracer misses these
+      // because mammoth is loaded via createRequire() rather than a static import.
+      './node_modules/underscore/**/*',
+      './node_modules/jszip/**/*',
+      './node_modules/xmlbuilder2/**/*',
+      './node_modules/xmldom/**/*',
     ],
   },
 };
