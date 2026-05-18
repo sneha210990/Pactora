@@ -98,10 +98,12 @@ export async function POST(request: Request) {
       );
 
       // Record usage asynchronously — do not block the SSE response.
+      // Model is mixed (Sonnet for 3 thinking agents, Haiku for 5 standard) so
+      // we record "mixed" as the model label and rely on the cost field for billing.
       if (collectedUsages.length > 0) {
         recordApiUsage({
           operation: 'clause_analysis',
-          model: 'claude-sonnet-4-6',
+          model: 'mixed:sonnet+haiku',
           input_tokens: totalUsage.inputTokens,
           output_tokens: totalUsage.outputTokens,
           cache_creation_tokens: totalUsage.cacheCreationTokens,
