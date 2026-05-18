@@ -12,7 +12,7 @@ export async function GET() {
     );
   }
 
-  await touchUserLastActive(sessionData.user.id);
+  try { await touchUserLastActive(sessionData.user.id); } catch { /* best-effort */ }
 
   return NextResponse.json(
     { user: sessionData.user },

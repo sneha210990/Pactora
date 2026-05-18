@@ -64,12 +64,6 @@ export async function POST(request: Request) {
     user: { id: string; email: string };
   };
 
-  const betaUser = await createOrUpdateUserByIdentity({
-    provider: 'supabase',
-    auth_user_id: data.user.id,
-    email: data.user.email,
-  });
-
   const cookieStore = await cookies();
   cookieStore.set(
     SESSION_COOKIE_NAME,
@@ -77,12 +71,21 @@ export async function POST(request: Request) {
     authCookieOptions(),
   );
 
-  await createEvent({
-    event_type: mode === 'signup' ? 'user_signed_up' : 'user_logged_in',
-    user_id: betaUser.id,
-    email: betaUser.email,
-    page_context: '/login',
-  });
-
-  return NextResponse.json({ ok: true, user: betaUser });
+  // Beta-store is best-effort — don't let telemetry failures break auth.
+  try {
+    const betaUser = await createOrUpdateUserByIdentity({
+      provider: 'supabase',
+      auth_user_id: data.user.id,
+      email: data.user.email,
+    });
+    await createEvent({
+      event_type: mode === 'signup' ? 'user_signed_up' : 'user_logged_in',
+      user_id: betaUser.id,
+      email: betaUser.email,
+      page_context: '/login',
+    });
+    return NextResponse.json({ ok: true, user: betaUser });
+  } catch {
+    return NextResponse.json({ ok: true, user: { email: data.user.email } });
+  }
 }

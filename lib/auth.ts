@@ -47,11 +47,29 @@ export async function getCurrentSessionUser() {
     return null;
   }
 
-  const betaUser = await createOrUpdateUserByIdentity({
-    provider: 'supabase',
-    auth_user_id: user.id,
-    email: user.email,
-  });
-
-  return { user: betaUser };
+  try {
+    const betaUser = await createOrUpdateUserByIdentity({
+      provider: 'supabase',
+      auth_user_id: user.id,
+      email: user.email,
+    });
+    return { user: betaUser };
+  } catch {
+    // Beta-store unavailable (e.g. read-only filesystem on serverless).
+    // Return a minimal user shape so the session is still usable.
+    const now = new Date().toISOString();
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        auth_provider: 'supabase',
+        auth_user_id: user.id,
+        created_at: now,
+        updated_at: now,
+        last_active_at: now,
+        first_upload_at: null,
+        first_feedback_at: null,
+      },
+    };
+  }
 }

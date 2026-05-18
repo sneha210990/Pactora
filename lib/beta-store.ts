@@ -69,7 +69,10 @@ type BetaStore = {
   events: BetaEvent[];
 };
 
-const dataDir = path.join(process.cwd(), 'data');
+// Vercel's project root is read-only; /tmp is the only writable path in serverless.
+const dataDir = process.env.VERCEL
+  ? path.join('/tmp', 'pactora-data')
+  : path.join(process.cwd(), 'data');
 const dataFile = path.join(dataDir, 'beta-store.json');
 
 const defaultStore: BetaStore = {
