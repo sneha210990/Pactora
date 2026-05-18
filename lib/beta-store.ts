@@ -62,11 +62,24 @@ export type BetaEvent = {
   created_at: string;
 };
 
+export type ApiUsageRecord = {
+  id: string;
+  created_at: string;
+  operation: 'extraction' | 'clause_analysis';
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_tokens: number;
+  cache_read_tokens: number;
+  cost_usd: number;
+};
+
 type BetaStore = {
   users: BetaUser[];
   sessions: BetaSession[];
   feedback: FeedbackEntry[];
   events: BetaEvent[];
+  apiUsage: ApiUsageRecord[];
 };
 
 // Vercel's project root is read-only; /tmp is the only writable path in serverless.
@@ -80,6 +93,7 @@ const defaultStore: BetaStore = {
   sessions: [],
   feedback: [],
   events: [],
+  apiUsage: [],
 };
 
 async function ensureDataFile() {
@@ -104,6 +118,7 @@ async function readStore(): Promise<BetaStore> {
       sessions: parsed.sessions ?? [],
       feedback: parsed.feedback ?? [],
       events: parsed.events ?? [],
+      apiUsage: parsed.apiUsage ?? [],
     };
   } catch {
     return defaultStore;
@@ -335,6 +350,57 @@ export async function createEvent(params: {
 
   await writeStore(store);
   return event;
+}
+
+export async function recordApiUsage(params: {
+  operation: ApiUsageRecord['operation'];
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_tokens: number;
+  cache_read_tokens: number;
+  cost_usd: number;
+}) {
+  const now = new Date().toISOString();
+  const store = await readStore();
+  store.apiUsage.push({ id: id('api'), created_at: now, ...params });
+  await writeStore(store);
+}
+
+export async function getApiUsageSummary() {
+  const store = await readStore();
+  const records = store.apiUsage ?? [];
+
+  const totalCostUsd = records.reduce((s, r) => s + r.cost_usd, 0);
+  const totalInputTokens = records.reduce((s, r) => s + r.input_tokens, 0);
+  const totalOutputTokens = records.reduce((s, r) => s + r.output_tokens, 0);
+  const totalCacheReadTokens = records.reduce((s, r) => s + r.cache_read_tokens, 0);
+
+  const extractionRecords = records.filter((r) => r.operation === 'extraction');
+  const analysisRecords = records.filter((r) => r.operation === 'clause_analysis');
+  const extractionCostUsd = extractionRecords.reduce((s, r) => s + r.cost_usd, 0);
+  const analysisCostUsd = analysisRecords.reduce((s, r) => s + r.cost_usd, 0);
+
+  const contractsProcessed = extractionRecords.length;
+  const avgCostPerContractUsd = contractsProcessed > 0 ? totalCostUsd / contractsProcessed : 0;
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const last30DaysCostUsd = records
+    .filter((r) => r.created_at >= thirtyDaysAgo)
+    .reduce((s, r) => s + r.cost_usd, 0);
+
+  return {
+    totalCostUsd,
+    totalInputTokens,
+    totalOutputTokens,
+    totalCacheReadTokens,
+    extractionCostUsd,
+    analysisCostUsd,
+    contractsProcessed,
+    avgCostPerContractUsd,
+    last30DaysCostUsd,
+    recordCount: records.length,
+  };
 }
 
 export async function getOperatorSummary() {

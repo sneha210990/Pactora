@@ -30,10 +30,12 @@
 
 import { NextResponse } from 'next/server';
 import { runClauseAgent } from '@/lib/agents/run-clause-agent';
+import type { ClauseAgentUsage } from '@/lib/agents/run-clause-agent';
 import { detectCrossClauseRisks } from '@/lib/agents/cross-clause-engine';
 import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
 import type { AgentEvent, PactoraClauseType } from '@/lib/agents/types';
 import type { ClauseFlag } from '@/lib/clause-analysis';
+import { recordApiUsage } from '@/lib/beta-store';
 
 export const runtime = 'nodejs';
 // 5 parallel agents each with up to 60 s → 120 s ceiling gives headroom
@@ -63,8 +65,9 @@ export async function POST(request: Request) {
       const emit = (event: AgentEvent) => controller.enqueue(enc.encode(sseEvent(event)));
 
       const collectedFlags: ClauseFlag[] = [];
+      const collectedUsages: ClauseAgentUsage[] = [];
 
-      // Fire all five clause agents in parallel and stream each result as it arrives.
+      // Fire all clause agents in parallel and stream each result as it arrives.
       // Promise.allSettled ensures one agent failure does not abort the others.
       const agentPromises = PACTORA_CLAUSE_AGENTS.map(async (clauseType: PactoraClauseType) => {
         emit({ type: 'agent_start', clauseType });
@@ -72,6 +75,7 @@ export async function POST(request: Request) {
         if (result.ok) {
           emit({ type: 'agent_result', clauseType, flag: result.flag });
           if (result.flag) collectedFlags.push(result.flag);
+          collectedUsages.push(result.usage);
         } else {
           emit({ type: 'agent_error', clauseType, message: result.error });
         }
@@ -81,11 +85,37 @@ export async function POST(request: Request) {
 
       const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
 
+      const zero = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, costUsd: 0 };
+      const totalUsage = collectedUsages.reduce(
+        (acc, u) => ({
+          inputTokens: acc.inputTokens + u.inputTokens,
+          outputTokens: acc.outputTokens + u.outputTokens,
+          cacheCreationTokens: acc.cacheCreationTokens + u.cacheCreationTokens,
+          cacheReadTokens: acc.cacheReadTokens + u.cacheReadTokens,
+          costUsd: acc.costUsd + u.costUsd,
+        }),
+        zero,
+      );
+
+      // Record usage asynchronously — do not block the SSE response.
+      if (collectedUsages.length > 0) {
+        recordApiUsage({
+          operation: 'clause_analysis',
+          model: 'claude-sonnet-4-6',
+          input_tokens: totalUsage.inputTokens,
+          output_tokens: totalUsage.outputTokens,
+          cache_creation_tokens: totalUsage.cacheCreationTokens,
+          cache_read_tokens: totalUsage.cacheReadTokens,
+          cost_usd: totalUsage.costUsd,
+        }).catch(console.error);
+      }
+
       emit({
         type: 'analysis_complete',
         flags: collectedFlags,
         crossClauseRisks,
         analyzedAt: new Date().toISOString(),
+        totalCostUsd: totalUsage.costUsd,
       });
 
       controller.close();

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { calculateCostUsd } from '@/lib/agents/api-cost';
 
 // AI-powered commercial value extraction using Claude Haiku.
 //
@@ -132,7 +133,20 @@ export type AIExtractedValues = {
   currency: 'GBP' | 'USD' | 'EUR' | 'other';
 };
 
-export async function extractContractValuesWithAI(contractText: string): Promise<AIExtractedValues> {
+export type AIExtractionUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  costUsd: number;
+};
+
+export type AIExtractionResult = {
+  values: AIExtractedValues;
+  usage: AIExtractionUsage;
+};
+
+export async function extractContractValuesWithAI(contractText: string): Promise<AIExtractionResult> {
   const client = new Anthropic();
   const truncated = contractText.slice(0, EXTRACTION_CHAR_LIMIT);
 
@@ -161,8 +175,21 @@ export async function extractContractValuesWithAI(contractText: string): Promise
   }
 
   const raw = toolCall.input as Record<string, unknown>;
+  const u = response.usage;
+  const usage: AIExtractionUsage = {
+    inputTokens: u.input_tokens,
+    outputTokens: u.output_tokens,
+    cacheCreationTokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
+    cacheReadTokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+    costUsd: calculateCostUsd(HAIKU_MODEL, {
+      input_tokens: u.input_tokens,
+      output_tokens: u.output_tokens,
+      cache_creation_input_tokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
+      cache_read_input_tokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+    }),
+  };
 
-  return {
+  const values: AIExtractedValues = {
     acv: typeof raw.acv === 'number' ? raw.acv : null,
     termMonths: typeof raw.termMonths === 'number' ? Math.round(raw.termMonths) : null,
     insuranceCover: typeof raw.insuranceCover === 'number' ? raw.insuranceCover : null,
@@ -181,4 +208,6 @@ export async function extractContractValuesWithAI(contractText: string): Promise
       ? (raw.currency as 'GBP' | 'USD' | 'EUR' | 'other')
       : 'other',
   };
+
+  return { values, usage };
 }

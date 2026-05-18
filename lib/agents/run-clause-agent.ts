@@ -3,6 +3,7 @@ import type { PactoraClauseType } from './types';
 import { getAnthropicClient } from './client';
 import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
+import { calculateCostUsd } from './api-cost';
 
 const MODEL = 'claude-sonnet-4-6';
 
@@ -38,8 +39,16 @@ const MAX_TOKENS_THINKING = 12_000;
 // Standard agents: covers tool call overhead plus a full verbatim clause section.
 const MAX_TOKENS_STANDARD = 2_048;
 
+export type ClauseAgentUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  costUsd: number;
+};
+
 export type ClauseAgentResult =
-  | { ok: true; flag: ClauseFlag | null }
+  | { ok: true; flag: ClauseFlag | null; usage: ClauseAgentUsage }
   | { ok: false; error: string };
 
 // Runs a single specialist clause agent against the contract text.
@@ -97,6 +106,20 @@ export async function runClauseAgent(
       ],
     });
 
+    const u = response.usage;
+    const usage: ClauseAgentUsage = {
+      inputTokens: u.input_tokens,
+      outputTokens: u.output_tokens,
+      cacheCreationTokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
+      cacheReadTokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+      costUsd: calculateCostUsd(MODEL, {
+        input_tokens: u.input_tokens,
+        output_tokens: u.output_tokens,
+        cache_creation_input_tokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
+        cache_read_input_tokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+      }),
+    };
+
     // With tool_choice: 'any', response.content always contains a tool_use block.
     // There may also be a preceding thinking block or text block — we skip both.
     const toolCall = response.content.find((b) => b.type === 'tool_use');
@@ -105,7 +128,7 @@ export async function runClauseAgent(
     }
 
     if (toolCall.name === 'no_issue_found') {
-      return { ok: true, flag: null };
+      return { ok: true, flag: null, usage };
     }
 
     if (toolCall.name === 'flag_clause') {
@@ -121,7 +144,7 @@ export async function runClauseAgent(
         plainEnglish: (input.plainEnglish as string) ?? '',
         negotiationPoint: (input.negotiationPoint as string) ?? '',
       };
-      return { ok: true, flag };
+      return { ok: true, flag, usage };
     }
 
     return { ok: false, error: `Unexpected tool called: ${toolCall.name}` };
