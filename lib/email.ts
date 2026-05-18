@@ -1,22 +1,24 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-// RESEND_FROM defaults to Resend's shared sending address which works without
-// a verified domain. Set RESEND_FROM to your own verified domain address
-// (e.g. hello@pactora.co) once your domain is verified in the Resend dashboard.
-const FROM = process.env.RESEND_FROM ?? 'onboarding@resend.dev';
+function getTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
 
-function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return null;
-  return new Resend(key);
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
 }
 
 export async function sendBetaConfirmation(email: string): Promise<void> {
-  const resend = getResend();
-  if (!resend) return; // silently skip if key not configured
+  const transporter = getTransporter();
+  if (!transporter) return; // silently skip if credentials not configured
 
-  await resend.emails.send({
-    from: FROM,
+  const from = process.env.GMAIL_USER!;
+
+  await transporter.sendMail({
+    from: `Pactora <${from}>`,
     to: email,
     subject: "You're on the Pactora beta list",
     html: `
