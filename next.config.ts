@@ -1,13 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['pdf-parse', 'mammoth'],
-  // pdf-parse and mammoth are loaded via dynamic createRequire() calls that
-  // Vercel's static file tracer cannot follow. Force-include the entire
-  // node_modules subtree for the extract route so every transitive dep is
-  // present at runtime — avoids whack-a-mole with individual missing packages.
+  // pdf-parse is loaded via createRequire() pointing at a specific internal subpath
+  // (pdf-parse/lib/pdf.js/v2.0.550/build/pdf.js) that the static tracer cannot follow.
+  // mammoth uses a standard dynamic import() so Next.js bundles it automatically.
+  serverExternalPackages: ['pdf-parse'],
   outputFileTracingIncludes: {
-    'app/api/contracts/extract/route': ['./node_modules/**/*'],
+    'app/api/contracts/extract/route': [
+      './node_modules/pdf-parse/**/*',
+      './node_modules/node-ensure/**/*',
+    ],
   },
 };
 
