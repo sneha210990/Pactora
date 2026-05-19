@@ -10,6 +10,9 @@ export type ClauseFlag = {
   plainEnglish: string;
   negotiationPoint: string;
   clauseText?: string;
+  verified?: boolean;
+  verificationNote?: string;
+  position?: { start: number; end: number };
 };
 
 export type ClauseAnalysis = {

@@ -3,6 +3,7 @@ import type { PactoraClauseType } from './types';
 import { getAnthropicClient } from './client';
 import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
+import { flagWithVerification } from './hallucination-check';
 
 const MODEL = 'claude-sonnet-4-6';
 
@@ -121,7 +122,18 @@ export async function runClauseAgent(
         plainEnglish: (input.plainEnglish as string) ?? '',
         negotiationPoint: (input.negotiationPoint as string) ?? '',
       };
-      return { ok: true, flag };
+
+      const verifiedFlag = flagWithVerification(flag, contractText);
+
+      if (!verifiedFlag.verified) {
+        console.warn('[AUDIT] Clause text could not be verified in source:', {
+          clauseType,
+          text: flag.clauseText?.slice(0, 50),
+          note: verifiedFlag.verificationNote,
+        });
+      }
+
+      return { ok: true, flag: verifiedFlag };
     }
 
     return { ok: false, error: `Unexpected tool called: ${toolCall.name}` };
