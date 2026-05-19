@@ -31,6 +31,7 @@
 import { NextResponse } from 'next/server';
 import { runClauseAgent } from '@/lib/agents/run-clause-agent';
 import { detectCrossClauseRisks } from '@/lib/agents/cross-clause-engine';
+import { createOverlappingChunks, mergeChunkResults } from '@/lib/chunking-strategy';
 import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
 import type { AgentEvent, PactoraClauseType } from '@/lib/agents/types';
 import type { ClauseFlag } from '@/lib/clause-analysis';
@@ -57,36 +58,65 @@ export async function POST(request: Request) {
 
   const contractText = body.text;
 
+  const chunks = createOverlappingChunks(contractText);
+  console.log(`[CHUNKING] Contract (${contractText.length} chars) split into ${chunks.length} chunk(s)`);
+
   const stream = new ReadableStream({
     async start(controller) {
       const enc = new TextEncoder();
       const emit = (event: AgentEvent) => controller.enqueue(enc.encode(sseEvent(event)));
 
-      const collectedFlags: ClauseFlag[] = [];
+      if (chunks.length === 1) {
+        // Single-chunk path: preserve existing streaming behaviour — emit events as each agent resolves.
+        const collectedFlags: ClauseFlag[] = [];
+        const agentPromises = PACTORA_CLAUSE_AGENTS.map(async (clauseType: PactoraClauseType) => {
+          emit({ type: 'agent_start', clauseType });
+          const result = await runClauseAgent(clauseType, contractText, chunks[0]);
+          if (result.ok) {
+            emit({ type: 'agent_result', clauseType, flag: result.flag });
+            if (result.flag) collectedFlags.push(result.flag);
+          } else {
+            emit({ type: 'agent_error', clauseType, message: result.error });
+          }
+        });
+        await Promise.allSettled(agentPromises);
 
-      // Fire all five clause agents in parallel and stream each result as it arrives.
-      // Promise.allSettled ensures one agent failure does not abort the others.
-      const agentPromises = PACTORA_CLAUSE_AGENTS.map(async (clauseType: PactoraClauseType) => {
-        emit({ type: 'agent_start', clauseType });
-        const result = await runClauseAgent(clauseType, contractText);
-        if (result.ok) {
-          emit({ type: 'agent_result', clauseType, flag: result.flag });
-          if (result.flag) collectedFlags.push(result.flag);
-        } else {
-          emit({ type: 'agent_error', clauseType, message: result.error });
+        const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
+        emit({ type: 'analysis_complete', flags: collectedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
+      } else {
+        // Multi-chunk path: analyse each chunk sequentially (agents within a chunk run in parallel),
+        // then merge and deduplicate before emitting results.
+        const rawResults: Array<{ chunkIndex: number; clauseType: PactoraClauseType; flag: ClauseFlag | null }> = [];
+
+        for (const chunk of chunks) {
+          console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
+          const chunkPromises = PACTORA_CLAUSE_AGENTS.map(async (clauseType: PactoraClauseType) => {
+            const result = await runClauseAgent(clauseType, contractText, chunk);
+            return {
+              chunkIndex: chunk.chunkIndex,
+              clauseType,
+              flag: result.ok ? result.flag : null,
+            };
+          });
+          const settled = await Promise.allSettled(chunkPromises);
+          for (const r of settled) {
+            if (r.status === 'fulfilled') rawResults.push(r.value);
+            else console.error(`[ERROR] Agent failed on chunk ${chunk.chunkIndex}:`, r.reason);
+          }
         }
-      });
 
-      await Promise.allSettled(agentPromises);
+        const mergedFlags = mergeChunkResults(rawResults);
+        console.log(`[ANALYSIS] Found ${mergedFlags.length} unique flag(s) across ${chunks.length} chunk(s)`);
 
-      const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
+        // Emit one agent_result per clause type so clients receive the standard event shape.
+        for (const clauseType of PACTORA_CLAUSE_AGENTS) {
+          const flag = mergedFlags.find((f) => f.clauseType === clauseType) ?? null;
+          emit({ type: 'agent_result', clauseType, flag });
+        }
 
-      emit({
-        type: 'analysis_complete',
-        flags: collectedFlags,
-        crossClauseRisks,
-        analyzedAt: new Date().toISOString(),
-      });
+        const crossClauseRisks = detectCrossClauseRisks(mergedFlags);
+        emit({ type: 'analysis_complete', flags: mergedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
+      }
 
       controller.close();
     },

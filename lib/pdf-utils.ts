@@ -14,7 +14,11 @@ export interface PDFMetadata {
  * Detects common page number patterns to estimate page boundaries.
  *
  * Heuristic-based for MVP — covers most contracts (page numbers, section breaks).
- * For 100% accuracy, use PDF.js to parse actual PDFs (PROMPT 3).
+ *
+ * Two safeguards guard against false positives:
+ *   1. Requires ≥3 sequential page markers before trusting any detected boundaries.
+ *   2. Page numbers must be strictly sequential — section headers jump non-sequentially.
+ * Falls back to single-page if markers are sparse or non-sequential.
  */
 export function extractPDFMetadata(contractText: string): PDFMetadata {
   const singlePage: PDFMetadata = {
@@ -28,13 +32,10 @@ export function extractPDFMetadata(contractText: string): PDFMetadata {
 
   const matches = Array.from(contractText.matchAll(pageNumberPattern));
 
-  // SAFEGUARD 1: fewer than 3 markers is likely noise (section numbers, years, refs)
   if (matches.length < 3) {
     return singlePage;
   }
 
-  // SAFEGUARD 2: page numbers must be strictly sequential (1, 2, 3, ...)
-  // Section headers jump non-sequentially — reject those
   const pageNumbers = matches.map((m) => parseInt(m[1], 10));
   const isSequential = pageNumbers.every(
     (num, i) => i === 0 || num === pageNumbers[i - 1] + 1,
@@ -103,6 +104,7 @@ type EnrichedFlag = FlagWithPosition & {
 
 /**
  * Enrich a ClauseFlag with pageNumber and highlightRange from its byte position.
+ * Requires flag.position to be set (populated by hallucination-check's flagWithVerification).
  */
 export function enrichFlagWithPageNumber(
   flag: FlagWithPosition,

@@ -1,8 +1,10 @@
 import type { ClauseFlag } from '@/lib/clause-analysis';
+import type { ContractChunk } from '@/lib/chunking-strategy';
 import type { PactoraClauseType } from './types';
 import { getAnthropicClient } from './client';
 import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
+import { flagWithVerification } from './hallucination-check';
 import { extractPDFMetadata, enrichFlagWithPageNumber } from '@/lib/pdf-utils';
 
 const MODEL = 'claude-sonnet-4-6';
@@ -60,11 +62,13 @@ export type ClauseAgentResult =
 export async function runClauseAgent(
   clauseType: PactoraClauseType,
   contractText: string,
+  chunk?: ContractChunk,
 ): Promise<ClauseAgentResult> {
   const client = getAnthropicClient();
 
-  // Mirror the same 120 k truncation used by analyzeContractClauses().
-  const truncated = contractText.slice(0, 120_000);
+  // When a chunk is provided (large-contract path), analyse only that slice.
+  // Fall back to 120 k truncation for backward-compatible direct calls.
+  const textToAnalyze = chunk ? chunk.text : contractText.slice(0, 120_000);
 
   const withThinking = EXTENDED_THINKING_CLAUSE_TYPES.has(clauseType);
 
@@ -90,7 +94,7 @@ export async function runClauseAgent(
           content: [
             {
               type: 'text',
-              text: `Review the following SaaS contract for ${clauseType} risks:\n\n${truncated}`,
+              text: `Review the following SaaS contract for ${clauseType} risks:\n\n${textToAnalyze}`,
               cache_control: { type: 'ephemeral' },
             },
           ],
@@ -123,8 +127,19 @@ export async function runClauseAgent(
         negotiationPoint: (input.negotiationPoint as string) ?? '',
       };
 
+      // PROMPT 1: verify extracted text exists in full contract (anti-hallucination).
+      const verifiedFlag = flagWithVerification(baseFlag, contractText);
+      if (!verifiedFlag.verified) {
+        console.warn('[AUDIT] Clause text could not be verified in source:', {
+          clauseType,
+          text: baseFlag.clauseText?.slice(0, 50),
+          note: verifiedFlag.verificationNote,
+        });
+      }
+
+      // PROMPT 2: enrich with page number + highlight range from char offset.
       const pdfMetadata = extractPDFMetadata(contractText);
-      const flag = enrichFlagWithPageNumber(baseFlag, pdfMetadata);
+      const flag = enrichFlagWithPageNumber(verifiedFlag, pdfMetadata);
 
       return { ok: true, flag };
     }
