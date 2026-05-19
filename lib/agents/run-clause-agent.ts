@@ -98,16 +98,17 @@ export async function runClauseAgent(
     });
 
     const u = response.usage;
+    const uAny = u as unknown as Record<string, number>;
     const usage: ClauseAgentUsage = {
       inputTokens: u.input_tokens,
       outputTokens: u.output_tokens,
-      cacheCreationTokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
-      cacheReadTokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+      cacheCreationTokens: uAny.cache_creation_input_tokens ?? 0,
+      cacheReadTokens: uAny.cache_read_input_tokens ?? 0,
       costUsd: calculateCostUsd(model, {
         input_tokens: u.input_tokens,
         output_tokens: u.output_tokens,
-        cache_creation_input_tokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
-        cache_read_input_tokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+        cache_creation_input_tokens: uAny.cache_creation_input_tokens ?? 0,
+        cache_read_input_tokens: uAny.cache_read_input_tokens ?? 0,
       }),
     };
 
