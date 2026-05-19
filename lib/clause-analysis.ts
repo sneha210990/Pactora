@@ -10,9 +10,15 @@ export type ClauseFlag = {
   plainEnglish: string;
   negotiationPoint: string;
   clauseText?: string;
+
+  // From PROMPT 1 (hallucination verification)
   verified?: boolean;
   verificationNote?: string;
   position?: { start: number; end: number };
+
+  // From PROMPT 2 (source location)
+  pageNumber?: number;
+  highlightRange?: { start: number; end: number };
 };
 
 export type ClauseAnalysis = {

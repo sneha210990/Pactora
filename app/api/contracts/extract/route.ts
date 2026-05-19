@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { detectContractValues, extractContractText } from '@/lib/contract-extraction';
 import { extractContractValuesWithAI } from '@/lib/ai-extraction';
+import { recordApiUsage } from '@/lib/beta-store';
 
 export const runtime = 'nodejs';
 
@@ -39,35 +40,50 @@ async function mergeExtractionValues(text: string) {
     return null;
   });
 
+  // Record usage asynchronously — do not block the extraction response.
+  if (aiResult) {
+    recordApiUsage({
+      operation: 'extraction',
+      model: 'claude-haiku-4-5-20251001',
+      input_tokens: aiResult.usage.inputTokens,
+      output_tokens: aiResult.usage.outputTokens,
+      cache_creation_tokens: aiResult.usage.cacheCreationTokens,
+      cache_read_tokens: aiResult.usage.cacheReadTokens,
+      cost_usd: aiResult.usage.costUsd,
+    }).catch(console.error);
+  }
+
+  const ai = aiResult?.values ?? null;
+
   const detectedValues = {
     // Numeric fields: AI wins on any non-null value; regex serves as fallback.
-    acv: aiResult?.acv ?? regexValues.acv,
-    termMonths: aiResult?.termMonths ?? regexValues.termMonths,
-    insuranceCover: aiResult?.insuranceCover ?? regexValues.insuranceCover,
+    acv: ai?.acv ?? regexValues.acv,
+    termMonths: ai?.termMonths ?? regexValues.termMonths,
+    insuranceCover: ai?.insuranceCover ?? regexValues.insuranceCover,
     // dataType: AI wins — it understands GDPR context better than keyword matching.
-    dataType: aiResult?.dataType ?? regexValues.dataType,
+    dataType: ai?.dataType ?? regexValues.dataType,
     // liabilityCap: AI-only field; regex has no equivalent.
-    liabilityCap: aiResult?.liabilityCap ?? null,
+    liabilityCap: ai?.liabilityCap ?? null,
     // currency: AI-only field.
-    currency: aiResult?.currency ?? ('GBP' as const),
+    currency: ai?.currency ?? ('GBP' as const),
   };
 
   const extractedTerms = {
     effectiveDate: regexTerms.effectiveDate ?? undefined,
     // AI wins on governing law and termination notice (more context-aware than regex).
-    governingLaw: aiResult?.governingLaw ?? regexTerms.governingLaw ?? undefined,
-    terminationNotice: aiResult?.terminationNotice ?? regexTerms.terminationNotice ?? undefined,
-    renewalTerm: aiResult?.renewalTerm ?? regexTerms.renewalTerm ?? undefined,
+    governingLaw: ai?.governingLaw ?? regexTerms.governingLaw ?? undefined,
+    terminationNotice: ai?.terminationNotice ?? regexTerms.terminationNotice ?? undefined,
+    renewalTerm: ai?.renewalTerm ?? regexTerms.renewalTerm ?? undefined,
   };
 
   console.log('[extract] extraction sources:', {
-    acv: aiResult?.acv != null ? 'ai' : regexValues.acv != null ? 'regex' : 'null',
-    termMonths: aiResult?.termMonths != null ? 'ai' : regexValues.termMonths != null ? 'regex' : 'null',
-    insuranceCover: aiResult?.insuranceCover != null ? 'ai' : regexValues.insuranceCover != null ? 'regex' : 'null',
-    dataType: aiResult?.dataType != null ? 'ai' : 'regex',
-    liabilityCap: aiResult?.liabilityCap != null ? 'ai' : 'null',
-    governingLaw: aiResult?.governingLaw != null ? 'ai' : regexTerms.governingLaw != null ? 'regex' : 'null',
-    terminationNotice: aiResult?.terminationNotice != null ? 'ai' : regexTerms.terminationNotice != null ? 'regex' : 'null',
+    acv: ai?.acv != null ? 'ai' : regexValues.acv != null ? 'regex' : 'null',
+    termMonths: ai?.termMonths != null ? 'ai' : regexValues.termMonths != null ? 'regex' : 'null',
+    insuranceCover: ai?.insuranceCover != null ? 'ai' : regexValues.insuranceCover != null ? 'regex' : 'null',
+    dataType: ai?.dataType != null ? 'ai' : 'regex',
+    liabilityCap: ai?.liabilityCap != null ? 'ai' : 'null',
+    governingLaw: ai?.governingLaw != null ? 'ai' : regexTerms.governingLaw != null ? 'regex' : 'null',
+    terminationNotice: ai?.terminationNotice != null ? 'ai' : regexTerms.terminationNotice != null ? 'regex' : 'null',
     aiAvailable: aiResult !== null,
   });
 

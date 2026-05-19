@@ -158,13 +158,34 @@ function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
     <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="text-sm font-semibold text-zinc-200">{flag.clauseType}</span>
-        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${clauseFlagRiskClass(flag.riskLevel)}`}>
-          {flag.riskLevel}
-        </span>
+        <div className="flex items-center gap-2">
+          {flag.pageNumber != null && (
+            <span className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400">
+              p.{flag.pageNumber}
+            </span>
+          )}
+          <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${clauseFlagRiskClass(flag.riskLevel)}`}>
+            {flag.riskLevel}
+          </span>
+        </div>
       </div>
+
+      {flag.verified === false && flag.verificationNote && (
+        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          <span className="font-semibold">Unverified:</span> {flag.verificationNote}
+        </div>
+      )}
+
+      {flag.clauseText && (
+        <div className="mb-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Extracted clause</p>
+          <p className="whitespace-pre-wrap font-mono text-xs text-zinc-300">{flag.clauseText}</p>
+        </div>
+      )}
+
       {flag.problematicLanguage && (
         <blockquote className="mb-3 border-l-2 border-zinc-600 pl-3">
-          <p className="text-xs italic text-zinc-400">“{flag.problematicLanguage}”</p>
+          <p className="text-xs italic text-zinc-400">"{flag.problematicLanguage}"</p>
         </blockquote>
       )}
       <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
@@ -172,6 +193,21 @@ function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
         <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Negotiation point</p>
         <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
       </div>
+
+      {flag.highlightRange != null && flag.pageNumber != null && (
+        <button
+          type="button"
+          className="mt-3 text-xs text-zinc-500 underline hover:text-zinc-300"
+          onClick={() => {
+            // Placeholder for PROMPT 3: PDF viewer with highlighting
+            console.log(
+              `Highlight in PDF: page ${flag.pageNumber}, chars ${flag.highlightRange!.start}-${flag.highlightRange!.end}`,
+            );
+          }}
+        >
+          Open in PDF (page {flag.pageNumber})
+        </button>
+      )}
     </div>
   );
 }

@@ -58,8 +58,8 @@ export function verifyClauseText(
     };
   }
 
-  // Sliding window fuzzy match against the first sentence (for paraphrases)
-  // OPTIMIZATION: Limit to first 500 positions to avoid timeout on large contracts
+  // Sliding window fuzzy match against the first sentence (for paraphrases).
+  // Capped at 500 positions to avoid timeout on large contracts.
   const sentences = clauseText.split(/[.!?]+/).filter((s) => s.trim());
   let bestMatch = 0;
   let bestPosition = -1;
@@ -68,7 +68,7 @@ export function verifyClauseText(
     const firstSentence = sentences[0].trim();
     if (firstSentence.length > 0) {
       const WINDOW_SIZE = Math.ceil(firstSentence.length * 1.2);
-      const MAX_POSITIONS = 500; // Limit expensive fuzzy matching
+      const MAX_POSITIONS = 500;
       const searchLength = Math.min(contractText.length - WINDOW_SIZE, MAX_POSITIONS);
 
       for (let i = 0; i <= searchLength; i++) {
@@ -82,14 +82,10 @@ export function verifyClauseText(
       }
 
       if (bestMatch >= fuzzyThreshold && bestPosition !== -1) {
-        // Position should reflect actual clause boundary, not just window
-        // Find where the clause likely ends (next sentence break or newline)
         let clauseEnd = bestPosition + WINDOW_SIZE;
-
-        // Look for natural clause boundary: period/question/exclamation followed by space
         const boundaryMatch = contractText.slice(bestPosition).match(/[.!?]\s+/);
         if (boundaryMatch) {
-          clauseEnd = bestPosition + boundaryMatch.index! + 1; // Include the punctuation
+          clauseEnd = bestPosition + boundaryMatch.index! + 1;
         }
 
         return {
