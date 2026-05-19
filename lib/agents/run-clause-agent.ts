@@ -3,6 +3,7 @@ import type { PactoraClauseType } from './types';
 import { getAnthropicClient } from './client';
 import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
+import { extractPDFMetadata, enrichFlagWithPageNumber } from '@/lib/pdf-utils';
 
 const MODEL = 'claude-sonnet-4-6';
 
@@ -113,7 +114,7 @@ export async function runClauseAgent(
 
       // Override clauseType with the known agent type rather than trusting Claude's
       // returned string — prevents mislabelling if the model hallucinates a category name.
-      const flag: ClauseFlag = {
+      const baseFlag: ClauseFlag = {
         clauseType,
         riskLevel: (input.riskLevel as ClauseFlag['riskLevel']) ?? 'Medium',
         clauseText: (input.clauseText as string) ?? '',
@@ -121,6 +122,10 @@ export async function runClauseAgent(
         plainEnglish: (input.plainEnglish as string) ?? '',
         negotiationPoint: (input.negotiationPoint as string) ?? '',
       };
+
+      const pdfMetadata = extractPDFMetadata(contractText);
+      const flag = enrichFlagWithPageNumber(baseFlag, pdfMetadata);
+
       return { ok: true, flag };
     }
 
