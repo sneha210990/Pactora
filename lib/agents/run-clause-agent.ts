@@ -6,6 +6,7 @@ import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
 import { flagWithVerification } from './hallucination-check';
 import { extractPDFMetadata, enrichFlagWithPageNumber } from '@/lib/pdf-utils';
+import { calculateCostUsd } from './api-cost';
 
 const SONNET = 'claude-sonnet-4-6';
 const HAIKU  = 'claude-haiku-4-5-20251001';
@@ -79,7 +80,7 @@ export async function runClauseAgent(
           // Contract text first so it can be cached across all parallel agent calls.
           // All eight agents share this block identically — cache hit on calls 2-8.
           type: 'text',
-          text: `The following is the full text of a SaaS contract under review:\n\n${truncated}`,
+          text: `The following is the full text of a SaaS contract under review:\n\n${textToAnalyze}`,
           cache_control: { type: 'ephemeral' },
         },
         {
@@ -91,13 +92,7 @@ export async function runClauseAgent(
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Review the following SaaS contract for ${clauseType} risks:\n\n${textToAnalyze}`,
-              cache_control: { type: 'ephemeral' },
-            },
-          ],
+          content: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.`,
         },
       ],
     });
@@ -155,7 +150,7 @@ export async function runClauseAgent(
       const pdfMetadata = extractPDFMetadata(contractText);
       const flag = enrichFlagWithPageNumber(verifiedFlag, pdfMetadata);
 
-      return { ok: true, flag };
+      return { ok: true, flag, usage };
     }
 
     return { ok: false, error: `Unexpected tool called: ${toolCall.name}` };
