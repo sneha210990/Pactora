@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createOrUpdateUser, createEvent } from '@/lib/beta-store';
+import { sendBetaConfirmation } from '@/lib/email';
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
 
-  const { user } = await createOrUpdateUser({ email: email.trim() });
+  const { user, created } = await createOrUpdateUser({ email: email.trim() });
 
   await createEvent({
     event_type: 'email_captured',
@@ -25,6 +26,11 @@ export async function POST(request: Request) {
     email: user.email,
     page_context: '/review/summary',
   });
+
+  // Only send confirmation on first capture — not on repeat submissions.
+  if (created) {
+    await sendBetaConfirmation(user.email);
+  }
 
   return NextResponse.json({ ok: true });
 }
