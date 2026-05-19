@@ -7,58 +7,52 @@ import { CLAUSE_AGENT_TOOLS } from './tools';
 import { flagWithVerification } from './hallucination-check';
 import { extractPDFMetadata, enrichFlagWithPageNumber } from '@/lib/pdf-utils';
 
-const MODEL = 'claude-sonnet-4-6';
+const SONNET = 'claude-sonnet-4-6';
+const HAIKU  = 'claude-haiku-4-5-20251001';
 
-// Extended thinking is enabled selectively for the three legally complex clause types:
-//
-//   IP Ownership — requires multi-step reasoning across data-rights grants, feedback
-//     licences, derived-work ownership, anonymisation carve-outs, and perpetual/
-//     irrevocable licence interactions. A shallow read misses layered claims.
-//
-//   Indemnities — requires tracing whether indemnity obligations bypass the liability
-//     cap ("notwithstanding the limitation of liability"), assessing directionality
-//     across complex multi-party drafting, and evaluating trigger scope across
-//     cross-referenced clause groups. Errors here carry the highest financial risk.
-//
-//   Liability Cap — cap provisions span multiple sub-clauses, carve-outs, and
-//     cross-references that interact non-obviously (e.g. a mutual cap with a
-//     one-sided data-breach carve-out). Detection failure is the primary reported
-//     issue; extended thinking improves recall across non-standard phrasings.
-//
-// The remaining five clause types (Data Protection, Termination Rights,
-// Auto-Renewal, Fee Increases, Governing Law) involve pattern recognition more than
-// multi-step legal chains — standard inference is sufficient and cheaper.
+// Extended thinking for the three legally complex clause types only.
+// The other five (Data Protection, Termination Rights, Auto-Renewal, Fee Increases,
+// Governing Law) are pattern-recognition tasks well within Haiku's capability.
 const EXTENDED_THINKING_CLAUSE_TYPES = new Set<PactoraClauseType>([
   'Liability Cap',
   'IP Ownership',
   'Indemnities',
 ]);
 
-const THINKING_BUDGET_TOKENS = 8_000;
-// Must be strictly greater than THINKING_BUDGET_TOKENS to leave headroom for the
-// tool call response (full verbatim clauseText + other fields).
-const MAX_TOKENS_THINKING = 12_000;
+// 4k thinking budget is sufficient for the multi-step legal chains these agents
+// must trace. 8k was headroom we never needed and billed at $15/MTok output rate.
+const THINKING_BUDGET_TOKENS = 4_000;
+// Must be strictly greater than THINKING_BUDGET_TOKENS.
+const MAX_TOKENS_THINKING = 6_000;
 // Standard agents: covers tool call overhead plus a full verbatim clause section.
 const MAX_TOKENS_STANDARD = 2_048;
 
+export type ClauseAgentUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  costUsd: number;
+};
+
 export type ClauseAgentResult =
-  | { ok: true; flag: ClauseFlag | null }
+  | { ok: true; flag: ClauseFlag | null; usage: ClauseAgentUsage }
   | { ok: false; error: string };
 
 // Runs a single specialist clause agent against the contract text.
 // Called in parallel for all eight clause types by the analyze-agents route.
 //
-// Tool-use architecture:
-//   tool_choice: { type: 'any' } forces Claude to call exactly one tool per call:
-//     • flag_clause      → risk found; input maps 1-to-1 to ClauseFlag
-//     • no_issue_found   → contract is clean for this clause type; return null flag
+// Caching architecture:
+//   The contract text sits in the FIRST system block with cache_control: ephemeral.
+//   Because all eight agents share identical contract text, Anthropic caches it on the
+//   first call and subsequent parallel calls pay only 10% of the input token price.
+//   The clause-specific instructions sit in the SECOND system block (no cache_control)
+//   — unique per agent, short (~600 tokens), not worth caching.
 //
-//   This eliminates the previous JSON-parsing path (markdown stripping, JSON.parse,
-//   null-check on the flag field) and makes absent-clause an explicit signal rather
-//   than an inferred empty string.
-//
-// TODO (managed agents phase): replace direct client.messages.create with
-// client.beta.sessions.send() once ANTHROPIC_AGENT_ID is provisioned.
+// Model selection:
+//   Extended-thinking agents (Liability Cap, Indemnities, IP Ownership) use Sonnet —
+//   they require multi-step legal chains that Haiku cannot reliably trace.
+//   Standard agents use Haiku — pattern-recognition tasks at 20× cheaper output rate.
 export async function runClauseAgent(
   clauseType: PactoraClauseType,
   contractText: string,
@@ -71,21 +65,27 @@ export async function runClauseAgent(
   const textToAnalyze = chunk ? chunk.text : contractText.slice(0, 120_000);
 
   const withThinking = EXTENDED_THINKING_CLAUSE_TYPES.has(clauseType);
+  const model = withThinking ? SONNET : HAIKU;
 
   try {
     const response = await client.messages.create({
-      model: MODEL,
+      model,
       max_tokens: withThinking ? MAX_TOKENS_THINKING : MAX_TOKENS_STANDARD,
       ...(withThinking ? { thinking: { type: 'enabled' as const, budget_tokens: THINKING_BUDGET_TOKENS } } : {}),
       tools: CLAUSE_AGENT_TOOLS,
-      // 'any' = Claude MUST call one of the two tools. No text-only responses.
-      // This is the key guarantee: every agent call returns a typed tool_use block.
       tool_choice: { type: 'any' },
       system: [
         {
+          // Contract text first so it can be cached across all parallel agent calls.
+          // All eight agents share this block identically — cache hit on calls 2-8.
+          type: 'text',
+          text: `The following is the full text of a SaaS contract under review:\n\n${truncated}`,
+          cache_control: { type: 'ephemeral' },
+        },
+        {
+          // Clause-specific instructions — unique per agent, not worth caching.
           type: 'text',
           text: CLAUSE_SYSTEM_PROMPTS[clauseType],
-          cache_control: { type: 'ephemeral' },
         },
       ],
       messages: [
@@ -102,6 +102,20 @@ export async function runClauseAgent(
       ],
     });
 
+    const u = response.usage;
+    const usage: ClauseAgentUsage = {
+      inputTokens: u.input_tokens,
+      outputTokens: u.output_tokens,
+      cacheCreationTokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
+      cacheReadTokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+      costUsd: calculateCostUsd(model, {
+        input_tokens: u.input_tokens,
+        output_tokens: u.output_tokens,
+        cache_creation_input_tokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
+        cache_read_input_tokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+      }),
+    };
+
     // With tool_choice: 'any', response.content always contains a tool_use block.
     // There may also be a preceding thinking block or text block — we skip both.
     const toolCall = response.content.find((b) => b.type === 'tool_use');
@@ -110,7 +124,7 @@ export async function runClauseAgent(
     }
 
     if (toolCall.name === 'no_issue_found') {
-      return { ok: true, flag: null };
+      return { ok: true, flag: null, usage };
     }
 
     if (toolCall.name === 'flag_clause') {

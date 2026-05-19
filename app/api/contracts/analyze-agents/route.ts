@@ -30,11 +30,13 @@
 
 import { NextResponse } from 'next/server';
 import { runClauseAgent } from '@/lib/agents/run-clause-agent';
+import type { ClauseAgentUsage } from '@/lib/agents/run-clause-agent';
 import { detectCrossClauseRisks } from '@/lib/agents/cross-clause-engine';
 import { createOverlappingChunks, mergeChunkResults } from '@/lib/chunking-strategy';
 import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
 import type { AgentEvent, PactoraClauseType } from '@/lib/agents/types';
 import type { ClauseFlag } from '@/lib/clause-analysis';
+import { recordApiUsage } from '@/lib/beta-store';
 
 export const runtime = 'nodejs';
 // 5 parallel agents each with up to 60 s → 120 s ceiling gives headroom

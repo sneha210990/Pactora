@@ -23,4 +23,4 @@ export type AgentEvent =
   | { type: 'agent_start'; clauseType: PactoraClauseType }
   | { type: 'agent_result'; clauseType: PactoraClauseType; flag: ClauseFlag | null }
   | { type: 'agent_error'; clauseType: PactoraClauseType; message: string }
-  | { type: 'analysis_complete'; flags: ClauseFlag[]; crossClauseRisks: CrossClauseRisk[]; analyzedAt: string };
+  | { type: 'analysis_complete'; flags: ClauseFlag[]; crossClauseRisks: CrossClauseRisk[]; analyzedAt: string; totalCostUsd?: number };
