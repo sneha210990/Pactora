@@ -74,7 +74,9 @@ export async function runClauseAgent(
       max_tokens: withThinking ? MAX_TOKENS_THINKING : MAX_TOKENS_STANDARD,
       ...(withThinking ? { thinking: { type: 'enabled' as const, budget_tokens: THINKING_BUDGET_TOKENS } } : {}),
       tools: CLAUSE_AGENT_TOOLS,
-      tool_choice: { type: 'any' },
+      // Extended thinking forbids tool_choice forcing tool use ('any' / 'tool').
+      // Thinking agents must use 'auto'; the model decides whether to call a tool.
+      tool_choice: withThinking ? { type: 'auto' } : { type: 'any' },
       system: [
         {
           // Contract text first so it can be cached across all parallel agent calls.
@@ -115,7 +117,12 @@ export async function runClauseAgent(
     // There may also be a preceding thinking block or text block — we skip both.
     const toolCall = response.content.find((b) => b.type === 'tool_use');
     if (!toolCall || toolCall.type !== 'tool_use') {
-      return { ok: false, error: 'Claude did not call a tool (unexpected stop_reason)' };
+      const firstText = response.content.find((b) => b.type === 'text');
+      const preview = firstText && firstText.type === 'text' ? firstText.text.slice(0, 200) : '';
+      return {
+        ok: false,
+        error: `No tool call (stop_reason=${response.stop_reason})${preview ? `: ${preview}` : ''}`,
+      };
     }
 
     if (toolCall.name === 'no_issue_found') {
