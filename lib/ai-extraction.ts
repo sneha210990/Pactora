@@ -176,16 +176,18 @@ export async function extractContractValuesWithAI(contractText: string): Promise
 
   const raw = toolCall.input as Record<string, unknown>;
   const u = response.usage;
+  const cacheCreation = u.cache_creation_input_tokens ?? 0;
+  const cacheRead = u.cache_read_input_tokens ?? 0;
   const usage: AIExtractionUsage = {
     inputTokens: u.input_tokens,
     outputTokens: u.output_tokens,
-    cacheCreationTokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
-    cacheReadTokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+    cacheCreationTokens: cacheCreation,
+    cacheReadTokens: cacheRead,
     costUsd: calculateCostUsd(HAIKU_MODEL, {
       input_tokens: u.input_tokens,
       output_tokens: u.output_tokens,
-      cache_creation_input_tokens: (u as Record<string, number>).cache_creation_input_tokens ?? 0,
-      cache_read_input_tokens: (u as Record<string, number>).cache_read_input_tokens ?? 0,
+      cache_creation_input_tokens: cacheCreation,
+      cache_read_input_tokens: cacheRead,
     }),
   };
 
