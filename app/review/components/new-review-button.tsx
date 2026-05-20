@@ -9,6 +9,7 @@ interface NewReviewButtonProps {
 
 export function NewReviewButton({ className, children = 'New review' }: NewReviewButtonProps) {
   function handleClick() {
+    if (!confirm('This will clear your current analysis. Are you sure?')) return;
     // Clear persisted state synchronously, then do a hard navigation so the
     // React app re-initialises from scratch. This avoids any React 19 concurrent
     // rendering race where the new page renders before the in-memory reset
