@@ -286,9 +286,9 @@ export default function NewDealPage() {
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8 space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight">New Deal Intake</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Review a contract</h1>
           <p className="max-w-2xl text-sm text-zinc-400">
-            Upload your draft contract or paste key clauses manually, confirm the extracted commercial context, then continue to Liability review.
+            Upload your draft contract or paste key clauses manually, confirm the extracted commercial context, then view your contract analysis.
           </p>
         </header>
 
@@ -469,7 +469,7 @@ export default function NewDealPage() {
                 </Link>
               ) : (
                 <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
-                  Continue to Liability review
+                  View contract analysis
                 </button>
               )}
             </div>
