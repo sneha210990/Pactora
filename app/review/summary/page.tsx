@@ -10,6 +10,7 @@ import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 import { useDocumentAnalysis } from '@/lib/document-analysis-store';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
+import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
@@ -157,6 +158,7 @@ const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities']);
 
 function ClauseFlagCard({ flag, acv, liabilityCap }: { flag: ClauseFlag; acv?: number | null; liabilityCap?: number | null }) {
   const showPlaybook = PLAYBOOK_CLAUSE_TYPES.has(flag.clauseType);
+  const [isExpanded, setIsExpanded] = useState(flag.riskLevel === 'High');
   const [alternative, setAlternative] = useState('');
   const [altLoading, setAltLoading] = useState(false);
   const [altError, setAltError] = useState('');
@@ -188,111 +190,136 @@ function ClauseFlagCard({ flag, acv, liabilityCap }: { flag: ClauseFlag; acv?: n
     }
   }
 
+  const ladderItems = flag.negotiationPositions
+    ? [
+        { label: 'Ask',      title: flag.negotiationPositions.ask.title,      script: flag.negotiationPositions.ask.script },
+        { label: 'Fallback', title: flag.negotiationPositions.fallback.title,  script: flag.negotiationPositions.fallback.script },
+        { label: 'Narrowing', title: flag.negotiationPositions.narrowing.title, script: flag.negotiationPositions.narrowing.script },
+      ]
+    : null;
+
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-zinc-200">{flag.clauseType}</span>
-        <div className="flex items-center gap-2">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950/50">
+      <button
+        type="button"
+        onClick={() => setIsExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 p-5 text-left"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-semibold text-zinc-200 truncate">{flag.clauseType}</span>
           {flag.pageNumber != null && (
-            <span className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400">
+            <span className="shrink-0 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400">
               p.{flag.pageNumber}
             </span>
           )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
           <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${clauseFlagRiskClass(flag.riskLevel)}`}>
             {flag.riskLevel}
           </span>
+          <svg
+            className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-150 ${isExpanded ? 'rotate-180' : ''}`}
+            viewBox="0 0 16 16" fill="none" aria-hidden="true"
+          >
+            <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
-      </div>
+      </button>
 
-      {flag.verified === false && flag.verificationNote && (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-          <span className="font-semibold">Unverified:</span> {flag.verificationNote}
-        </div>
-      )}
-
-      {flag.clauseText && (
-        <div className="mb-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Extracted clause</p>
-          <p className="whitespace-pre-wrap font-mono text-xs text-zinc-300">{flag.clauseText}</p>
-        </div>
-      )}
-
-      {flag.problematicLanguage && (
-        <blockquote className="mb-3 border-l-2 border-zinc-600 pl-3">
-          <p className="text-xs italic text-zinc-400">&ldquo;{flag.problematicLanguage}&rdquo;</p>
-        </blockquote>
-      )}
-      <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
-      <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Negotiation point</p>
-        <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
-      </div>
-
-      {showPlaybook && (
-        <div className="mt-3">
-          {alternative ? (
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400">Alternative language</p>
-                <button
-                  type="button"
-                  onClick={() => setAlternative('')}
-                  className="text-[10px] text-zinc-500 hover:text-zinc-300"
-                >
-                  Dismiss
-                </button>
-              </div>
-              <p className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-200">{alternative}</p>
-              <button
-                type="button"
-                onClick={suggestAlternative}
-                disabled={altLoading}
-                className="mt-2 text-[10px] text-zinc-500 hover:text-zinc-300 disabled:opacity-50"
-              >
-                {altLoading ? 'Regenerating…' : 'Regenerate'}
-              </button>
-            </div>
-          ) : (
-            <div>
-              <button
-                type="button"
-                onClick={suggestAlternative}
-                disabled={altLoading}
-                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50"
-              >
-                {altLoading ? (
-                  <>
-                    <div className="h-3 w-3 animate-spin rounded-full border border-zinc-600 border-t-zinc-300" />
-                    Drafting alternative…
-                  </>
-                ) : (
-                  <>
-                    <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                    Suggest alternative language
-                  </>
-                )}
-              </button>
-              {altError && <p className="mt-1 text-xs text-red-400">{altError}</p>}
+      {isExpanded && (
+        <div className="border-t border-zinc-800 px-5 pb-5 pt-4">
+          {flag.verified === false && flag.verificationNote && (
+            <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              <span className="font-semibold">Unverified:</span> {flag.verificationNote}
             </div>
           )}
-        </div>
-      )}
 
-      {flag.highlightRange != null && flag.pageNumber != null && (
-        <button
-          type="button"
-          className="mt-3 text-xs text-zinc-500 underline hover:text-zinc-300"
-          onClick={() => {
-            // Placeholder for PROMPT 3: PDF viewer with highlighting
-            console.log(
-              `Highlight in PDF: page ${flag.pageNumber}, chars ${flag.highlightRange!.start}-${flag.highlightRange!.end}`,
-            );
-          }}
-        >
-          Open in PDF (page {flag.pageNumber})
-        </button>
+          {flag.clauseText && (
+            <div className="mb-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Extracted clause</p>
+              <p className="whitespace-pre-wrap font-mono text-xs text-zinc-300">{flag.clauseText}</p>
+            </div>
+          )}
+
+          {flag.problematicLanguage && (
+            <blockquote className="mb-3 border-l-2 border-zinc-600 pl-3">
+              <p className="text-xs italic text-zinc-400">&ldquo;{flag.problematicLanguage}&rdquo;</p>
+            </blockquote>
+          )}
+
+          <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
+
+          {ladderItems ? (
+            <NegotiationLadder title="Negotiation positions" items={ladderItems} className="mt-4" />
+          ) : (
+            <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Negotiation point</p>
+              <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
+            </div>
+          )}
+
+          {showPlaybook && (
+            <div className="mt-3">
+              {alternative ? (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400">Alternative language</p>
+                    <button type="button" onClick={() => setAlternative('')} className="text-[10px] text-zinc-500 hover:text-zinc-300">
+                      Dismiss
+                    </button>
+                  </div>
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-200">{alternative}</p>
+                  <button
+                    type="button"
+                    onClick={suggestAlternative}
+                    disabled={altLoading}
+                    className="mt-2 text-[10px] text-zinc-500 hover:text-zinc-300 disabled:opacity-50"
+                  >
+                    {altLoading ? 'Regenerating…' : 'Regenerate'}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    type="button"
+                    onClick={suggestAlternative}
+                    disabled={altLoading}
+                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50"
+                  >
+                    {altLoading ? (
+                      <>
+                        <div className="h-3 w-3 animate-spin rounded-full border border-zinc-600 border-t-zinc-300" />
+                        Drafting alternative…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                        Suggest alternative language
+                      </>
+                    )}
+                  </button>
+                  {altError && <p className="mt-1 text-xs text-red-400">{altError}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {flag.highlightRange != null && flag.pageNumber != null && (
+            <button
+              type="button"
+              className="mt-3 text-xs text-zinc-500 underline hover:text-zinc-300"
+              onClick={() => {
+                console.log(
+                  `Highlight in PDF: page ${flag.pageNumber}, chars ${flag.highlightRange!.start}-${flag.highlightRange!.end}`,
+                );
+              }}
+            >
+              Open in PDF (page {flag.pageNumber})
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -362,6 +389,7 @@ function SummaryContent() {
     problematicLanguage: clause.text ?? '',
     plainEnglish: clause.explanation ?? 'Analysis incomplete',
     negotiationPoint: analysis.recommendations.find((recommendation) => recommendation.clauseType === clause.type)?.text ?? 'No recommendation generated',
+    negotiationPositions: clause.negotiationPositions,
   }));
 
   const effectiveFlags: ClauseFlag[] = clauseFlags.length > 0 ? clauseFlags : (analysis.manualFlags ?? []);
@@ -587,7 +615,7 @@ function SummaryContent() {
                 {effectiveFlags.length} {effectiveFlags.length === 1 ? 'flag' : 'flags'}
               </span>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-3">
               {effectiveFlags.map((flag, i) => (
                 <ClauseFlagCard key={i} flag={flag} acv={acvAmount} liabilityCap={lolCap} />
               ))}

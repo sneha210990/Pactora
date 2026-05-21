@@ -39,6 +39,11 @@ import type { PactoraClauseType } from './types';
 // to tool names (e.g. renaming flag_clause) only need updating in one place.
 const TOOL_DIRECTIVE = `
 Call flag_clause if you identify language that creates a meaningful risk for the buyer.
+For the negotiationPositions field, provide three distinct positions:
+- ask: the strongest opening position the buyer should state first; if accepted, they win the point outright
+- fallback: a secondary concession that signals flexibility without revealing the floor
+- narrowing: a scope carve-out that restricts what the clause covers rather than changing a headline figure
+Each position needs a short title (3–6 words) and verbatim script (1–2 sentences the buyer can say directly).
 Call no_issue_found if the contract has no language in this area, or the language present is clearly acceptable.`;
 
 export const CLAUSE_SYSTEM_PROMPTS: Record<PactoraClauseType, string> = {

@@ -3,12 +3,24 @@ import { FLAG_CLAUSE_TOOL, NO_ISSUE_FOUND_TOOL } from '@/lib/agents/tools';
 
 export type RiskLevel = 'High' | 'Medium' | 'Low';
 
+export type NegotiationPosition = {
+  title: string;
+  script: string;
+};
+
+export type NegotiationLadder = {
+  ask: NegotiationPosition;
+  fallback: NegotiationPosition;
+  narrowing: NegotiationPosition;
+};
+
 export type ClauseFlag = {
   clauseType: string;
   riskLevel: RiskLevel;
   problematicLanguage: string;
   plainEnglish: string;
   negotiationPoint: string;
+  negotiationPositions?: NegotiationLadder;
   clauseText?: string;
 
   // From PROMPT 1 (hallucination verification)

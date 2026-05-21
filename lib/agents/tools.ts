@@ -52,12 +52,48 @@ export const FLAG_CLAUSE_TOOL: Anthropic.Tool = {
           '1-2 sentences explaining the risk in plain English for a non-lawyer buyer. ' +
           'State what the clause means in practice — not what it says.',
       },
-      negotiationPoint: {
-        type: 'string',
-        description:
-          '1-2 sentences with a specific, actionable ask. ' +
-          'State exactly what the buyer should request — include concrete thresholds, ' +
-          'fallback language, or alternative structures where possible.',
+      negotiationPositions: {
+        type: 'object',
+        description: 'Three negotiation positions the buyer can take, in descending order of strength.',
+        properties: {
+          ask: {
+            type: 'object',
+            description:
+              'Opening position — state this first. If accepted, the buyer wins the point without conceding anything.',
+            properties: {
+              title: {
+                type: 'string',
+                description: 'Short label for this position, 3–6 words (e.g. "Mutual cap at 1× ACV").',
+              },
+              script: {
+                type: 'string',
+                description: 'Verbatim thing the buyer should say, 1–2 sentences.',
+              },
+            },
+            required: ['title', 'script'],
+          },
+          fallback: {
+            type: 'object',
+            description:
+              'Secondary position — move here if the Ask is rejected. Signals flexibility without revealing the floor.',
+            properties: {
+              title: { type: 'string', description: 'Short label, 3–6 words.' },
+              script: { type: 'string', description: 'Verbatim thing the buyer should say, 1–2 sentences.' },
+            },
+            required: ['title', 'script'],
+          },
+          narrowing: {
+            type: 'object',
+            description:
+              'A scope restriction rather than a number move — carve out the worst-case scenario instead of moving the headline figure.',
+            properties: {
+              title: { type: 'string', description: 'Short label, 3–6 words.' },
+              script: { type: 'string', description: 'Verbatim thing the buyer should say, 1–2 sentences.' },
+            },
+            required: ['title', 'script'],
+          },
+        },
+        required: ['ask', 'fallback', 'narrowing'],
       },
     },
     required: [
@@ -66,7 +102,7 @@ export const FLAG_CLAUSE_TOOL: Anthropic.Tool = {
       'clauseText',
       'problematicLanguage',
       'plainEnglish',
-      'negotiationPoint',
+      'negotiationPositions',
     ],
   },
 };
