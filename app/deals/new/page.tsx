@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import {
   clearPersistedState,
@@ -118,6 +118,7 @@ export default function NewDealPage() {
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
   const [agentProgress, setAgentProgress] = useState<AgentProgressMap>({});
+  const [isDragging, setIsDragging] = useState(false);
 
   const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';
@@ -201,9 +202,7 @@ export default function NewDealPage() {
     }
   };
 
-  const handleContractUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
+  const handleFile = async (file: File | undefined) => {
     if (!file) {
       actions.reset();
       setUploadError(null);
@@ -235,6 +234,23 @@ export default function NewDealPage() {
       setUploadError(message);
       actions.setError(message);
     }
+  };
+
+  const handleContractUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    void handleFile(event.target.files?.[0]);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    void handleFile(event.dataTransfer.files?.[0]);
   };
 
   const handleManualClauseSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -321,21 +337,43 @@ export default function NewDealPage() {
           </p>
 
           <div className="mt-5">
-            <label htmlFor="contractUpload" className="mb-2 block text-xs font-medium uppercase tracking-wide text-zinc-400">
-              Contract file (.pdf, .docx, or .doc)
+            <label
+              htmlFor="contractUpload"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 transition-colors ${
+                isDragging
+                  ? 'border-white/40 bg-white/5'
+                  : selectedFileName
+                  ? 'border-emerald-500/40 bg-emerald-500/5'
+                  : 'border-zinc-700 bg-zinc-950 hover:border-zinc-500 hover:bg-zinc-900/50'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              {selectedFileName ? (
+                <div className="text-center">
+                  <p className="text-sm font-medium text-white">{selectedFileName}</p>
+                  <p className="mt-1 text-xs text-zinc-400">Click or drop a file to replace</p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-sm font-medium text-zinc-200">
+                    {isDragging ? 'Drop your contract here' : 'Drop your contract here, or click to browse'}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">PDF, DOCX, or DOC · max 20 MB</p>
+                </div>
+              )}
+              <input
+                id="contractUpload"
+                type="file"
+                accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+                onChange={handleContractUpload}
+                className="sr-only"
+              />
             </label>
-            <input
-              id="contractUpload"
-              type="file"
-              accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
-              onChange={handleContractUpload}
-              className="block w-full cursor-pointer rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-black hover:file:bg-zinc-200"
-            />
-            {selectedFileName ? (
-              <p className="mt-3 text-sm text-zinc-300">
-                Current input: <span className="font-medium text-white">{selectedFileName}</span>
-              </p>
-            ) : null}
 
             <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-zinc-500">
               <span className="h-px flex-1 bg-zinc-800" />
