@@ -6,6 +6,7 @@ import { trackEvent } from '@/components/track-event';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { NewReviewButton } from '../components/new-review-button';
+import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
@@ -564,6 +565,14 @@ function LolReviewContent() {
               ]}
             />
           </div>
+
+          <RedlineSuggestion
+            className="mt-4"
+            clauseText={clause}
+            clauseType="Liability Cap"
+            acv={acv}
+            liabilityCap={derived.impliedCapAmountGBP}
+          />
 
           <div className="mt-4 flex flex-wrap gap-3">
             <Link

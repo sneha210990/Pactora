@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useRef, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
@@ -368,6 +369,12 @@ function IndemnitiesReviewContent() {
                       : '“If broader language is required, this indemnity must still sit inside the agreed liability cap.”',
                 },
               ]}
+            />
+            <RedlineSuggestion
+              clauseText={clause}
+              clauseType="Indemnities"
+              acv={acvAmount}
+              liabilityCap={lolCap}
             />
           </section>
         )}

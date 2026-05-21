@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useRef, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
@@ -416,6 +417,12 @@ function DataProtectionReviewContent() {
                     '“Security language should reference reasonable, industry-standard technical and organisational measures rather than absolute outcomes.”',
                 },
               ]}
+            />
+            <RedlineSuggestion
+              clauseText={clause}
+              clauseType="Data Protection"
+              acv={commercialContext.acv.value}
+              liabilityCap={lolCap}
             />
           </section>
         )}
