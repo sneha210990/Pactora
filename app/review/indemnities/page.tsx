@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
@@ -203,12 +203,14 @@ function IndemnitiesReviewContent() {
   const actions = useDocumentAnalysisActions();
   const [clause, setClause] = useState(canonicalClause?.text ?? '');
   const [result, setResult] = useState<ReviewResult | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const queryString = '';
 
   function runReview() {
     const parsed = parseClause(clause);
     setResult(parsed);
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     if (clause.trim()) {
       actions.setManualReviewFlag(synthesizeIndemnitiesFlag(clause, parsed));
     }
@@ -289,7 +291,7 @@ function IndemnitiesReviewContent() {
         </section>
 
         {result && (
-          <section className="mt-8 space-y-6">
+          <section ref={resultRef} className="mt-8 space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <ReviewCard label="Directionality" value={result.directionality} />
               <ReviewCard label="Trigger scope" value={result.triggerScope} />
