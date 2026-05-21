@@ -25,8 +25,8 @@ const EXTENDED_THINKING_CLAUSE_TYPES = new Set<PactoraClauseType>([
 const THINKING_BUDGET_TOKENS = 4_000;
 // Must be strictly greater than THINKING_BUDGET_TOKENS.
 const MAX_TOKENS_THINKING = 6_000;
-// Standard agents: covers tool call overhead plus a full verbatim clause section.
-const MAX_TOKENS_STANDARD = 2_048;
+// Standard agents: bumped from 2048 to cover the three-position negotiation ladder.
+const MAX_TOKENS_STANDARD = 2_500;
 
 export type ClauseAgentUsage = {
   inputTokens: number;
@@ -134,15 +134,31 @@ export async function runClauseAgent(
     if (toolCall.name === 'flag_clause') {
       const input = toolCall.input as Record<string, unknown>;
 
+      const rawPos = input.negotiationPositions as {
+        ask?: { title?: string; script?: string };
+        fallback?: { title?: string; script?: string };
+        narrowing?: { title?: string; script?: string };
+      } | undefined;
+
+      const negotiationPositions: ClauseFlag['negotiationPositions'] = rawPos
+        ? {
+            ask:      { title: rawPos.ask?.title ?? '',      script: rawPos.ask?.script ?? '' },
+            fallback: { title: rawPos.fallback?.title ?? '', script: rawPos.fallback?.script ?? '' },
+            narrowing: { title: rawPos.narrowing?.title ?? '', script: rawPos.narrowing?.script ?? '' },
+          }
+        : undefined;
+
       // Override clauseType with the known agent type rather than trusting Claude's
       // returned string — prevents mislabelling if the model hallucinates a category name.
+      // negotiationPoint is derived from ask.script for backwards compat with the negotiate route.
       const baseFlag: ClauseFlag = {
         clauseType,
         riskLevel: (input.riskLevel as ClauseFlag['riskLevel']) ?? 'Medium',
         clauseText: (input.clauseText as string) ?? '',
         problematicLanguage: (input.problematicLanguage as string) ?? '',
         plainEnglish: (input.plainEnglish as string) ?? '',
-        negotiationPoint: (input.negotiationPoint as string) ?? '',
+        negotiationPoint: negotiationPositions?.ask.script ?? '',
+        negotiationPositions,
       };
 
       // PROMPT 1: verify extracted text exists in full contract (anti-hallucination).

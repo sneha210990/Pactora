@@ -8,7 +8,7 @@ import {
   useMemo,
   useReducer,
 } from 'react';
-import type { ClauseFlag, RiskLevel } from '@/lib/clause-analysis';
+import type { ClauseFlag, NegotiationLadder, RiskLevel } from '@/lib/clause-analysis';
 export type { ClauseFlag };
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 export type { CrossClauseRisk };
@@ -20,6 +20,7 @@ export type Clause = {
   text?: string;
   riskLevel?: RiskLevel;
   explanation?: string;
+  negotiationPositions?: NegotiationLadder;
 };
 
 export type Risk = {
@@ -244,6 +245,7 @@ function toCanonicalAnalysis(state: DocumentAnalysisState, analysis: AnalysisPay
     text: flag.clauseText ?? flag.problematicLanguage,
     riskLevel: flag.riskLevel,
     explanation: flag.plainEnglish,
+    negotiationPositions: flag.negotiationPositions,
   }));
   const risks = flags.map((flag, index): Risk => ({
     id: `${state.documentId || 'document'}-risk-${index}`,
@@ -454,6 +456,7 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
         text: flag.clauseText ?? flag.problematicLanguage,
         riskLevel: flag.riskLevel,
         explanation: flag.plainEnglish,
+        negotiationPositions: flag.negotiationPositions,
       };
       const newRisk: Risk = {
         id: `${docId}-risk-${idx}`,
