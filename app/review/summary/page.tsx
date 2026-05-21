@@ -153,7 +153,41 @@ function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
   return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
 }
 
-function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
+const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities']);
+
+function ClauseFlagCard({ flag, acv, liabilityCap }: { flag: ClauseFlag; acv?: number | null; liabilityCap?: number | null }) {
+  const showPlaybook = PLAYBOOK_CLAUSE_TYPES.has(flag.clauseType);
+  const [alternative, setAlternative] = useState('');
+  const [altLoading, setAltLoading] = useState(false);
+  const [altError, setAltError] = useState('');
+
+  async function suggestAlternative() {
+    setAltLoading(true);
+    setAltError('');
+    try {
+      const res = await fetch('/api/contracts/redline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clauseText: flag.clauseText ?? flag.problematicLanguage ?? '',
+          clauseType: flag.clauseType,
+          acv: acv ?? null,
+          liabilityCap: liabilityCap ?? null,
+        }),
+      });
+      const data = (await res.json()) as { alternative?: string; error?: string };
+      if (!res.ok || !data.alternative) {
+        setAltError(data.error ?? 'Could not generate alternative. Try again.');
+      } else {
+        setAlternative(data.alternative);
+      }
+    } catch {
+      setAltError('Network error. Please try again.');
+    } finally {
+      setAltLoading(false);
+    }
+  }
+
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -185,7 +219,7 @@ function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
 
       {flag.problematicLanguage && (
         <blockquote className="mb-3 border-l-2 border-zinc-600 pl-3">
-          <p className="text-xs italic text-zinc-400">"{flag.problematicLanguage}"</p>
+          <p className="text-xs italic text-zinc-400">&ldquo;{flag.problematicLanguage}&rdquo;</p>
         </blockquote>
       )}
       <p className="text-sm text-zinc-300">{flag.plainEnglish}</p>
@@ -193,6 +227,58 @@ function ClauseFlagCard({ flag }: { flag: ClauseFlag }) {
         <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Negotiation point</p>
         <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
       </div>
+
+      {showPlaybook && (
+        <div className="mt-3">
+          {alternative ? (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400">Alternative language</p>
+                <button
+                  type="button"
+                  onClick={() => setAlternative('')}
+                  className="text-[10px] text-zinc-500 hover:text-zinc-300"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <p className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-200">{alternative}</p>
+              <button
+                type="button"
+                onClick={suggestAlternative}
+                disabled={altLoading}
+                className="mt-2 text-[10px] text-zinc-500 hover:text-zinc-300 disabled:opacity-50"
+              >
+                {altLoading ? 'Regenerating…' : 'Regenerate'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <button
+                type="button"
+                onClick={suggestAlternative}
+                disabled={altLoading}
+                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50"
+              >
+                {altLoading ? (
+                  <>
+                    <div className="h-3 w-3 animate-spin rounded-full border border-zinc-600 border-t-zinc-300" />
+                    Drafting alternative…
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    Suggest alternative language
+                  </>
+                )}
+              </button>
+              {altError && <p className="mt-1 text-xs text-red-400">{altError}</p>}
+            </div>
+          )}
+        </div>
+      )}
 
       {flag.highlightRange != null && flag.pageNumber != null && (
         <button
@@ -503,7 +589,7 @@ function SummaryContent() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {effectiveFlags.map((flag, i) => (
-                <ClauseFlagCard key={i} flag={flag} />
+                <ClauseFlagCard key={i} flag={flag} acv={acvAmount} liabilityCap={lolCap} />
               ))}
             </div>
           </section>
