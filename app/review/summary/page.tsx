@@ -360,6 +360,40 @@ function CrossClauseRiskCard({ risk }: { risk: CrossClauseRisk }) {
   );
 }
 
+function FeedbackToggle({ user }: { user: { email: string } | null }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-10">
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-2"
+        >
+          Share feedback on this summary
+        </button>
+      ) : (
+        <section className="rounded-2xl border border-zinc-900 bg-black/20 p-4 opacity-90">
+          <div className="mb-3 flex items-center justify-between border-b border-zinc-900 pb-3">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Beta feedback</h2>
+              <p className="mt-1 text-xs text-zinc-500">Optional — share what would make this summary more useful.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-xs text-zinc-500 hover:text-zinc-300"
+            >
+              ✕ Close
+            </button>
+          </div>
+          <FeedbackForm user={user} compact />
+        </section>
+      )}
+    </div>
+  );
+}
+
 function SummaryContent() {
   const analysis = useDocumentAnalysis();
 
@@ -628,13 +662,7 @@ function SummaryContent() {
           </section>
         )}
 
-        <section className="mt-14 rounded-2xl border border-zinc-900 bg-black/20 p-4 opacity-90">
-          <div className="mb-3 border-b border-zinc-900 pb-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Beta feedback</h2>
-            <p className="mt-1 text-xs text-zinc-500">Optional — share what would make this summary more useful.</p>
-          </div>
-          <FeedbackForm user={user} compact />
-        </section>
+        <FeedbackToggle user={user} />
 
         <div className="mt-8">
           <Link href="/" className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">

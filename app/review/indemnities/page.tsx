@@ -249,7 +249,7 @@ function IndemnitiesReviewContent() {
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-              {ladderBaseCap !== null ? `Liability cap: ${money(ladderBaseCap)}` : 'Liability cap: not provided'}
+              {ladderBaseCap !== null ? `Liability cap: ${money(ladderBaseCap)}` : 'Liability cap: Not detected'}
             </span>
           </div>
         </section>

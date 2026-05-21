@@ -368,6 +368,7 @@ function LolReviewContent() {
 
   const [clause, setClause] = useState(initialClause);
   const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
+  const [hasReviewed, setHasReviewed] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   const derived = useMemo(
@@ -379,6 +380,7 @@ function LolReviewContent() {
     const result = parseClause(clause);
     const derivedResult = deriveFromDeal(result, derivedAcv, derivedTermMonths);
     setParsedResult(result);
+    setHasReviewed(true);
     setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     actions.setLiabilityCap(derivedResult.impliedCapAmountGBP);
     if (clause.trim()) {
@@ -412,7 +414,7 @@ function LolReviewContent() {
         <div className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Limitation of Liability Review</h1>
           <p className="mt-2 text-zinc-400">
-            Standard clause module pattern: exact detected clause text, editable review, deterministic analysis.
+            Assess whether the liability cap is proportionate, mutual, and appropriate for your deal size.
           </p>
 
 
@@ -435,12 +437,8 @@ function LolReviewContent() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
-          <div className="mb-3">
-            <h2 className="text-lg font-semibold">Clause text panel</h2>
-            <p className="text-xs text-zinc-400">Reusable for Indemnities, IP Ownership, Data Protection, and Termination.</p>
-          </div>
           <label htmlFor="lolClause" className="text-base font-semibold">
-            Detected clause text
+            Liability cap clause
           </label>
           <textarea
             id="lolClause"
@@ -469,9 +467,12 @@ function LolReviewContent() {
         </div>
 
         <div ref={resultRef} className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
-          <h2 className="text-lg font-semibold">Analysis panel</h2>
-          <p className="mt-1 text-sm text-zinc-400">Results are always tied to the exact text currently in the textarea.</p>
+          <h2 className="text-lg font-semibold">Analysis</h2>
 
+          {!hasReviewed ? (
+            <p className="mt-3 text-sm text-zinc-500">Paste the clause text above and click Run review to see the analysis.</p>
+          ) : (
+          <>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-zinc-800 bg-black/30 p-4 md:col-span-2">
               <div className="flex items-start justify-between gap-4">
@@ -573,6 +574,8 @@ function LolReviewContent() {
             acv={acv}
             liabilityCap={derived.impliedCapAmountGBP}
           />
+          </>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-3">
             <Link

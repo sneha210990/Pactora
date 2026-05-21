@@ -26,7 +26,7 @@ export default function DealsPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Your deals</h1>
-            <p className="mt-2 text-sm text-zinc-400">Past contract reviews, stored on this device.</p>
+            <p className="mt-2 text-sm text-zinc-400">Your past contract reviews.</p>
           </div>
           <Link
             href="/deals/new"
