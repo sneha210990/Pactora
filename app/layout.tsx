@@ -27,6 +27,12 @@ export default function RootLayout({
 
               <nav className="flex items-center justify-end gap-2 sm:gap-3">
                 <Link
+                  href="/deals"
+                  className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
+                >
+                  Deals
+                </Link>
+                <Link
                   href="/how-it-works"
                   className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
                 >
