@@ -400,6 +400,15 @@ function SummaryContent() {
           </div>
         </section>
 
+        {clauseFlags.length > 0 && (
+          <div className="mt-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 text-xs text-zinc-400">
+            <svg className="h-3.5 w-3.5 shrink-0 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Your analysis is saved in this browser — return anytime to pick up where you left off.
+          </div>
+        )}
+
         {user === null && clauseFlags.length > 0 && <EmailCaptureBanner />}
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">

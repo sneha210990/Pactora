@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NegotiationLadder } from '../components/negotiation-ladder';
@@ -367,6 +367,7 @@ function LolReviewContent() {
 
   const [clause, setClause] = useState(initialClause);
   const [parsedResult, setParsedResult] = useState<ParsedClauseResult>(() => parseClause(initialClause));
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const derived = useMemo(
     () => deriveFromDeal(parsedResult, derivedAcv, derivedTermMonths),
@@ -377,6 +378,7 @@ function LolReviewContent() {
     const result = parseClause(clause);
     const derivedResult = deriveFromDeal(result, derivedAcv, derivedTermMonths);
     setParsedResult(result);
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     actions.setLiabilityCap(derivedResult.impliedCapAmountGBP);
     if (clause.trim()) {
       actions.setManualReviewFlag(synthesizeLolFlag(clause, result, derivedResult, derivedAcv));
@@ -465,7 +467,7 @@ function LolReviewContent() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
+        <div ref={resultRef} className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
           <h2 className="text-lg font-semibold">Analysis panel</h2>
           <p className="mt-1 text-sm text-zinc-400">Results are always tied to the exact text currently in the textarea.</p>
 

@@ -53,7 +53,7 @@ function LabelBadge({ label }: { label: string }) {
             onClick={() => setOpen((v) => !v)}
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
-            className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-[10px] font-semibold text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-[10px] font-semibold text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
           >
             ?
           </button>
