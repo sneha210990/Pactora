@@ -411,7 +411,7 @@ export default function NewDealPage() {
                   disabled={analysis.uploadStatus === 'uploading' || analysis.uploadStatus === 'processing'}
                   className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
                 >
-                  Analyze pasted clauses
+                  Analyze clauses
                 </button>
               </div>
             </form>
