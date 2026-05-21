@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useRef, useState } from 'react';
 import { NegotiationLadder } from '../components/negotiation-ladder';
+import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
@@ -493,6 +494,12 @@ function TerminationReviewContent() {
                     '“Post-termination duties should focus on data return/deletion with practical timelines, not open-ended transition commitments.”',
                 },
               ]}
+            />
+            <RedlineSuggestion
+              clauseText={clause}
+              clauseType="Termination"
+              acv={commercialContext.acv.value}
+              liabilityCap={lolCap}
             />
           </section>
         )}
