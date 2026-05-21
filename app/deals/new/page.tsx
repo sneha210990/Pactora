@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
 import {
   clearPersistedState,
@@ -10,6 +10,7 @@ import {
   useDocumentAnalysisActions,
 } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
+import { saveDeal } from '@/lib/deals-history';
 import { formatMoney } from '@/app/review/components/active-document-banner';
 import type { ExtractedContractValues } from '@/lib/contract-extraction';
 import { PACTORA_CLAUSE_AGENTS, type AgentEvent, type PactoraClauseType } from '@/lib/agents/types';
@@ -119,6 +120,16 @@ export default function NewDealPage() {
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
   const [agentProgress, setAgentProgress] = useState<AgentProgressMap>({});
   const [isDragging, setIsDragging] = useState(false);
+
+  // Save completed analyses to the deals history. Keyed by documentId so a stale
+  // localStorage state loaded on arrival doesn't get re-saved.
+  const savedDealId = useRef('');
+  useEffect(() => {
+    if (analysis.uploadStatus === 'complete' && analysis.documentId !== savedDealId.current) {
+      savedDealId.current = analysis.documentId;
+      saveDeal(analysis);
+    }
+  }, [analysis.uploadStatus, analysis.documentId, analysis]);
 
   const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';

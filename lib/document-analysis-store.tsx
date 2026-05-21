@@ -126,7 +126,8 @@ type Action =
   | { type: 'setError'; error: string }
   | { type: 'setLiabilityCap'; value: number | null }
   | { type: 'setManualReviewFlag'; flag: ClauseFlag }
-  | { type: 'appendFlag'; flag: ClauseFlag };
+  | { type: 'appendFlag'; flag: ClauseFlag }
+  | { type: 'restoreState'; state: DocumentAnalysisState };
 
 type ExtractionPayload = {
   documentId?: string;
@@ -475,6 +476,10 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
       };
       break;
     }
+    case 'restoreState': {
+      next = action.state;
+      break;
+    }
   }
 
   next = {
@@ -543,6 +548,7 @@ type StoreValue = {
     setLiabilityCap: (value: number | null) => void;
     setManualReviewFlag: (flag: ClauseFlag) => void;
     appendFlag: (flag: ClauseFlag) => void;
+    restoreState: (state: DocumentAnalysisState) => void;
   };
 };
 
@@ -572,6 +578,7 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
     setLiabilityCap: (value) => dispatch({ type: 'setLiabilityCap', value }),
     setManualReviewFlag: (flag) => dispatch({ type: 'setManualReviewFlag', flag }),
     appendFlag: (flag) => dispatch({ type: 'appendFlag', flag }),
+    restoreState: (state) => dispatch({ type: 'restoreState', state }),
   }), []);
 
   const value = useMemo(() => ({ state, actions }), [actions, state]);
