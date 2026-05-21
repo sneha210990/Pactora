@@ -464,8 +464,8 @@ export default function NewDealPage() {
             )}
             <div className="flex justify-end">
               {canContinue ? (
-                <Link href="/review/lol" className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
-                  Continue to Liability review
+                <Link href="/review/summary" className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
+                  View contract analysis
                 </Link>
               ) : (
                 <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
