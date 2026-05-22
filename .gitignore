@@ -47,3 +47,7 @@ data/beta-store.json
 # playwright
 /playwright-report/
 /test-results/
+
+# claude code — local settings and agent worktrees are machine-specific
+.claude/settings.local.json
+.claude/worktrees/
