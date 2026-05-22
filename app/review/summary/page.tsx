@@ -12,6 +12,7 @@ import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsFie
 import { NewReviewButton } from '../components/new-review-button';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
+import { ExportPdfButton } from '@/components/export-pdf-button';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -492,7 +493,18 @@ function SummaryContent() {
           <Link href="/" className="text-sm text-zinc-300 hover:text-white">
             Pactora
           </Link>
-          <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
+          <div className="flex items-center gap-2">
+            <ExportPdfButton
+              contractName={analysis.documentMeta?.fileName ?? ''}
+              commercialContext={commercialContext}
+              overallRisk={overallRisk}
+              verdict={verdict.text}
+              riskScore={riskScore100}
+              flags={effectiveFlags}
+              crossClauseRisks={crossClauseRisks}
+            />
+            <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
+          </div>
         </div>
 
         <ReviewProgress current="summary" />
