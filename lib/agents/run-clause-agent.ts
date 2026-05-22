@@ -72,6 +72,9 @@ export async function runClauseAgent(
     const response = await client.messages.create({
       model,
       max_tokens: withThinking ? MAX_TOKENS_THINKING : MAX_TOKENS_STANDARD,
+      // Extended thinking requires temperature=1 (API enforces it). Non-thinking
+      // agents use temperature=0 for consistent, reproducible clause detection.
+      ...(!withThinking ? { temperature: 0 } : {}),
       ...(withThinking ? { thinking: { type: 'enabled' as const, budget_tokens: THINKING_BUDGET_TOKENS } } : {}),
       tools: CLAUSE_AGENT_TOOLS,
       // Extended thinking forbids tool_choice forcing tool use ('any' / 'tool').

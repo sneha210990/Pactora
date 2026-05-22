@@ -153,6 +153,7 @@ export async function extractContractValuesWithAI(contractText: string): Promise
   const response = await client.messages.create({
     model: HAIKU_MODEL,
     max_tokens: 512,
+    temperature: 0,
     tools: [EXTRACT_VALUES_TOOL],
     // Must call the extraction tool — no text-only responses.
     tool_choice: { type: 'tool', name: 'extract_contract_values' },
