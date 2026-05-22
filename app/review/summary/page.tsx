@@ -7,13 +7,14 @@ import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
-import { useDocumentAnalysis } from '@/lib/document-analysis-store';
+import { useDocumentAnalysis, useDocumentAnalysisActions } from '@/lib/document-analysis-store';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
 import { ExportPdfButton } from '@/components/export-pdf-button';
 import { ClauseDiff } from '../components/clause-diff';
+import { DownloadRedlineButton } from '@/components/download-redline-button';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -158,7 +159,16 @@ function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
 
 const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities', 'IP Ownership', 'Data Protection', 'Termination']);
 
-function ClauseFlagCard({ flag, acv, liabilityCap }: { flag: ClauseFlag; acv?: number | null; liabilityCap?: number | null }) {
+function ClauseFlagCard({
+  flag, acv, liabilityCap, onAccept, isAccepted, onDismiss,
+}: {
+  flag: ClauseFlag;
+  acv?: number | null;
+  liabilityCap?: number | null;
+  onAccept?: (clauseText: string, proposedText: string, explanation: string) => void;
+  isAccepted?: boolean;
+  onDismiss?: () => void;
+}) {
   const showPlaybook = PLAYBOOK_CLAUSE_TYPES.has(flag.clauseType);
   const [isExpanded, setIsExpanded] = useState(flag.riskLevel === 'High');
   const [alternative, setAlternative] = useState('');
@@ -266,9 +276,34 @@ function ClauseFlagCard({ flag, acv, liabilityCap }: { flag: ClauseFlag; acv?: n
                 <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400">Alternative language</p>
-                    <button type="button" onClick={() => setAlternative('')} className="text-[10px] text-zinc-500 hover:text-zinc-300">
-                      Dismiss
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {isAccepted ? (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                          Accepted
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const proposedText = alternative.replace(/\nWhy this works:[\s\S]*/i, '').trim();
+                            const explanation = alternative.match(/\nWhy this works:([\s\S]*)/i)?.[0]?.replace(/^\n/, '').trim() ?? '';
+                            onAccept?.(flag.clauseText ?? flag.problematicLanguage ?? '', proposedText, explanation);
+                          }}
+                          className="flex items-center gap-1 rounded border border-emerald-700/60 bg-emerald-950/40 px-2 py-0.5 text-[10px] font-medium text-emerald-300 hover:border-emerald-500 hover:text-emerald-100"
+                        >
+                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                          Accept redline
+                        </button>
+                      )}
+                      <button type="button" onClick={() => { setAlternative(''); onDismiss?.(); }} className="text-[10px] text-zinc-500 hover:text-zinc-300">
+                        {isAccepted ? 'Undo' : 'Dismiss'}
+                      </button>
+                    </div>
                   </div>
                   <ClauseDiff
                     original={flag.clauseText ?? flag.problematicLanguage ?? ''}
@@ -405,6 +440,10 @@ function FeedbackToggle({ user }: { user: { email: string } | null }) {
 
 function SummaryContent() {
   const analysis = useDocumentAnalysis();
+  const actions = useDocumentAnalysisActions();
+
+  const acceptedRedlines = analysis.acceptedRedlines ?? {};
+  const sourceFileType = analysis.sourceFileType ?? null;
 
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [emailContent, setEmailContent] = useState('');
@@ -502,6 +541,11 @@ function SummaryContent() {
             Pactora
           </Link>
           <div className="flex items-center gap-2">
+            <DownloadRedlineButton
+              acceptedRedlines={acceptedRedlines}
+              sourceFileType={sourceFileType}
+              fileName={analysis.documentMeta?.fileName ?? 'contract'}
+            />
             <ExportPdfButton
               contractName={analysis.documentMeta?.fileName ?? ''}
               commercialContext={commercialContext}
@@ -671,7 +715,17 @@ function SummaryContent() {
             </div>
             <div className="flex flex-col gap-3">
               {effectiveFlags.map((flag, i) => (
-                <ClauseFlagCard key={i} flag={flag} acv={acvAmount} liabilityCap={lolCap} />
+                <ClauseFlagCard
+                  key={i}
+                  flag={flag}
+                  acv={acvAmount}
+                  liabilityCap={lolCap}
+                  onAccept={(clauseText, proposedText, explanation) =>
+                    actions.acceptRedline(flag.clauseType, clauseText, proposedText, explanation)
+                  }
+                  isAccepted={!!acceptedRedlines[flag.clauseType]}
+                  onDismiss={() => actions.dismissRedline(flag.clauseType)}
+                />
               ))}
             </div>
           </section>

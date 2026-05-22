@@ -160,11 +160,21 @@ async function extractFromUploadedFile(request: Request) {
   const buffer = Buffer.from(await uploaded.arrayBuffer());
   const text = await extractContractText(uploaded.name, buffer, uploaded.type);
 
-  return NextResponse.json(await buildExtractionPayload(text, {
+  const payload = await buildExtractionPayload(text, {
     fileName: uploaded.name,
     fileType: uploaded.type,
     uploadedAt: new Date().toISOString(),
-  }));
+  });
+
+  const isDocx =
+    uploaded.name.toLowerCase().endsWith('.docx') ||
+    uploaded.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  return NextResponse.json({
+    ...payload,
+    sourceFileType: isDocx ? 'docx' : 'pdf',
+    ...(isDocx && { docxBuffer: buffer.toString('base64') }),
+  });
 }
 
 export async function POST(request: Request) {

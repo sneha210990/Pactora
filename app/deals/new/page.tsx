@@ -24,6 +24,8 @@ type ExtractionResponse = {
   contractText?: string;
   documentMeta?: DocumentAnalysisState['documentMeta'];
   extractedTerms?: DocumentAnalysisState['extractedTerms'];
+  sourceFileType?: 'docx' | 'pdf';
+  docxBuffer?: string;
 };
 
 const processingStages: Array<{ key: keyof DocumentAnalysisState['processingSteps']; label: string }> = [
@@ -205,6 +207,17 @@ export default function NewDealPage() {
     console.info('[PACTORA] Parser payload shape', { endpoint: '/api/contracts/extract', keys: Object.keys(payload) });
     actions.hydrateExtraction(payload);
     trackEvent(successEventName, '/deals/new');
+
+    if (payload.sourceFileType) {
+      actions.setSourceFileType(payload.sourceFileType);
+    }
+    if (payload.docxBuffer) {
+      try {
+        sessionStorage.setItem('pactora.docxBuffer', payload.docxBuffer);
+      } catch {
+        // sessionStorage quota exceeded — export will fall back to markup schedule
+      }
+    }
 
     if (payload.contractText) {
       void runClauseAnalysis(payload.contractText);
