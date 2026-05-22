@@ -108,6 +108,8 @@ export type DocumentAnalysisState = {
   extractionWarnings: ExtractionWarning[];
   manualFlags?: ClauseFlag[];
   crossClauseRisks?: CrossClauseRisk[];
+  sourceFileType: 'docx' | 'pdf' | null;
+  acceptedRedlines: Record<string, { clauseText: string; proposedText: string; explanation: string }>;
   diagnostics?: {
     missingFields: string[];
     lastPayloadShape?: string[];
@@ -127,7 +129,10 @@ type Action =
   | { type: 'setLiabilityCap'; value: number | null }
   | { type: 'setManualReviewFlag'; flag: ClauseFlag }
   | { type: 'appendFlag'; flag: ClauseFlag }
-  | { type: 'restoreState'; state: DocumentAnalysisState };
+  | { type: 'restoreState'; state: DocumentAnalysisState }
+  | { type: 'setSourceFileType'; fileType: 'docx' | 'pdf' | null }
+  | { type: 'acceptRedline'; clauseType: string; clauseText: string; proposedText: string; explanation: string }
+  | { type: 'dismissRedline'; clauseType: string };
 
 type ExtractionPayload = {
   documentId?: string;
@@ -153,6 +158,7 @@ export function clearPersistedState() {
   try {
     window.localStorage.removeItem(STORAGE_KEY);
     window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    window.sessionStorage.removeItem('pactora.docxBuffer');
   } catch {
     // ignore storage errors
   }
@@ -197,6 +203,8 @@ export const emptyDocumentAnalysisState: DocumentAnalysisState = {
   extractionWarnings: [],
   manualFlags: [],
   crossClauseRisks: [],
+  sourceFileType: null,
+  acceptedRedlines: {},
   diagnostics: {
     missingFields: [],
     hydrationWarnings: [],
@@ -347,6 +355,7 @@ function reviewStateReset(state: DocumentAnalysisState): DocumentAnalysisState {
     commercialContext: emptyCommercialContext(),
     extractionWarnings: [],
     processingSteps: { ...emptySteps, upload: state.processingSteps.upload },
+    acceptedRedlines: {},
   };
 }
 
@@ -480,6 +489,23 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
       next = action.state;
       break;
     }
+    case 'setSourceFileType':
+      next = { ...state, sourceFileType: action.fileType };
+      break;
+    case 'acceptRedline':
+      next = {
+        ...state,
+        acceptedRedlines: {
+          ...state.acceptedRedlines,
+          [action.clauseType]: { clauseText: action.clauseText, proposedText: action.proposedText, explanation: action.explanation },
+        },
+      };
+      break;
+    case 'dismissRedline': {
+      const rest = Object.fromEntries(Object.entries(state.acceptedRedlines).filter(([k]) => k !== action.clauseType));
+      next = { ...state, acceptedRedlines: rest };
+      break;
+    }
   }
 
   next = {
@@ -549,6 +575,9 @@ type StoreValue = {
     setManualReviewFlag: (flag: ClauseFlag) => void;
     appendFlag: (flag: ClauseFlag) => void;
     restoreState: (state: DocumentAnalysisState) => void;
+    setSourceFileType: (fileType: 'docx' | 'pdf' | null) => void;
+    acceptRedline: (clauseType: string, clauseText: string, proposedText: string, explanation: string) => void;
+    dismissRedline: (clauseType: string) => void;
   };
 };
 
@@ -579,6 +608,10 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
     setManualReviewFlag: (flag) => dispatch({ type: 'setManualReviewFlag', flag }),
     appendFlag: (flag) => dispatch({ type: 'appendFlag', flag }),
     restoreState: (state) => dispatch({ type: 'restoreState', state }),
+    setSourceFileType: (fileType) => dispatch({ type: 'setSourceFileType', fileType }),
+    acceptRedline: (clauseType, clauseText, proposedText, explanation) =>
+      dispatch({ type: 'acceptRedline', clauseType, clauseText, proposedText, explanation }),
+    dismissRedline: (clauseType) => dispatch({ type: 'dismissRedline', clauseType }),
   }), []);
 
   const value = useMemo(() => ({ state, actions }), [actions, state]);

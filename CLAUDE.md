@@ -67,6 +67,21 @@ User/usage records currently live in a file-based store ([lib/beta-store.ts](lib
 
 [lib/agents/api-cost.ts](lib/agents/api-cost.ts) computes USD from token usage per model. `recordApiUsage` in beta-store persists per-request cost. Keep this updated when adding new models or changing prompt structure.
 
+### Negotiation playbook (AI-08, shipped)
+
+- `PLAYBOOK_CLAUSE_TYPES` in [app/review/summary/page.tsx](app/review/summary/page.tsx) controls which flag cards show the "Suggest redline" button. Currently: `Liability Cap`, `Indemnities`, `IP Ownership`, `Data Protection`, `Termination`.
+- [app/review/components/clause-diff.tsx](app/review/components/clause-diff.tsx) — word-level LCS diff, two-column side-by-side layout. Import and use whenever rendering original vs proposed clause text.
+- [app/review/components/redline-suggestion.tsx](app/review/components/redline-suggestion.tsx) — calls `/api/contracts/redline`, parses `\nWhy this works:` separator, renders `ClauseDiff`.
+- [app/api/contracts/redline/route.ts](app/api/contracts/redline/route.ts) — `THINKING_CLAUSE_TYPES = Set(['IP Ownership', 'Indemnities'])` use Sonnet + extended thinking (4k budget); others use Haiku. Rules 5–9 in `SYSTEM_PROMPT` are clause-type-specific.
+
+### Downloadable redline DOCX (AI-09, next)
+
+Tracked in [issue #138](https://github.com/sneha210990/Pactora/issues/138). When implementing:
+- Add `accepted: boolean` per-clause state to `document-analysis-store` reducer
+- New `POST /api/contracts/redline/export` route — accepts accepted redlines, returns `.docx` blob
+- Use [`docx`](https://docx.js.org) npm library `DeletedText` / `InsertedText` revision nodes for tracked changes
+- Fallback: two-column PDF via `@react-pdf/renderer` if DOCX tracked-changes proves too complex for v1
+
 ## Conventions specific to this repo
 
 - When wiring a new review surface, import from `@/lib/document-analysis-store` — never re-derive extracted contract data from query strings or `localStorage`.
