@@ -91,6 +91,7 @@ export async function POST(request: Request) {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
+      temperature: 0,
       system: [
         {
           type: 'text',

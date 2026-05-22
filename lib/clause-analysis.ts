@@ -81,6 +81,7 @@ export async function analyzeContractClauses(contractText: string): Promise<Clau
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,
+    temperature: 0,
     tools: [FLAG_CLAUSE_TOOL, NO_ISSUE_FOUND_TOOL],
     // 'any' forces at least one tool call, eliminating the "silent empty response" failure mode.
     tool_choice: { type: 'any' },
