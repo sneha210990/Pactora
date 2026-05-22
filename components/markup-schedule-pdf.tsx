@@ -1,22 +1,14 @@
-import { Document, Font, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
-
-Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff', fontWeight: 400 },
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiJ-Ek-_EeA.woff', fontWeight: 600 },
-  ],
-});
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
-  page: { fontFamily: 'Inter', fontSize: 9, color: '#1a1a1a', padding: 48, backgroundColor: '#ffffff' },
+  page: { fontFamily: 'Helvetica', fontSize: 9, color: '#1a1a1a', padding: 48, backgroundColor: '#ffffff' },
   header: { marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  title: { fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 4 },
+  title: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#111827', marginBottom: 4 },
   subtitle: { fontSize: 9, color: '#6b7280' },
   disclaimer: { marginTop: 6, fontSize: 8, color: '#9ca3af' },
   item: { marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  clauseType: { fontSize: 8, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
-  label: { fontSize: 7.5, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 3 },
+  clauseType: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#6b7280', textTransform: 'uppercase', marginBottom: 6 },
+  label: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: '#374151', textTransform: 'uppercase', marginBottom: 3 },
   clauseBox: { backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 3, padding: 8, marginBottom: 8 },
   clauseText: { fontSize: 8.5, color: '#374151', lineHeight: 1.5 },
   proposedBox: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#bbf7d0', borderRadius: 3, padding: 8, marginBottom: 8 },
