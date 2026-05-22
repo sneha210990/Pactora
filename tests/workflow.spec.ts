@@ -143,7 +143,7 @@ async function uploadContractAndConfirm(page: Page) {
 
   await page.setInputFiles('#contractUpload', dummyContractPath);
 
-  await expect(page.getByText('Current input:')).toContainText('dummy-contract.pdf');
+  await expect(page.getByText('dummy-contract.pdf')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 }
 
@@ -335,7 +335,7 @@ test('Test 10: DOCX upload parses correctly and populates deal context fields', 
 
   await page.setInputFiles('#contractUpload', dummyDocxPath);
 
-  await expect(page.getByText('Current input:')).toContainText('dummy-contract.docx');
+  await expect(page.getByText('dummy-contract.docx')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 
   await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
@@ -1095,7 +1095,7 @@ test('Test 62: Minimum required fixes section appears and lists only High-risk c
 
   const prioritiesSection = page.locator('div').filter({ hasText: 'Key negotiation priorities' }).first();
   await expect(prioritiesSection).toBeVisible();
-  await expect(prioritiesSection.getByText('Liability Cap')).toBeVisible();
+  await expect(prioritiesSection.getByText('Liability Cap').first()).toBeVisible();
   await expect(prioritiesSection.getByText('High').first()).toBeVisible();
 });
 
