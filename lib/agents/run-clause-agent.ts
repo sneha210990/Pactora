@@ -11,22 +11,21 @@ import { calculateCostUsd } from './api-cost';
 const SONNET = 'claude-sonnet-4-6';
 const HAIKU  = 'claude-haiku-4-5-20251001';
 
-// Extended thinking for the three legally complex clause types only.
-// The other five (Data Protection, Termination Rights, Auto-Renewal, Fee Increases,
-// Governing Law) are pattern-recognition tasks well within Haiku's capability.
+// Extended thinking for the two legally complex clause types that require multi-step
+// legal chain reasoning. Liability Cap was moved to Haiku (pattern-recognition: find
+// a cap amount, check mutuality) — Sonnet+thinking was unnecessary overhead.
 const EXTENDED_THINKING_CLAUSE_TYPES = new Set<PactoraClauseType>([
-  'Liability Cap',
   'IP Ownership',
   'Indemnities',
 ]);
 
-// 4k thinking budget is sufficient for the multi-step legal chains these agents
-// must trace. 8k was headroom we never needed and billed at $15/MTok output rate.
-const THINKING_BUDGET_TOKENS = 4_000;
+// 2k thinking budget handles the legal chains these two agents must trace.
+// 4k was unused headroom billed at $15/MTok output rate.
+const THINKING_BUDGET_TOKENS = 2_000;
 // Must be strictly greater than THINKING_BUDGET_TOKENS.
-const MAX_TOKENS_THINKING = 6_000;
-// Standard agents: bumped from 2048 to cover the three-position negotiation ladder.
-const MAX_TOKENS_STANDARD = 2_500;
+const MAX_TOKENS_THINKING = 4_000;
+// Haiku agents: 2000 is enough for the 3-position negotiation ladder (~400 output tokens).
+const MAX_TOKENS_STANDARD = 2_000;
 
 export type ClauseAgentUsage = {
   inputTokens: number;
