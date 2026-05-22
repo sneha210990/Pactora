@@ -16,5 +16,5 @@ export async function POST() {
     page_context: '/logout',
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.redirect(new URL('/', process.env.APP_URL ?? 'http://localhost:3000'), { status: 303 });
 }
