@@ -55,7 +55,14 @@ export default function LoginPage() {
         }
       })();
 
-      setStatus(data?.error ?? data?.message ?? data?.error_description ?? (fallback || 'Unable to continue right now.'));
+      const msg = data?.error ?? data?.message ?? data?.error_description ?? (fallback || 'Something went wrong. Please try again.');
+      const alreadyExists = /already registered|already exists|user_already_exists/i.test(msg);
+      if (alreadyExists) {
+        setMode('login');
+        setStatus('You already have an account — please log in below.');
+      } else {
+        setStatus(msg);
+      }
       setLoading(false);
       return;
     }
