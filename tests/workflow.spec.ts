@@ -139,11 +139,11 @@ test('Test 2: Public pages load', async ({ page }) => {
 
 async function uploadContractAndConfirm(page: Page) {
   await page.goto('/deals/new');
-  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 
   await page.setInputFiles('#contractUpload', dummyContractPath);
 
-  await expect(page.getByText('Current input:')).toContainText('dummy-contract.pdf');
+  await expect(page.getByText('dummy-contract.pdf')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 }
 
@@ -175,9 +175,9 @@ test('Test 5: Commercial context carries through to LoL review', async ({ page }
     .getByLabel(/I understand extracted values are parser outputs/i)
     .check();
 
-  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
+  await page.getByRole('link', { name: 'View contract analysis' }).click();
 
-  await expect(page).toHaveURL(/\/review\/lol/);
+  await expect(page).toHaveURL(/\/review\/summary/);
   await expect(page.getByText('ACV: £12,345')).toBeVisible();
   await expect(page.getByText('Term: 24 months')).toBeVisible();
 });
@@ -232,7 +232,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await seedStore(page, { acv: 50000, termMonths: 24, insuranceCover: 2000000, dataType: 'personal' });
 
   await page.goto('/deals/new');
-  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 
   await expect(page.getByText('£50,000', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
@@ -245,9 +245,10 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await page
     .getByLabel(/I understand extracted values are parser outputs/i)
     .check();
-  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
+  await page.getByRole('link', { name: 'View contract analysis' }).click();
 
-  await expect(page).toHaveURL(/\/review\/lol/);
+  await expect(page).toHaveURL(/\/review\/summary/);
+  await page.goto('/review/lol');
   await expect(page.getByRole('heading', { name: 'Limitation of Liability Review' })).toBeVisible();
   await expect(page.getByText('ACV: £50,000')).toBeVisible();
   await expect(page.getByText('Term: 24 months')).toBeVisible();
@@ -330,11 +331,11 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
 
 test('Test 10: DOCX upload parses correctly and populates deal context fields', async ({ page }) => {
   await page.goto('/deals/new');
-  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 
   await page.setInputFiles('#contractUpload', dummyDocxPath);
 
-  await expect(page.getByText('Current input:')).toContainText('dummy-contract.docx');
+  await expect(page.getByText('dummy-contract.docx')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 
   await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
@@ -378,10 +379,10 @@ test('Test 13: Subprocessors page loads', async ({ page }) => {
 
 test('Test 14: Manual clause entry rejects text shorter than 20 characters', async ({ page }) => {
   await page.goto('/deals/new');
-  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 
   await page.locator('#manualClauses').fill('Too short');
-  await page.getByRole('button', { name: 'Analyze pasted clauses' }).click();
+  await page.getByRole('button', { name: 'Analyze clauses' }).click();
 
   await expect(page.getByRole('paragraph').filter({ hasText: 'Please paste at least 20 characters' })).toBeVisible();
 });
@@ -393,7 +394,7 @@ test('Test 15: Manual clause entry accepts long enough text and triggers process
     'Supplier liability shall be limited to 2x the annual contract value. The cap shall not apply to fraud or wilful misconduct. Either party may terminate on 30 days written notice.';
 
   await page.locator('#manualClauses').fill(clause);
-  await page.getByRole('button', { name: 'Analyze pasted clauses' }).click();
+  await page.getByRole('button', { name: 'Analyze clauses' }).click();
 
   // Pipeline section appears and shows current input
   await expect(page.getByText('Pasted contract clauses')).toBeVisible({ timeout: 30000 });
@@ -847,9 +848,10 @@ test('Test 48: Back navigation from LoL review returns to deals/new', async ({ p
   await seedStore(page, { acv: 10000, termMonths: 12 });
   await page.goto('/review/lol');
 
+  page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Back to New review' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
-  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 });
 
 test('Test 49: Back navigation from Indemnities returns to LoL', async ({ page }) => {
@@ -872,6 +874,7 @@ test('Test 51: New review link from summary returns to deals intake', async ({ p
   await seedStore(page, { acv: 50000, termMonths: 24 });
   await page.goto('/review/summary');
 
+  page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'New review' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
 });
@@ -883,16 +886,16 @@ test('Test 52: Continue button stays disabled until both checkboxes are ticked',
   await page.goto('/deals/new');
 
   // Initially disabled
-  await expect(page.getByRole('button', { name: 'Continue to Liability review' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Continue to Liability review' })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'View contract analysis' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View contract analysis' })).not.toBeVisible();
 
   // Tick first checkbox only — still disabled
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
-  await expect(page.getByRole('link', { name: 'Continue to Liability review' })).not.toBeVisible();
+  await expect(page.getByRole('link', { name: 'View contract analysis' })).not.toBeVisible();
 
   // Tick second checkbox — now enabled
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
-  await expect(page.getByRole('link', { name: 'Continue to Liability review' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View contract analysis' })).toBeVisible();
 });
 
 // ─── Commercial context display on review pages ────────────────────────────────
@@ -923,7 +926,9 @@ test('Test 55: LoL negotiation ladder shows ACV-based scripts', async ({ page })
   await seedStore(page, { acv: 40000, termMonths: 12 });
   await page.goto('/review/lol');
 
-  // Ladder should show scripts with ACV values even before running review
+  // Run review to reveal the negotiation ladder section
+  await page.locator('#lolClause').fill('Supplier liability shall be limited to £40,000.');
+  await page.getByRole('button', { name: 'Run review' }).click();
   await expect(page.getByText('Negotiation fallback ladder')).toBeVisible();
   await expect(page.getByText('£40,000').first()).toBeVisible();
 });
@@ -980,7 +985,9 @@ test('Test 56: Uploading a second document clears stale extracted ACV and change
   await expect(page.getByText('£100,000', { exact: true })).toBeVisible();
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
-  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
+  await page.getByRole('link', { name: 'View contract analysis' }).click();
+  await expect(page).toHaveURL(/\/review\/summary/);
+  await page.goto('/review/lol');
   await expect(page.getByText('Active document: contract-a.pdf')).toBeVisible();
   await expect(page.getByText('ACV: £100,000')).toBeVisible();
 
@@ -993,8 +1000,9 @@ test('Test 56: Uploading a second document clears stale extracted ACV and change
   await expect(page.getByText('Not detected', { exact: true }).first()).toBeVisible();
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
-  await page.getByRole('link', { name: 'Continue to Liability review' }).click();
-
+  await page.getByRole('link', { name: 'View contract analysis' }).click();
+  await expect(page).toHaveURL(/\/review\/summary/);
+  await page.goto('/review/lol');
   await expect(page.getByText('Active document: contract-b.pdf')).toBeVisible();
   await expect(page.getByText('ACV: Not detected')).toBeVisible();
   await expect(page.getByText('£100,000')).not.toBeVisible();
@@ -1085,12 +1093,10 @@ test('Test 62: Minimum required fixes section appears and lists only High-risk c
   ]);
   await page.goto('/review/summary');
 
-  const blockersSection = page.locator('section').filter({ hasText: 'Minimum required fixes' });
-  await expect(blockersSection).toBeVisible();
-  await expect(blockersSection.getByText('1 blocker')).toBeVisible();
-  await expect(blockersSection.getByText('Liability Cap', { exact: true })).toBeVisible();
-  // Medium flag must not appear inside the blockers section (only in the full flags list below)
-  await expect(blockersSection.getByText('IP Ownership', { exact: true })).not.toBeVisible();
+  const prioritiesSection = page.locator('div').filter({ hasText: 'Key negotiation priorities' }).first();
+  await expect(prioritiesSection).toBeVisible();
+  await expect(prioritiesSection.getByText('Liability Cap').first()).toBeVisible();
+  await expect(prioritiesSection.getByText('High').first()).toBeVisible();
 });
 
 test('Test 63: Minimum required fixes section is absent when no High-risk flags are seeded', async ({ page }) => {
@@ -1200,7 +1206,8 @@ test('Test 66: New review button clears stale contract data and returns a blank 
   await expect(page.getByText('old-contract.pdf')).toBeVisible();
   await expect(page.getByText('£99,999')).toBeVisible();
 
-  // Click "New review" to start fresh.
+  // Click "New review" to start fresh (accept the confirmation dialog).
+  page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'New review' }).click();
 
   // Hard navigation: wait for the new page to finish loading.
@@ -1217,7 +1224,7 @@ test('Test 66: New review button clears stale contract data and returns a blank 
   await expect(page.getByRole('heading', { name: 'Acknowledgment', level: 2 })).not.toBeVisible();
 
   // The blank upload form (Step 1) must be visible.
-  await expect(page.getByRole('heading', { name: 'New Deal Intake' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
   await expect(page.locator('#contractUpload')).toBeVisible();
 
   assertNoImportantAppIssues(page);

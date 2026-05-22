@@ -13,6 +13,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { NegotiationLadder } from '../components/negotiation-ladder';
 import { ReviewProgress } from '../components/review-progress';
 import { ExportPdfButton } from '@/components/export-pdf-button';
+import { ClauseDiff } from '../components/clause-diff';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -155,7 +156,7 @@ function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
   return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
 }
 
-const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities']);
+const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities', 'IP Ownership', 'Data Protection', 'Termination']);
 
 function ClauseFlagCard({ flag, acv, liabilityCap }: { flag: ClauseFlag; acv?: number | null; liabilityCap?: number | null }) {
   const showPlaybook = PLAYBOOK_CLAUSE_TYPES.has(flag.clauseType);
@@ -269,7 +270,14 @@ function ClauseFlagCard({ flag, acv, liabilityCap }: { flag: ClauseFlag; acv?: n
                       Dismiss
                     </button>
                   </div>
-                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-200">{alternative}</p>
+                  <ClauseDiff
+                    original={flag.clauseText ?? flag.problematicLanguage ?? ''}
+                    proposed={alternative.replace(/\nWhy this works:[\s\S]*/i, '').trim()}
+                    explanation={(() => {
+                      const m = alternative.match(/\nWhy this works:([\s\S]*)/i);
+                      return m ? m[0].replace(/^\n/, '').trim() : '';
+                    })()}
+                  />
                   <button
                     type="button"
                     onClick={suggestAlternative}

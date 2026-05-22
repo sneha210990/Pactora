@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ClauseDiff } from './clause-diff';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
 
@@ -12,19 +13,26 @@ type Props = {
   className?: string;
 };
 
+function parseAlternative(raw: string): { clause: string; explanation: string } {
+  const idx = raw.search(/\nWhy this works:/i);
+  if (idx === -1) return { clause: raw.trim(), explanation: '' };
+  return {
+    clause: raw.slice(0, idx).trim(),
+    explanation: raw.slice(idx).replace(/^\n/, '').trim(),
+  };
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
-
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Clipboard unavailable
+      // clipboard unavailable
     }
   }
-
   return (
     <button
       type="button"
@@ -82,6 +90,7 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
   }
 
   const disabled = !clauseText.trim() || status === 'loading';
+  const parsed = status === 'done' && alternative ? parseAlternative(alternative) : null;
 
   return (
     <div className={`rounded-xl border border-zinc-800 bg-black/30 p-4 ${className ?? ''}`.trim()}>
@@ -92,41 +101,40 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
             Generate buyer-protective alternative language for this clause.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={suggest}
-          disabled={disabled}
-          className="flex shrink-0 items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {status === 'loading' ? (
-            <>
-              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Generating…
-            </>
-          ) : (
-            <>
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-              </svg>
-              {status === 'done' ? 'Regenerate' : 'Suggest redline'}
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {parsed && <CopyButton text={parsed.clause} />}
+          <button
+            type="button"
+            onClick={suggest}
+            disabled={disabled}
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {status === 'loading' ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Generating…
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                </svg>
+                {status === 'done' ? 'Regenerate' : 'Suggest redline'}
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {status === 'done' && alternative && (
-        <div className="mt-4">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Proposed language</span>
-            <CopyButton text={alternative} />
-          </div>
-          <div className="whitespace-pre-wrap rounded-lg border border-emerald-800/40 bg-emerald-950/20 p-4 text-sm leading-relaxed text-zinc-100">
-            {alternative}
-          </div>
-        </div>
+      {parsed && (
+        <ClauseDiff
+          original={clauseText}
+          proposed={parsed.clause}
+          explanation={parsed.explanation}
+        />
       )}
 
       {status === 'error' && (

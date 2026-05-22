@@ -22,6 +22,14 @@ function parseSupabaseError(err: SupabaseAuthError | null, fallback: string) {
 }
 
 export async function POST(request: Request) {
+  try {
+    return await handleLogin(request);
+  } catch {
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
+  }
+}
+
+async function handleLogin(request: Request) {
   const body = await request.json().catch(() => null);
 
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
@@ -89,3 +97,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, user: { email: data.user.email } });
   }
 }
+
