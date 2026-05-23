@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@ansonlai/docx-redline-js':
         specifier: ^0.1.4
-        version: 0.1.4(@xmldom/xmldom@0.8.13)
+        version: 0.1.4(@xmldom/xmldom@0.9.10)
       '@anthropic-ai/sdk':
         specifier: ^0.95.0
         version: 0.95.2(zod@4.4.3)
@@ -20,6 +20,9 @@ importers:
       '@vercel/analytics':
         specifier: ^1.6.1
         version: 1.6.1(next@16.1.6(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+      '@xmldom/xmldom':
+        specifier: ^0.9.10
+        version: 0.9.10
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
@@ -1011,6 +1014,10 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+
+  '@xmldom/xmldom@0.9.10':
+    resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
+    engines: {node: '>=14.6'}
 
   abs-svg-path@0.1.1:
     resolution: {integrity: sha512-d8XPSGjfyzlXC3Xx891DJRyZfqk5JU0BJrDQcsWomFIV1/BIzPW5HDH5iDdWpqWaav0YVIEzT1RHTwWr0FFshA==}
@@ -2633,11 +2640,11 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@ansonlai/docx-redline-js@0.1.4(@xmldom/xmldom@0.8.13)':
+  '@ansonlai/docx-redline-js@0.1.4(@xmldom/xmldom@0.9.10)':
     dependencies:
       diff-match-patch: 1.0.5
     optionalDependencies:
-      '@xmldom/xmldom': 0.8.13
+      '@xmldom/xmldom': 0.9.10
 
   '@anthropic-ai/sdk@0.95.2(zod@4.4.3)':
     dependencies:
@@ -3475,6 +3482,8 @@ snapshots:
       tinyrainbow: 3.1.0
 
   '@xmldom/xmldom@0.8.13': {}
+
+  '@xmldom/xmldom@0.9.10': {}
 
   abs-svg-path@0.1.1: {}
 
