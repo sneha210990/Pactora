@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import fs from 'fs';
 import path from 'path';
 
 const dummyContractPath = path.join(__dirname, 'fixtures/dummy-contract.pdf');
@@ -26,7 +27,7 @@ function attachIssueTracking(page: Page) {
     if (message.type() !== 'error') return;
 
     const text = message.text();
-    const ignorable = ['favicon.ico', 'Failed to load resource: the server responded with a status of 404'];
+    const ignorable = ['favicon.ico', 'Failed to load resource: the server responded with a status of 404', 'net::ERR_FAILED'];
     if (ignorable.some((entry) => text.includes(entry))) return;
 
     tracker.consoleErrors.push(text);
@@ -154,7 +155,7 @@ test('Test 3: New Deal page loads and upload UI works', async ({ page }) => {
 test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
   await uploadContractAndConfirm(page);
 
-  await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 45000 });
   await expect(page.getByText('£25,000', { exact: true })).toBeVisible();
   await expect(page.getByText('12 months', { exact: true })).toBeVisible();
   await expect(page.getByText('£1,000,000', { exact: true })).toBeVisible();
@@ -338,7 +339,7 @@ test('Test 10: DOCX upload parses correctly and populates deal context fields', 
   await expect(page.getByText('dummy-contract.docx')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 
-  await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 45000 });
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 45000 });
   await expect(page.getByText('£30,000', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
   await expect(page.getByText('£2,000,000', { exact: true })).toBeVisible();
@@ -382,7 +383,7 @@ test('Test 14: Manual clause entry rejects text shorter than 20 characters', asy
   await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 
   await page.locator('#manualClauses').fill('Too short');
-  await page.getByRole('button', { name: 'Analyze clauses' }).click();
+  await page.getByRole('button', { name: 'Analyse clauses' }).click();
 
   await expect(page.getByRole('paragraph').filter({ hasText: 'Please paste at least 20 characters' })).toBeVisible();
 });
@@ -394,7 +395,7 @@ test('Test 15: Manual clause entry accepts long enough text and triggers process
     'Supplier liability shall be limited to 2x the annual contract value. The cap shall not apply to fraud or wilful misconduct. Either party may terminate on 30 days written notice.';
 
   await page.locator('#manualClauses').fill(clause);
-  await page.getByRole('button', { name: 'Analyze clauses' }).click();
+  await page.getByRole('button', { name: 'Analyse clauses' }).click();
 
   // Pipeline section appears and shows current input
   await expect(page.getByText('Pasted contract clauses')).toBeVisible({ timeout: 30000 });
@@ -848,8 +849,9 @@ test('Test 48: Back navigation from LoL review returns to deals/new', async ({ p
   await seedStore(page, { acv: 10000, termMonths: 12 });
   await page.goto('/review/lol');
 
-  page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Back to New review' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Start fresh' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
   await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 });
@@ -874,8 +876,9 @@ test('Test 51: New review link from summary returns to deals intake', async ({ p
   await seedStore(page, { acv: 50000, termMonths: 24 });
   await page.goto('/review/summary');
 
-  page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'New review' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Start fresh' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
 });
 
@@ -1154,7 +1157,7 @@ test('Test 65: Processing pipeline shows per-agent sub-list after analysis compl
   await page.click('button[type=submit]');
 
   // Wait for the analysis to complete (pipeline status badge shows complete)
-  await expect(page.getByText('Finalizing workspace… complete')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 15000 });
 
   // The per-agent sub-list should be rendered — Liability Cap was emitted by the mock
   await expect(page.getByText('Liability Cap').first()).toBeVisible();
@@ -1206,9 +1209,10 @@ test('Test 66: New review button clears stale contract data and returns a blank 
   await expect(page.getByText('old-contract.pdf')).toBeVisible();
   await expect(page.getByText('£99,999')).toBeVisible();
 
-  // Click "New review" to start fresh (accept the confirmation dialog).
-  page.once('dialog', dialog => dialog.accept());
+  // Click "New review" → styled confirmation modal → confirm.
   await page.getByRole('button', { name: 'New review' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Start fresh' }).click();
 
   // Hard navigation: wait for the new page to finish loading.
   await page.waitForURL(/\/deals\/new/, { waitUntil: 'domcontentloaded' });
@@ -1228,4 +1232,139 @@ test('Test 66: New review button clears stale contract data and returns a blank 
   await expect(page.locator('#contractUpload')).toBeVisible();
 
   assertNoImportantAppIssues(page);
+});
+
+// ─── AI-09: DOCX redline download ─────────────────────────────────────────────
+
+const DOCX_STORE_ENVELOPE = {
+  version: 2,
+  activeDocumentId: 'playwright-redline-docx',
+  state: {
+    documentId: 'playwright-redline-docx',
+    uploadStatus: 'complete',
+    sourceFileType: 'docx',
+    documentMeta: { fileName: 'dummy-contract.docx', uploadedAt: '2026-05-23T12:00:00Z' },
+    extractedParties: {},
+    extractedTerms: {},
+    clauses: [
+      {
+        id: 'c-lol',
+        type: 'Liability Cap',
+        riskLevel: 'High',
+        text: 'Supplier liability shall be limited to £1,000.',
+        explanation: 'Cap is 0.02× ACV. This is materially inadequate for a £50,000 contract.',
+        negotiationPositions: null,
+      },
+    ],
+    risks: [],
+    obligations: [],
+    recommendations: [],
+    processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
+    errors: [],
+    commercialContext: {
+      acv: { value: 50000, confidence: 0.9, evidence: null, extractionMethod: 'regex' },
+      termMonths: { value: 12, confidence: 0.9, evidence: null, extractionMethod: 'regex' },
+      insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
+      dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
+      liabilityCap: null,
+    },
+    extractionWarnings: [],
+    manualFlags: [],
+    diagnostics: { missingFields: [], hydrationWarnings: [] },
+  },
+};
+
+async function acceptRedlineViaUI(page: Page) {
+  // Use regex with $ to match only /api/contracts/redline, not /api/contracts/redline/export
+  await page.route(/\/api\/contracts\/redline$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        alternative: 'Supplier aggregate liability shall not exceed 1× the annual contract value (£50,000).\nWhy this works: Aligns the cap with commercial exposure.',
+      }),
+    });
+  });
+
+  // The Liability Cap card is auto-expanded (High risk). Get a suggestion and accept it.
+  await page.getByRole('button', { name: 'Suggest alternative language' }).click();
+  await expect(page.getByText('Alternative language')).toBeVisible({ timeout: 10000 });
+  await page.getByRole('button', { name: 'Accept redline' }).click();
+  await expect(page.getByText('Accepted')).toBeVisible();
+}
+
+test('Test 67: Download button appears after accepting a redline on a DOCX contract', async ({ page }) => {
+  await page.addInitScript((envelope) => {
+    window.localStorage.setItem('pactora.documentAnalysis.v2', JSON.stringify(envelope));
+  }, DOCX_STORE_ENVELOPE);
+
+  await page.goto('/review/summary');
+  await page.evaluate(() => {
+    sessionStorage.setItem('pactora.docxBuffer', 'ZmFrZWRvY3hidWZmZXI='); // 'fakedocxbuffer' in base64
+  });
+
+  await acceptRedlineViaUI(page);
+
+  const downloadBtn = page.getByRole('button', { name: /Download redline/i });
+  await expect(downloadBtn).toBeVisible();
+  await expect(downloadBtn.getByText('1')).toBeVisible();
+});
+
+test('Test 68: DOCX download falls back to markup schedule PDF when server fails', async ({ page }) => {
+  await page.addInitScript((envelope) => {
+    window.localStorage.setItem('pactora.documentAnalysis.v2', JSON.stringify(envelope));
+  }, DOCX_STORE_ENVELOPE);
+
+  // Abort the export route to simulate a server/network failure
+  await page.route('/api/contracts/redline/export', (route) => route.abort('failed'));
+
+  await page.goto('/review/summary');
+  await page.evaluate(() => {
+    sessionStorage.setItem('pactora.docxBuffer', 'ZmFrZWRvY3hidWZmZXI=');
+  });
+
+  await acceptRedlineViaUI(page);
+
+  // Click download — server fails, should fall back to markup schedule PDF silently
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Download redline/i }).click(),
+  ]);
+
+  // Fallback produces a PDF, not a DOCX
+  expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+
+  // No error message should be visible after the silent fallback
+  await expect(page.getByText('Download failed')).not.toBeVisible();
+});
+
+test('Test 69: DOCX download produces .docx when server succeeds', async ({ page }) => {
+  await page.addInitScript((envelope) => {
+    window.localStorage.setItem('pactora.documentAnalysis.v2', JSON.stringify(envelope));
+  }, DOCX_STORE_ENVELOPE);
+
+  // Return a minimal DOCX blob from the real fixture
+  const docxBytes = fs.readFileSync(dummyDocxPath);
+  await page.route('/api/contracts/redline/export', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      headers: { 'Content-Disposition': 'attachment; filename="dummy-contract-redlined.docx"' },
+      body: docxBytes,
+    });
+  });
+
+  await page.goto('/review/summary');
+  await page.evaluate(() => {
+    sessionStorage.setItem('pactora.docxBuffer', 'ZmFrZWRvY3hidWZmZXI=');
+  });
+
+  await acceptRedlineViaUI(page);
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Download redline/i }).click(),
+  ]);
+
+  expect(download.suggestedFilename()).toMatch(/\.docx$/);
 });
