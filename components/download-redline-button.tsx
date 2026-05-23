@@ -77,14 +77,19 @@ export function DownloadRedlineButton({ acceptedRedlines, sourceFileType, fileNa
     try {
       const hasDocxBuffer = !!sessionStorage.getItem('pactora.docxBuffer');
       if (sourceFileType === 'docx' && hasDocxBuffer) {
-        await downloadDocxRedline(acceptedRedlines, fileName);
+        try {
+          await downloadDocxRedline(acceptedRedlines, fileName);
+        } catch (docxErr) {
+          // Server-side DOCX generation failed — fall back to markup schedule PDF
+          console.warn('[redline] DOCX export failed, falling back to markup schedule:', docxErr);
+          await downloadMarkupSchedule(acceptedRedlines, fileName);
+        }
       } else {
         await downloadMarkupSchedule(acceptedRedlines, fileName);
       }
     } catch (err) {
       console.error('Redline download failed:', err);
       setError('Download failed. Please try again.');
-      setTimeout(() => setError(''), 4000);
     } finally {
       setLoading(false);
     }
