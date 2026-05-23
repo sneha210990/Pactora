@@ -1,6 +1,7 @@
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { ContractChunk } from '@/lib/chunking-strategy';
 import type { PactoraClauseType } from './types';
+import type { ContractType } from './classify-contract-type';
 import { getAnthropicClient } from './client';
 import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
@@ -18,6 +19,15 @@ const EXTENDED_THINKING_CLAUSE_TYPES = new Set<PactoraClauseType>([
   'IP Ownership',
   'Indemnities',
 ]);
+
+const CONTRACT_TYPE_CONTEXT: Record<ContractType, string> = {
+  SaaS: 'Apply standard SaaS buyer-side risk thresholds.',
+  NDA: 'Apply NDA norms — mutual confidentiality, limited liability scope, and automatic renewal are common. Calibrate risk ratings accordingly.',
+  Employment: 'Apply employment contract norms — employer IP ownership of work product and restrictive covenants are often standard. Focus on scope that is unusually broad.',
+  SupplyChain: 'Apply supply chain/procurement norms — price escalation and force majeure clauses are common. Focus on uncapped liability and asymmetric termination rights.',
+  ProfessionalServices: 'Apply professional services norms — time-and-materials pricing, IP licence-back, and professional liability indemnities are expected.',
+  Other: 'Apply general commercial contract risk thresholds.',
+};
 
 // 2k thinking budget handles the legal chains these two agents must trace.
 // 4k was unused headroom billed at $15/MTok output rate.
@@ -57,6 +67,7 @@ export async function runClauseAgent(
   clauseType: PactoraClauseType,
   contractText: string,
   chunk?: ContractChunk,
+  contractType?: ContractType,
 ): Promise<ClauseAgentResult> {
   const client = getAnthropicClient();
 
@@ -96,7 +107,12 @@ export async function runClauseAgent(
       messages: [
         {
           role: 'user',
-          content: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.`,
+          content: [
+            {
+              type: 'text',
+              text: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.${contractType ? `\n\nContract type context: ${CONTRACT_TYPE_CONTEXT[contractType]}` : ''}`,
+            },
+          ],
         },
       ],
     });

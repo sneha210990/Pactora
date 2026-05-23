@@ -1,6 +1,8 @@
 import type { ClauseFlag } from '@/lib/clause-analysis';
 export type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
+import type { ContractType } from './classify-contract-type';
+export type { ContractType };
 
 // All clause types covered by specialist agents.
 // The first five have dedicated review pages; the last three surface in AI Clause Analysis.
@@ -23,4 +25,5 @@ export type AgentEvent =
   | { type: 'agent_start'; clauseType: PactoraClauseType }
   | { type: 'agent_result'; clauseType: PactoraClauseType; flag: ClauseFlag | null }
   | { type: 'agent_error'; clauseType: PactoraClauseType; message: string }
-  | { type: 'analysis_complete'; flags: ClauseFlag[]; crossClauseRisks: CrossClauseRisk[]; analyzedAt: string; totalCostUsd?: number };
+  | { type: 'analysis_complete'; flags: ClauseFlag[]; crossClauseRisks: CrossClauseRisk[]; analyzedAt: string; totalCostUsd?: number }
+  | { type: 'contract_type_detected'; contractType: ContractType };

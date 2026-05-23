@@ -13,6 +13,9 @@ export type { ClauseFlag };
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 export type { CrossClauseRisk };
 import type { ExtractedContractValues, ExtractedField } from '@/lib/contract-extraction';
+import type { ContractType } from '@/lib/agents/classify-contract-type';
+export type { ContractType };
+export { CONTRACT_TYPES } from '@/lib/agents/classify-contract-type';
 
 export type Clause = {
   id: string;
@@ -110,6 +113,7 @@ export type DocumentAnalysisState = {
   manualFlags?: ClauseFlag[];
   crossClauseRisks?: CrossClauseRisk[];
   sourceFileType: 'docx' | 'pdf' | null;
+  contractType?: ContractType;
   acceptedRedlines: Record<string, { clauseText: string; proposedText: string; explanation: string }>;
   diagnostics?: {
     missingFields: string[];
@@ -133,7 +137,8 @@ type Action =
   | { type: 'restoreState'; state: DocumentAnalysisState }
   | { type: 'setSourceFileType'; fileType: 'docx' | 'pdf' | null }
   | { type: 'acceptRedline'; clauseType: string; clauseText: string; proposedText: string; explanation: string }
-  | { type: 'dismissRedline'; clauseType: string };
+  | { type: 'dismissRedline'; clauseType: string }
+  | { type: 'setContractType'; contractType: ContractType };
 
 type ExtractionPayload = {
   documentId?: string;
@@ -508,6 +513,9 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
       next = { ...state, acceptedRedlines: rest };
       break;
     }
+    case 'setContractType':
+      next = { ...state, contractType: action.contractType };
+      break;
   }
 
   next = {
@@ -580,6 +588,7 @@ type StoreValue = {
     setSourceFileType: (fileType: 'docx' | 'pdf' | null) => void;
     acceptRedline: (clauseType: string, clauseText: string, proposedText: string, explanation: string) => void;
     dismissRedline: (clauseType: string) => void;
+    setContractType: (contractType: ContractType) => void;
   };
 };
 
@@ -614,6 +623,7 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
     acceptRedline: (clauseType, clauseText, proposedText, explanation) =>
       dispatch({ type: 'acceptRedline', clauseType, clauseText, proposedText, explanation }),
     dismissRedline: (clauseType) => dispatch({ type: 'dismissRedline', clauseType }),
+    setContractType: (contractType) => dispatch({ type: 'setContractType', contractType }),
   }), []);
 
   const value = useMemo(() => ({ state, actions }), [actions, state]);

@@ -1,6 +1,7 @@
 'use client';
 
-import { extractedValue, useDocumentAnalysis } from '@/lib/document-analysis-store';
+import { extractedValue, useDocumentAnalysisStore, CONTRACT_TYPES } from '@/lib/document-analysis-store';
+import type { ContractType } from '@/lib/document-analysis-store';
 import type { ExtractedField } from '@/lib/contract-extraction';
 
 function formatDate(value: string) {
@@ -29,7 +30,8 @@ export function formatOptionalTextField<T extends string>(field: ExtractedField<
 }
 
 export function ActiveDocumentBanner() {
-  const { activeDocument } = useDocumentAnalysis();
+  const { state, actions } = useDocumentAnalysisStore();
+  const { activeDocument, contractType } = state;
 
   return (
     <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-300">
@@ -48,6 +50,23 @@ export function ActiveDocumentBanner() {
         </>
       ) : (
         <span>None selected</span>
+      )}
+      {contractType && (
+        <div className="mt-2 flex items-center gap-2">
+          <span className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400">
+            {contractType}
+          </span>
+          <select
+            value={contractType}
+            onChange={(e) => actions.setContractType(e.target.value as ContractType)}
+            className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400 hover:border-zinc-500 cursor-pointer"
+            aria-label="Override contract type"
+          >
+            {CONTRACT_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
       )}
     </div>
   );
