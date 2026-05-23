@@ -22,6 +22,7 @@ export type ClauseFlag = {
   negotiationPoint: string;
   negotiationPositions?: NegotiationLadder;
   clauseText?: string;
+  confidence?: 'High' | 'Medium' | 'Uncertain';
 
   // From PROMPT 1 (hallucination verification)
   verified?: boolean;
@@ -123,6 +124,7 @@ export async function analyzeContractClauses(contractText: string): Promise<Clau
         problematicLanguage: (input.problematicLanguage as string) ?? '',
         plainEnglish: (input.plainEnglish as string) ?? '',
         negotiationPoint: (input.negotiationPoint as string) ?? '',
+        confidence: (input.confidence as 'High' | 'Medium' | 'Uncertain') ?? undefined,
       };
     });
 

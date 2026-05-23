@@ -21,6 +21,7 @@ export type Clause = {
   riskLevel?: RiskLevel;
   explanation?: string;
   negotiationPositions?: NegotiationLadder;
+  confidence?: 'High' | 'Medium' | 'Uncertain';
 };
 
 export type Risk = {
@@ -255,6 +256,7 @@ function toCanonicalAnalysis(state: DocumentAnalysisState, analysis: AnalysisPay
     riskLevel: flag.riskLevel,
     explanation: flag.plainEnglish,
     negotiationPositions: flag.negotiationPositions,
+    confidence: flag.confidence,
   }));
   const risks = flags.map((flag, index): Risk => ({
     id: `${state.documentId || 'document'}-risk-${index}`,

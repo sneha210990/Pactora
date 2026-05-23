@@ -95,6 +95,16 @@ export const FLAG_CLAUSE_TOOL: Anthropic.Tool = {
         },
         required: ['ask', 'fallback', 'narrowing'],
       },
+      confidence: {
+        type: 'string',
+        enum: ['High', 'Medium', 'Uncertain'],
+        description:
+          'Your confidence that this is a genuine risk. ' +
+          'High: the clause clearly creates the stated risk. ' +
+          'Medium: the clause likely creates the risk but context may change the assessment. ' +
+          'Uncertain: the clause is ambiguous, the language is atypical, or you cannot determine risk without information not present in the contract. ' +
+          'Use Uncertain when your analysis contains hedging language such as "may", "it is unclear", "appears to", or "depending on".',
+      },
     },
     required: [
       'clauseType',
