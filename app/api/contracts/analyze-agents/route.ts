@@ -32,6 +32,7 @@ import { NextResponse } from 'next/server';
 import { runClauseAgent } from '@/lib/agents/run-clause-agent';
 import type { ClauseAgentUsage } from '@/lib/agents/run-clause-agent';
 import { classifyPresentClauses } from '@/lib/agents/classify-clauses';
+import { classifyContractType } from '@/lib/agents/classify-contract-type';
 import { detectCrossClauseRisks } from '@/lib/agents/cross-clause-engine';
 import { createOverlappingChunks, mergeChunkResults } from '@/lib/chunking-strategy';
 import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
@@ -70,11 +71,18 @@ export async function POST(request: Request) {
       const emit = (event: AgentEvent) => controller.enqueue(enc.encode(sseEvent(event)));
 
       // AI-06: Pre-classify which clause types are present using a single cheap Haiku call.
+      // AI-07: Classify contract type in parallel — independent of clause presence detection.
       // Absent clause types are skipped — saves the full specialist-agent cost for each one.
       // Falls back to all 8 agents if classification fails.
-      const presentClauses = await classifyPresentClauses(contractText);
+      const [presentClauses, contractType] = await Promise.all([
+        classifyPresentClauses(contractText),
+        classifyContractType(contractText),
+      ]);
       const activeAgents = PACTORA_CLAUSE_AGENTS.filter((c) => presentClauses.has(c));
       const absentAgents = PACTORA_CLAUSE_AGENTS.filter((c) => !presentClauses.has(c));
+
+      // Emit contract type before running agents so the client can calibrate UI immediately.
+      emit({ type: 'contract_type_detected', contractType });
 
       // Immediately mark absent clause types as done (no agent ran, no flag found).
       for (const clauseType of absentAgents) {
@@ -86,7 +94,7 @@ export async function POST(request: Request) {
         const collectedFlags: ClauseFlag[] = [];
         const agentPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
           emit({ type: 'agent_start', clauseType });
-          const result = await runClauseAgent(clauseType, contractText, chunks[0]);
+          const result = await runClauseAgent(clauseType, contractText, chunks[0], contractType);
           if (result.ok) {
             emit({ type: 'agent_result', clauseType, flag: result.flag });
             if (result.flag) collectedFlags.push(result.flag);
