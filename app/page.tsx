@@ -29,15 +29,19 @@ export default function Home() {
             href="https://timesofindia.indiatimes.com/city/hyderabad/courtrooms-to-code-hyderabads-young-lawyers-tap-into-ai-to-tackle-legal-hurdles/articleshow/131267827.cms"
             target="_blank"
             rel="noopener noreferrer"
-            className="opacity-60 transition-opacity hover:opacity-100"
+            className="flex items-center gap-2.5 opacity-60 transition-opacity hover:opacity-100"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/The-times-of-india.png/320px-The-times-of-india.png"
+              src="/toi-logo.png"
               alt="Times of India"
+              width={24}
               height={24}
-              className="h-6 w-auto invert grayscale"
+              className="h-6 w-6 rounded-sm"
             />
+            <span className="font-serif text-base font-bold tracking-tight text-white">
+              Times of India
+            </span>
           </a>
         </div>
       </section>
