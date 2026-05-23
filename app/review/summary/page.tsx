@@ -229,6 +229,11 @@ function ClauseFlagCard({
           <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${clauseFlagRiskClass(flag.riskLevel)}`}>
             {flag.riskLevel}
           </span>
+          {flag.confidence === 'Uncertain' && (
+            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+              Uncertain
+            </span>
+          )}
           <svg
             className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-150 ${isExpanded ? 'rotate-180' : ''}`}
             viewBox="0 0 16 16" fill="none" aria-hidden="true"
@@ -472,9 +477,11 @@ function SummaryContent() {
     plainEnglish: clause.explanation ?? 'Analysis incomplete',
     negotiationPoint: analysis.recommendations.find((recommendation) => recommendation.clauseType === clause.type)?.text ?? 'No recommendation generated',
     negotiationPositions: clause.negotiationPositions,
+    confidence: clause.confidence,
   }));
 
   const effectiveFlags: ClauseFlag[] = clauseFlags.length > 0 ? clauseFlags : (analysis.manualFlags ?? []);
+  const uncertainFlagCount = effectiveFlags.filter((f) => f.confidence === 'Uncertain').length;
 
   const rankedSections = useMemo(() => {
     return reviewSections
@@ -721,6 +728,12 @@ function SummaryContent() {
               </span>
             </div>
             <div className="flex flex-col gap-3">
+              {uncertainFlagCount >= 2 && (
+                <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                  <span className="font-semibold">Human review recommended — </span>
+                  {uncertainFlagCount} of these flags have uncertain confidence. Verify with a qualified legal or commercial reviewer before relying on this analysis.
+                </div>
+              )}
               {effectiveFlags.map((flag, i) => (
                 <ClauseFlagCard
                   key={i}

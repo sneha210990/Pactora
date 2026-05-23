@@ -161,6 +161,7 @@ export async function runClauseAgent(
         plainEnglish: (input.plainEnglish as string) ?? '',
         negotiationPoint: negotiationPositions?.ask.script ?? '',
         negotiationPositions,
+        confidence: (input.confidence as ClauseFlag['confidence']) ?? undefined,
       };
 
       // PROMPT 1: verify extracted text exists in full contract (anti-hallucination).
