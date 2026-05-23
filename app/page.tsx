@@ -21,6 +21,17 @@ export default function Home() {
         >
           Start contract review
         </Link>
+        <p className="mt-6 text-xs uppercase tracking-[0.2em] text-zinc-500">
+          Featured in{" "}
+          <a
+            href="https://timesofindia.indiatimes.com/city/hyderabad/courtrooms-to-code-hyderabads-young-lawyers-tap-into-ai-to-tackle-legal-hurdles/articleshow/131267827.cms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-300 underline underline-offset-4 transition hover:text-white"
+          >
+            Times of India
+          </a>
+        </p>
       </section>
 
       <section className="border-t border-zinc-800 bg-black py-16">
