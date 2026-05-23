@@ -32,7 +32,7 @@ const processingStages: Array<{ key: keyof DocumentAnalysisState['processingStep
   { key: 'upload', label: 'Capturing contract input…' },
   { key: 'extraction', label: 'Extracting supported values…' },
   { key: 'clauseDetection', label: 'Identifying clauses…' },
-  { key: 'riskAnalysis', label: 'Analyzing risks…' },
+  { key: 'riskAnalysis', label: 'Analysing risks…' },
   { key: 'recommendations', label: 'Generating recommendations…' },
 ];
 
@@ -426,7 +426,7 @@ export default function NewDealPage() {
                   disabled={analysis.uploadStatus === 'uploading' || analysis.uploadStatus === 'processing'}
                   className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
                 >
-                  Analyze clauses
+                  Analyse clauses
                 </button>
               </div>
             </form>

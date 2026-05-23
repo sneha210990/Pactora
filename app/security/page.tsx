@@ -53,7 +53,7 @@ export default function SecurityPage() {
           <h2 className="text-xl font-semibold text-white">Security Overview</h2>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-zinc-300">
             <li>Data is encrypted in transit.</li>
-            <li>Access is restricted to authorized systems.</li>
+            <li>Access is restricted to authorised systems.</li>
             <li>Uploaded documents are processed securely.</li>
             <li>Controls are evolving as the product scales.</li>
           </ul>
