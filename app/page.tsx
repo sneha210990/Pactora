@@ -21,17 +21,25 @@ export default function Home() {
         >
           Start contract review
         </Link>
-        <p className="mt-6 text-xs uppercase tracking-[0.2em] text-zinc-500">
-          Featured in{" "}
+        <div className="mt-8 flex flex-col items-center gap-2">
+          <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
+            Featured in
+          </span>
           <a
             href="https://timesofindia.indiatimes.com/city/hyderabad/courtrooms-to-code-hyderabads-young-lawyers-tap-into-ai-to-tackle-legal-hurdles/articleshow/131267827.cms"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-zinc-300 underline underline-offset-4 transition hover:text-white"
+            className="opacity-60 transition-opacity hover:opacity-100"
           >
-            Times of India
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/The-times-of-india.png/320px-The-times-of-india.png"
+              alt="Times of India"
+              height={24}
+              className="h-6 w-auto invert grayscale"
+            />
           </a>
-        </p>
+        </div>
       </section>
 
       <section className="border-t border-zinc-800 bg-black py-16">
