@@ -182,6 +182,8 @@ export default function NewDealPage() {
               setAgentProgress((prev) => ({ ...prev, [event.clauseType]: 'done' }));
             } else if (event.type === 'agent_error') {
               setAgentProgress((prev) => ({ ...prev, [event.clauseType]: 'error' }));
+            } else if (event.type === 'contract_type_detected') {
+              actions.setContractType(event.contractType);
             } else if (event.type === 'analysis_complete' && Array.isArray(event.flags)) {
               actions.hydrateAnalysis({
                 flags: event.flags,
