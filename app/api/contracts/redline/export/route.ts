@@ -6,10 +6,20 @@ export const maxDuration = 30;
 
 // No type declarations available — loaded at runtime via serverExternalPackages
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { applyRedlineToOxml, setDefaultAuthor } = require('@ansonlai/docx-redline-js') as {
+const { applyRedlineToOxml, setDefaultAuthor, configureXmlProvider } = require('@ansonlai/docx-redline-js') as {
   applyRedlineToOxml: (xml: string, original: string, proposed: string, options?: Record<string, unknown>) => Promise<{ oxml?: string } | string>;
   setDefaultAuthor: (author: string) => void;
+  configureXmlProvider: (providers: { DOMParser: unknown; XMLSerializer: unknown }) => void;
 };
+
+// docx-redline-js needs a DOM implementation in Node.js — @xmldom/xmldom provides it.
+// configureXmlProvider is idempotent so calling it at module scope is safe.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { DOMParser, XMLSerializer } = require('@xmldom/xmldom') as {
+  DOMParser: new () => DOMParser;
+  XMLSerializer: new () => XMLSerializer;
+};
+configureXmlProvider({ DOMParser, XMLSerializer });
 
 type AcceptedRedline = { clauseText: string; proposedText: string; explanation: string };
 

@@ -31,6 +31,7 @@
 import { NextResponse } from 'next/server';
 import { runClauseAgent } from '@/lib/agents/run-clause-agent';
 import type { ClauseAgentUsage } from '@/lib/agents/run-clause-agent';
+import { classifyPresentClauses } from '@/lib/agents/classify-clauses';
 import { detectCrossClauseRisks } from '@/lib/agents/cross-clause-engine';
 import { createOverlappingChunks, mergeChunkResults } from '@/lib/chunking-strategy';
 import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
@@ -68,10 +69,22 @@ export async function POST(request: Request) {
       const enc = new TextEncoder();
       const emit = (event: AgentEvent) => controller.enqueue(enc.encode(sseEvent(event)));
 
+      // AI-06: Pre-classify which clause types are present using a single cheap Haiku call.
+      // Absent clause types are skipped — saves the full specialist-agent cost for each one.
+      // Falls back to all 8 agents if classification fails.
+      const presentClauses = await classifyPresentClauses(contractText);
+      const activeAgents = PACTORA_CLAUSE_AGENTS.filter((c) => presentClauses.has(c));
+      const absentAgents = PACTORA_CLAUSE_AGENTS.filter((c) => !presentClauses.has(c));
+
+      // Immediately mark absent clause types as done (no agent ran, no flag found).
+      for (const clauseType of absentAgents) {
+        emit({ type: 'agent_result', clauseType, flag: null });
+      }
+
       if (chunks.length === 1) {
         // Single-chunk path: preserve existing streaming behaviour — emit events as each agent resolves.
         const collectedFlags: ClauseFlag[] = [];
-        const agentPromises = PACTORA_CLAUSE_AGENTS.map(async (clauseType: PactoraClauseType) => {
+        const agentPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
           emit({ type: 'agent_start', clauseType });
           const result = await runClauseAgent(clauseType, contractText, chunks[0]);
           if (result.ok) {
@@ -92,7 +105,7 @@ export async function POST(request: Request) {
 
         for (const chunk of chunks) {
           console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
-          const chunkPromises = PACTORA_CLAUSE_AGENTS.map(async (clauseType: PactoraClauseType) => {
+          const chunkPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
             const result = await runClauseAgent(clauseType, contractText, chunk);
             return {
               chunkIndex: chunk.chunkIndex,
@@ -110,8 +123,8 @@ export async function POST(request: Request) {
         const mergedFlags = mergeChunkResults(rawResults);
         console.log(`[ANALYSIS] Found ${mergedFlags.length} unique flag(s) across ${chunks.length} chunk(s)`);
 
-        // Emit one agent_result per clause type so clients receive the standard event shape.
-        for (const clauseType of PACTORA_CLAUSE_AGENTS) {
+        // Emit one agent_result per active clause type so clients receive the standard event shape.
+        for (const clauseType of activeAgents) {
           const flag = mergedFlags.find((f) => f.clauseType === clauseType) ?? null;
           emit({ type: 'agent_result', clauseType, flag });
         }
