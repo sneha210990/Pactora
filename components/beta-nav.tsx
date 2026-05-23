@@ -18,7 +18,7 @@ export async function BetaNav() {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="hidden max-w-[160px] truncate text-xs text-zinc-400 sm:block">
+      <span className="max-w-[110px] truncate text-xs text-zinc-400 sm:max-w-[160px]">
         {session.user.email}
       </span>
       <form action="/api/auth/logout" method="POST">

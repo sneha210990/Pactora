@@ -48,8 +48,8 @@ function ProcessingPipeline({ analysis, agentProgress }: { analysis: DocumentAna
     <div className="mt-5 rounded-xl border border-zinc-800 bg-black/30 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Processing pipeline</p>
-        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-300">
-          {analysis.uploadStatus === 'complete' ? 'Finalizing workspace… complete' : analysis.uploadStatus}
+        <span aria-live="polite" className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-300">
+          {analysis.uploadStatus === 'complete' ? 'Analysis complete' : analysis.uploadStatus}
         </span>
       </div>
       <ol className="space-y-2 text-sm">
@@ -83,7 +83,7 @@ function ProcessingPipeline({ analysis, agentProgress }: { analysis: DocumentAna
         ))}
         <li className="flex items-center gap-3 text-zinc-300">
           <span className={`h-2.5 w-2.5 rounded-full ${analysis.uploadStatus === 'complete' ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-          <span>Finalizing workspace…</span>
+          <span>Finalizing workspace</span>
         </li>
       </ol>
     </div>
@@ -415,6 +415,8 @@ export default function NewDealPage() {
                 onChange={(event) => setManualClauseText(event.target.value)}
                 rows={8}
                 placeholder="Paste limitation of liability, indemnity, termination, data protection, or other contract clauses here…"
+                aria-invalid={uploadError !== null && manualClauseText.trim().length < 20 ? true : undefined}
+                aria-describedby={uploadError ? 'upload-error' : undefined}
                 className="block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-700"
               />
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -430,7 +432,7 @@ export default function NewDealPage() {
             </form>
 
             {uploadError ? (
-              <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3">
+              <div id="upload-error" role="alert" className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3">
                 <p className="text-sm font-medium text-red-300">{uploadError}</p>
                 <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC under 20 MB, or paste at least 20 characters of clause text.</p>
               </div>
