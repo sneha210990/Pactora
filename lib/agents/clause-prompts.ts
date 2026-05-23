@@ -93,7 +93,7 @@ Analyse:
   loss-of-profit waivers, lost data or business interruption exclusions
 - Symmetry: is the cap mutual, or does it only restrict the vendor's liability (not the buyer's)?
 - Cap-to-ACV ratio: a cap below 1× annual contract value is materially inadequate for most buyers
-When you flag a clause using flag_clause, extract the complete verbatim text of that clause exactly as it appears in the contract. Include all numbered subsections, provisos, and carve-outs. Return it word-for-word in the clauseText field. Do not paraphrase or summarize.
+When you flag a clause using flag_clause, extract the complete verbatim text of that clause exactly as it appears in the contract. Include all numbered subsections, provisos, and carve-outs. Return it word-for-word in the clauseText field. Do not paraphrase or summarise.
 ${TOOL_DIRECTIVE}`,
 
   Indemnities: `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.
@@ -138,7 +138,7 @@ Analyse:
   indemnity, absent indemnity for vendor's own fraud or wilful misconduct
 - Defence control: does the vendor require sole control of the defence, preventing the buyer
   from protecting its own interests in third-party claims?
-When you flag a clause using flag_clause, extract the complete verbatim text of that clause exactly as it appears in the contract. Include all sub-clauses and conditions. Return it word-for-word in the clauseText field. Do not paraphrase or summarize.
+When you flag a clause using flag_clause, extract the complete verbatim text of that clause exactly as it appears in the contract. Include all sub-clauses and conditions. Return it word-for-word in the clauseText field. Do not paraphrase or summarise.
 ${TOOL_DIRECTIVE}`,
 
   // PACTORA-CUSTOM: No direct equivalent in claude-for-legal.
@@ -236,7 +236,7 @@ Do NOT flag:
 - Customer-owns-their-data statements — data protection language, not an IP ownership grab
 - Open-source licensing under named licences (MIT, Apache, GPL) — structured rights, not a grab
 
-When you flag a clause using flag_clause, extract the complete verbatim text of that clause exactly as it appears in the contract. Include all sentences about ownership, licensing, or data usage within the same clause or definition. Return it word-for-word in the clauseText field. Do not paraphrase or summarize.
+When you flag a clause using flag_clause, extract the complete verbatim text of that clause exactly as it appears in the contract. Include all sentences about ownership, licensing, or data usage within the same clause or definition. Return it word-for-word in the clauseText field. Do not paraphrase or summarise.
 ${TOOL_DIRECTIVE}`,
 
   'Data Protection': `You are a specialist commercial contracts lawyer reviewing SaaS agreements on behalf of a buyer.

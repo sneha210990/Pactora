@@ -137,7 +137,7 @@ export default function TermsPage() {
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-zinc-300">
             <li>Pactora is currently a beta product.</li>
             <li>Pactora provides decision-support software, not legal advice.</li>
-            <li>Users must be authorized to upload documents and data.</li>
+            <li>Users must be authorised to upload documents and data.</li>
             <li>Human review is required before relying on outputs for material decisions.</li>
           </ul>
         </section>
