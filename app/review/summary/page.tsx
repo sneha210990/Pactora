@@ -667,8 +667,12 @@ function SummaryContent() {
                   <button onClick={copyEmail} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800">
                     {emailCopied ? 'Copied!' : 'Copy to clipboard'}
                   </button>
-                  <button onClick={generateEmail} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800">
-                    Regenerate
+                  <button
+                    onClick={generateEmail}
+                    disabled={emailGenerating}
+                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {emailGenerating ? 'Generating…' : 'Regenerate'}
                   </button>
                 </div>
               </div>
@@ -682,6 +686,9 @@ function SummaryContent() {
                   {emailGenerating ? 'Generating…' : effectiveFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
                 </button>
                 {emailError ? <p className="text-xs text-red-300">{emailError}</p> : null}
+                {!emailGenerating && effectiveFlags.length === 0 && (
+                  <p className="text-xs text-zinc-500">Run the review sections above to generate clause flags first.</p>
+                )}
               </div>
             )}
           </div>
