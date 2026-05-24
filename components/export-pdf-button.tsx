@@ -3,15 +3,16 @@
 import { useState } from 'react';
 import type { ContractPdfProps } from './contract-pdf';
 
-export function ExportPdfButton(props: ContractPdfProps) {
+export function ExportPdfButton(props: ContractPdfProps & { className?: string }) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const { className: classNameOverride, ...pdfProps } = props;
 
   async function handleExport() {
     setStatus('loading');
     try {
       const { pdf } = await import('@react-pdf/renderer');
       const { ContractReviewPdf } = await import('./contract-pdf');
-      const blob = await pdf(<ContractReviewPdf {...props} />).toBlob();
+      const blob = await pdf(<ContractReviewPdf {...pdfProps} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -32,7 +33,7 @@ export function ExportPdfButton(props: ContractPdfProps) {
       type="button"
       onClick={handleExport}
       disabled={status === 'loading'}
-      className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+      className={classNameOverride ?? "flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"}
     >
       {status === 'loading' ? (
         <>

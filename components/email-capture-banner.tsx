@@ -54,8 +54,8 @@ export function EmailCaptureBanner() {
       {submitted ? (
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-blue-200">You're on the list</p>
-            <p className="mt-1 text-sm text-zinc-400">We'll send your full report and notify you when new features land.</p>
+            <p className="text-sm font-semibold text-blue-200">You&apos;re on the list</p>
+            <p className="mt-1 text-sm text-zinc-400">We&apos;ll send your full report and notify you when new features land.</p>
           </div>
           <button onClick={dismiss} className="shrink-0 text-zinc-500 hover:text-zinc-300" aria-label="Dismiss">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@ export function EmailCaptureBanner() {
             <div>
               <p className="text-sm font-semibold text-blue-200">Save your analysis</p>
               <p className="mt-1 text-sm text-zinc-400">
-                Enter your email to receive the full report and get early access to Pactora.
+                Get this analysis in your inbox, plus negotiation tips for each flagged clause.
               </p>
             </div>
             <button onClick={dismiss} className="shrink-0 text-zinc-500 hover:text-zinc-300" aria-label="Dismiss">

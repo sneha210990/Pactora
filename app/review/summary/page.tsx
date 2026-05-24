@@ -628,8 +628,6 @@ function SummaryContent() {
           </div>
         )}
 
-        {user === null && clauseFlags.length > 0 && <EmailCaptureBanner />}
-
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Overall risk</h2>
@@ -752,13 +750,28 @@ function SummaryContent() {
         ) : (
           <section className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Clause Analysis</h2>
-            <p className="mt-2 text-sm text-zinc-500">No flags yet — run each review section to build a complete picture.</p>
+            <p className="mt-2 text-sm text-zinc-500">No flags detected — upload a new contract to run AI analysis.</p>
           </section>
         )}
+
+        {user === null && clauseFlags.length > 0 && <EmailCaptureBanner />}
 
         <FeedbackToggle user={user} />
 
         <div className="mt-8">
+          <ExportPdfButton
+            contractName={analysis.documentMeta?.fileName ?? ''}
+            commercialContext={commercialContext}
+            overallRisk={overallRisk}
+            verdict={verdict.text}
+            riskScore={riskScore100}
+            flags={effectiveFlags}
+            crossClauseRisks={crossClauseRisks}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
+
+        <div className="mt-4">
           <Link href="/" className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200">
             Back to home
           </Link>
