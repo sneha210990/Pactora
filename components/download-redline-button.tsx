@@ -80,8 +80,8 @@ export function DownloadRedlineButton({ acceptedRedlines, sourceFileType, fileNa
         try {
           await downloadDocxRedline(acceptedRedlines, fileName);
         } catch (docxErr) {
-          // Server-side DOCX generation failed — fall back to markup schedule PDF
-          console.warn('[redline] DOCX export failed, falling back to markup schedule:', docxErr);
+          console.error('[redline] DOCX export failed, falling back to markup schedule:', docxErr);
+          setError('DOCX export unavailable. Downloading as PDF instead. Your redlines are preserved.');
           await downloadMarkupSchedule(acceptedRedlines, fileName);
         }
       } else {
