@@ -216,8 +216,13 @@ export default function NewDealPage() {
     if (payload.docxBuffer) {
       try {
         sessionStorage.setItem('pactora.docxBuffer', payload.docxBuffer);
-      } catch {
-        // sessionStorage quota exceeded — export will fall back to markup schedule
+      } catch (err) {
+        console.error('[extract] sessionStorage quota exceeded — DOCX buffer not stored; export will fall back to markup schedule:', err);
+        try {
+          sessionStorage.setItem('pactora.docxBufferUnavailable', 'true');
+        } catch {
+          // Storage completely full — flag also unwritable; download-redline-button will handle missing buffer gracefully
+        }
       }
     }
 

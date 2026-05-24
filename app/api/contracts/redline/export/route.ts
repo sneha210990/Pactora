@@ -50,6 +50,12 @@ export async function POST(request: Request) {
   try {
     setDefaultAuthor('Pactora');
     const buffer = Buffer.from(docxBuffer, 'base64');
+    if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b || buffer[2] !== 0x03 || buffer[3] !== 0x04) {
+      return NextResponse.json(
+        { error: 'Invalid or corrupted document buffer. Please re-upload the original contract.' },
+        { status: 400 },
+      );
+    }
     const zip = await JSZip.loadAsync(buffer);
     const xmlFile = zip.file('word/document.xml');
     if (!xmlFile) throw new Error('word/document.xml not found in DOCX');
