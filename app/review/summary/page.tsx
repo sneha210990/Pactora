@@ -756,8 +756,6 @@ function SummaryContent() {
 
         {user === null && clauseFlags.length > 0 && <EmailCaptureBanner />}
 
-        <FeedbackToggle user={user} />
-
         <div className="mt-8">
           <ExportPdfButton
             contractName={analysis.documentMeta?.fileName ?? ''}
@@ -776,6 +774,8 @@ function SummaryContent() {
             Back to home
           </Link>
         </div>
+
+        <FeedbackToggle user={user} />
       </div>
     </main>
   );
