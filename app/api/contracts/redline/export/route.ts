@@ -61,8 +61,17 @@ export async function POST(request: Request) {
     if (!xmlFile) throw new Error('word/document.xml not found in DOCX');
     let xml = await xmlFile.async('string');
 
-    for (const [, redline] of Object.entries(acceptedRedlines)) {
+    const seenClauseTexts = new Set<string>();
+    for (const [clauseType, redline] of Object.entries(acceptedRedlines)) {
       if (!redline.clauseText || !redline.proposedText) continue;
+      if (seenClauseTexts.has(redline.clauseText)) {
+        console.warn(
+          `[redline/export] Overlapping redlines detected for clause type: ${clauseType}. ` +
+          `Skipping duplicate to prevent double-wrapped revision markup.`,
+        );
+        continue;
+      }
+      seenClauseTexts.add(redline.clauseText);
       const result = await applyRedlineToOxml(xml, redline.clauseText, redline.proposedText, {
         generateRedlines: true,
       });
@@ -71,6 +80,27 @@ export async function POST(request: Request) {
       } else if (typeof result === 'string') {
         xml = result;
       }
+    }
+
+    // Validate output XML before writing — @xmldom/xmldom embeds parse errors as
+    // <parsererror> elements rather than throwing, so we check both paths.
+    let parsedXml: Document;
+    try {
+      parsedXml = new DOMParser().parseFromString(xml, 'text/xml');
+    } catch (parseErr) {
+      console.error('[redline/export] XML validation failed after redline application:', parseErr);
+      return NextResponse.json(
+        { error: 'Failed to generate valid DOCX. Please try again or contact support.' },
+        { status: 500 },
+      );
+    }
+    const parseErrors = parsedXml.getElementsByTagName('parsererror');
+    if (parseErrors.length > 0) {
+      console.error('[redline/export] XML validation failed after redline application:', parseErrors[0]?.textContent);
+      return NextResponse.json(
+        { error: 'Failed to generate valid DOCX. Please try again or contact support.' },
+        { status: 500 },
+      );
     }
 
     zip.file('word/document.xml', xml);
