@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pactora — DOCX Redline Audit Report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f7f8fa;
+      color: #1a1d23;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      color: #fff;
+      padding: 48px 40px 36px;
+    }
+    header .label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    header .meta {
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    header .meta span::before { content: "· "; }
+    header .meta span:first-child::before { content: ""; }
+
+    /* ── Layout ── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    section { margin-bottom: 48px; }
+
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Files table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    thead th {
+      text-align: left;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody td {
+      padding: 9px 12px;
+      border-top: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 12.5px;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #0f4c81;
+    }
+    .lines {
+      color: #94a3b8;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    /* ── Library box ── */
+    .lib-box {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-size: 14px;
+    }
+    .lib-box .primary { font-weight: 600; margin-bottom: 6px; }
+    .lib-box .secondary { color: #64748b; font-size: 13px; }
+    .lib-box code { background: #eff6ff; color: #1d4ed8; }
+
+    /* ── Flow steps ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .flow-step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .flow-step .connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 28px;
+    }
+    .flow-step .dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #1e3a5f;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .flow-step .line {
+      width: 2px;
+      flex: 1;
+      background: #cbd5e1;
+      min-height: 20px;
+      margin-top: 2px;
+    }
+    .flow-step:last-child .line { display: none; }
+    .flow-step .body {
+      padding: 4px 0 24px;
+      flex: 1;
+    }
+    .flow-step .body strong { display: block; margin-bottom: 2px; font-size: 14px; }
+    .flow-step .body p { font-size: 13.5px; color: #475569; }
+    .flow-step .body code { font-size: 12px; }
+
+    /* ── Issues ── */
+    .issue-list { display: flex; flex-direction: column; gap: 12px; }
+    .issue {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #ef4444;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+    }
+    .issue.warn { border-left-color: #f59e0b; }
+    .issue.info { border-left-color: #3b82f6; }
+    .issue-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 100px;
+    }
+    .badge-crit { background: #fee2e2; color: #b91c1c; }
+    .badge-high { background: #fef3c7; color: #92400e; }
+    .badge-med  { background: #dbeafe; color: #1e40af; }
+    .issue-desc { font-size: 13.5px; color: #475569; }
+    .issue-loc  { margin-top: 6px; }
+
+    /* ── Next steps ── */
+    .steps { display: flex; flex-direction: column; gap: 10px; }
+    .step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+    .step .num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step.p1 .num { background: #fee2e2; color: #b91c1c; }
+    .step.p2 .num { background: #fef3c7; color: #92400e; }
+    .step.p3 .num { background: #dbeafe; color: #1e40af; }
+    .step .text strong { font-size: 14px; display: block; margin-bottom: 2px; }
+    .step .text p { font-size: 13px; color: #64748b; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+      padding: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 32px 20px 24px; }
+      main { padding: 24px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="label">Pactora · Internal Engineering Audit</div>
+  <h1>DOCX Redline Generation &amp; Download Pipeline</h1>
+  <div class="meta">
+    <span>Audit date: 24 May 2026</span>
+    <span>Branch: <code style="background:rgba(255,255,255,0.1);color:#e2e8f0">claude/docx-redline-audit-Y5X32</code></span>
+    <span>Scope: AI-09 / Issue #138</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Files Found ── -->
+  <section>
+    <h2>Files Found</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Role</th>
+          <th style="text-align:right">Lines</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>app/api/contracts/redline/route.ts</code></td>
+          <td>Clause suggestion via Haiku / Sonnet + thinking</td>
+          <td class="lines">85</td>
+        </tr>
+        <tr>
+          <td><code>app/api/contracts/redline/export/route.ts</code></td>
+          <td>DOCX tracked-changes export endpoint</td>
+          <td class="lines">86</td>
+        </tr>
+        <tr>
+          <td><code>app/api/contracts/extract/route.ts</code></td>
+          <td>Extracts text; stores base64 <code>docxBuffer</code></td>
+          <td class="lines">194</td>
+        </tr>
+        <tr>
+          <td><code>components/download-redline-button.tsx</code></td>
+          <td>Client-side download orchestration &amp; PDF fallback</td>
+          <td class="lines">130</td>
+        </tr>
+        <tr>
+          <td><code>app/review/components/redline-suggestion.tsx</code></td>
+          <td>UI: renders suggestion + clause diff</td>
+          <td class="lines">147</td>
+        </tr>
+        <tr>
+          <td><code>app/review/summary/page.tsx</code></td>
+          <td>Summary page; accept/reject redline actions</td>
+          <td class="lines">500+</td>
+        </tr>
+        <tr>
+          <td><code>lib/document-analysis-store.tsx</code></td>
+          <td>React context/reducer; holds <code>acceptedRedlines</code></td>
+          <td class="lines">600+</td>
+        </tr>
+        <tr>
+          <td><code>components/markup-schedule-pdf.tsx</code></td>
+          <td>PDF fallback via <code>@react-pdf/renderer</code></td>
+          <td class="lines">68</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Library in Use ── -->
+  <section>
+    <h2>Library in Use</h2>
+    <div class="lib-box">
+      <div class="primary"><code>@ansonlai/docx-redline-js@^0.1.4</code></div>
+      <div class="secondary">
+        Patches <code>word/document.xml</code> inside the DOCX ZIP with Word revision markup
+        (<code>w:ins</code> / <code>w:del</code> nodes).
+        <br><br>
+        Supporting dependencies: <code>jszip</code> (ZIP read/write) ·
+        <code>@xmldom/xmldom</code> (DOM impl for Node) ·
+        <code>@react-pdf/renderer</code> (PDF fallback)
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Download Flow ── -->
+  <section>
+    <h2>Download Flow</h2>
+    <div class="flow">
+
+      <div class="flow-step">
+        <div class="connector"><div class="dot">1</div><div class="line"></div></div>
+        <div class="body">
+          <strong>Extract &amp; buffer</strong>
+          <p><code>POST /api/contracts/extract</code> — parses PDF/DOCX. For DOCX files, the raw buffer is base64-encoded and returned as <code>docxBuffer</code>. Client stores it in <code>sessionStorage('pactora.docxBuffer')</code>.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="connector"><div class="dot">2</div><div class="line"></div></div>
+        <div class="body">
+          <strong>Suggest redline</strong>
+          <p><code>POST /api/contracts/redline</code> — sends <code>clauseText</code> + <code>clauseType</code>. Haiku (or Sonnet + extended thinking for IP/Indemnities) returns alternative clause language split on <code>\nWhy this works:</code>.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="connector"><div class="dot">3</div><div class="line"></div></div>
+        <div class="body">
+          <strong>Accept &amp; store</strong>
+          <p><code>actions.acceptRedline(clauseType, clauseText, proposedText, explanation)</code> — saves a tuple in the React store. State is synced to <code>localStorage</code>.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="connector"><div class="dot">4A</div><div class="line"></div></div>
+        <div class="body">
+          <strong>Download — DOCX path</strong>
+          <p>If <code>sourceFileType === 'docx'</code> and <code>pactora.docxBuffer</code> is present: <code>POST /api/contracts/redline/export</code> with accepted redlines + base64 buffer. Server decodes → <code>jszip.loadAsync()</code> → extracts <code>word/document.xml</code> → loops through redlines calling <code>applyRedlineToOxml(xml, original, proposed)</code> → reconstructs ZIP → returns blob with correct <code>Content-Type</code> / <code>Content-Disposition</code>.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="connector"><div class="dot">4B</div><div class="line"></div></div>
+        <div class="body">
+          <strong>Download — PDF fallback</strong>
+          <p>If the DOCX export throws <em>or</em> no buffer is available, <code>download-redline-button.tsx</code> silently catches the error and falls back to <code>markup-schedule-pdf.tsx</code>, producing a side-by-side PDF comparison via <code>@react-pdf/renderer</code>.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Current Issues ── -->
+  <section>
+    <h2>Current Issues</h2>
+    <div class="issue-list">
+
+      <div class="issue">
+        <div class="issue-title">
+          <span class="badge badge-crit">Critical</span>
+          No DOCX buffer validation before jszip
+        </div>
+        <div class="issue-desc">
+          <code>Buffer.from(docxBuffer, 'base64')</code> is decoded without checking the ZIP magic bytes
+          (<code>50 4B 03 04</code>). Corrupted or truncated <code>sessionStorage</code> data will surface as a
+          cryptic jszip parse error rather than a clear user-facing message.
+        </div>
+        <div class="issue-loc"><code>app/api/contracts/redline/export/route.ts:52</code></div>
+      </div>
+
+      <div class="issue">
+        <div class="issue-title">
+          <span class="badge badge-crit">Critical</span>
+          Silent fallback — user unaware DOCX export failed
+        </div>
+        <div class="issue-desc">
+          When the DOCX export throws, the error is caught and the code silently falls back to PDF.
+          No toast, banner, or console warning is surfaced. The user receives a degraded output
+          without knowing it.
+        </div>
+        <div class="issue-loc"><code>components/download-redline-button.tsx:82–85</code></div>
+      </div>
+
+      <div class="issue warn">
+        <div class="issue-title">
+          <span class="badge badge-high">High</span>
+          sessionStorage quota failure swallowed silently
+        </div>
+        <div class="issue-desc">
+          If the DOCX buffer exceeds the browser's <code>sessionStorage</code> quota (typically 5–10 MB),
+          the write fails silently. Downstream, the download button can't find the buffer and falls back
+          to PDF — again with no user indication that DOCX tracked-changes will be unavailable.
+        </div>
+        <div class="issue-loc"><code>app/api/contracts/extract/route.ts:218–221</code></div>
+      </div>
+
+      <div class="issue warn">
+        <div class="issue-title">
+          <span class="badge badge-high">High</span>
+          No post-generation XML validation
+        </div>
+        <div class="issue-desc">
+          The output of <code>applyRedlineToOxml()</code> is not checked for well-formed XML before the
+          ZIP is reconstructed. A malformed <code>word/document.xml</code> will corrupt the DOCX silently;
+          Word will either refuse to open it or display a repair prompt.
+        </div>
+        <div class="issue-loc"><code>app/api/contracts/redline/export/route.ts:60–67</code></div>
+      </div>
+
+      <div class="issue warn">
+        <div class="issue-title">
+          <span class="badge badge-high">High</span>
+          No deduplication for overlapping redlines
+        </div>
+        <div class="issue-desc">
+          The loop processes accepted redlines sequentially with no overlap detection. If two redlines
+          target the same clause text, the second call to <code>applyRedlineToOxml()</code> operates on
+          already-modified XML, which may produce double-wrapped revision markup or mismatched
+          <code>w:ins</code>/<code>w:del</code> nodes.
+        </div>
+        <div class="issue-loc"><code>app/api/contracts/redline/export/route.ts:58–68</code></div>
+      </div>
+
+      <div class="issue info">
+        <div class="issue-title">
+          <span class="badge badge-med">Medium</span>
+          Missing <code>Content-Length</code> header
+        </div>
+        <div class="issue-desc">
+          The export response does not set <code>Content-Length</code>. Most browsers infer this from the
+          body, but some proxies and CDN edge nodes may mishandle streaming or show an indeterminate
+          progress indicator.
+        </div>
+        <div class="issue-loc"><code>app/api/contracts/redline/export/route.ts:74–80</code></div>
+      </div>
+
+      <div class="issue info">
+        <div class="issue-title">
+          <span class="badge badge-med">Medium</span>
+          Unsafe <code>as unknown as BodyInit</code> type cast
+        </div>
+        <div class="issue-desc">
+          The jszip <code>nodebuffer</code> output is cast via a double assertion rather than typed
+          explicitly as <code>Buffer</code> or <code>Uint8Array</code>. This masks type errors and makes the
+          intent opaque to future maintainers.
+        </div>
+        <div class="issue-loc"><code>app/api/contracts/redline/export/route.ts:74</code></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Next Steps ── -->
+  <section>
+    <h2>Next Steps</h2>
+    <div class="steps">
+
+      <div class="step p1">
+        <div class="num">1</div>
+        <div class="text">
+          <strong>Validate DOCX magic bytes before jszip</strong>
+          <p>Check first 4 bytes of decoded buffer equal <code>50 4B 03 04</code>; return 400 with a clear message if not. Prevents cryptic crashes from bad sessionStorage data.</p>
+        </div>
+      </div>
+
+      <div class="step p1">
+        <div class="num">2</div>
+        <div class="text">
+          <strong>Surface fallback to the user</strong>
+          <p>Add a toast/banner in <code>download-redline-button.tsx:82–85</code> when DOCX export fails and PDF is used instead. User should always know what they're downloading.</p>
+        </div>
+      </div>
+
+      <div class="step p1">
+        <div class="num">3</div>
+        <div class="text">
+          <strong>Handle sessionStorage quota gracefully</strong>
+          <p>Wrap the <code>sessionStorage.setItem</code> call in a try/catch; on failure, warn the user that DOCX redline download will be unavailable, or fall back to IndexedDB.</p>
+        </div>
+      </div>
+
+      <div class="step p2">
+        <div class="num">4</div>
+        <div class="text">
+          <strong>Validate reconstructed XML post-generation</strong>
+          <p>Parse <code>word/document.xml</code> with <code>@xmldom/xmldom</code> after <code>applyRedlineToOxml()</code> and check for parse errors before writing back to the ZIP.</p>
+        </div>
+      </div>
+
+      <div class="step p2">
+        <div class="num">5</div>
+        <div class="text">
+          <strong>Add overlap detection to the redline loop</strong>
+          <p>Before the sequential loop, check for duplicate <code>clauseText</code> entries. Warn or merge when two accepted redlines target the same text range to prevent double-revision markup.</p>
+        </div>
+      </div>
+
+      <div class="step p3">
+        <div class="num">6</div>
+        <div class="text">
+          <strong>Add <code>Content-Length</code> to export response</strong>
+          <p>Set <code>Content-Length: ${outputBuffer.length}</code> in the export route headers for proxy and CDN compatibility.</p>
+        </div>
+      </div>
+
+      <div class="step p3">
+        <div class="num">7</div>
+        <div class="text">
+          <strong>Remove double type assertion</strong>
+          <p>Replace <code>as unknown as BodyInit</code> with an explicit <code>Uint8Array</code> cast in <code>export/route.ts:74</code> to restore type safety.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Pactora · DOCX Redline Audit · Generated 24 May 2026 · AI-09 / Issue #138
+</footer>
+
+</body>
+</html>
