@@ -24,12 +24,21 @@ function parseSupabaseError(err: SupabaseAuthError | null, fallback: string) {
 export async function POST(request: Request) {
   try {
     return await handleLogin(request);
-  } catch {
+  } catch (err) {
+    console.error('[auth/login] unhandled error:', err);
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
 
 async function handleLogin(request: Request) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.error('[auth/login] Supabase env vars are not configured');
+    return NextResponse.json(
+      { error: 'Authentication service is not configured — please contact support.' },
+      { status: 503 },
+    );
+  }
+
   const body = await request.json().catch(() => null);
 
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
@@ -45,7 +54,15 @@ async function handleLogin(request: Request) {
   }
 
   if (mode === 'signup') {
-    const signupResponse = await signUpWithEmail(email, password);
+    let signupResponse: Response;
+    try {
+      signupResponse = await signUpWithEmail(email, password);
+    } catch {
+      return NextResponse.json(
+        { error: 'Unable to reach authentication service. Please try again.' },
+        { status: 503 },
+      );
+    }
     if (!signupResponse.ok) {
       const err = (await signupResponse.json().catch(() => null)) as SupabaseAuthError | null;
       return NextResponse.json(
@@ -55,7 +72,15 @@ async function handleLogin(request: Request) {
     }
   }
 
-  const signInResponse = await signInWithEmail(email, password);
+  let signInResponse: Response;
+  try {
+    signInResponse = await signInWithEmail(email, password);
+  } catch {
+    return NextResponse.json(
+      { error: 'Unable to reach authentication service. Please try again.' },
+      { status: 503 },
+    );
+  }
 
   if (!signInResponse.ok) {
     const err = (await signInResponse.json().catch(() => null)) as SupabaseAuthError | null;
