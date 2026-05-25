@@ -69,7 +69,7 @@ export async function runClauseAgent(
   chunk?: ContractChunk,
   contractType?: ContractType,
 ): Promise<ClauseAgentResult> {
-  const client = getAnthropicClient();
+  const client = getAnthropicClient(process.env.HEYJUDE_BASE_URL);
 
   // When a chunk is provided (large-contract path), analyse only that slice.
   // Fall back to 120 k truncation for backward-compatible direct calls.
