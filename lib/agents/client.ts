@@ -3,7 +3,10 @@ import Anthropic from '@anthropic-ai/sdk';
 // Singleton — avoids creating a new TCP connection for every parallel clause agent.
 let _client: Anthropic | null = null;
 
-export function getAnthropicClient(): Anthropic {
+export function getAnthropicClient(baseURL?: string): Anthropic {
+  if (baseURL) {
+    return new Anthropic({ baseURL, apiKey: process.env.HEYJUDE_API_KEY ?? 'sk-heyjude-dev' });
+  }
   if (!_client) {
     _client = new Anthropic();
   }
