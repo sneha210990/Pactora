@@ -1,26 +1,8 @@
 import { getOperatorSummary, getApiUsageSummary } from '@/lib/beta-store';
 
-export default async function OperatorBetaPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ key?: string }>;
-}) {
-  const { key } = await searchParams;
-  const operatorKey = process.env.PACTORA_OPERATOR_KEY;
-
-  if (!operatorKey || key !== operatorKey) {
-    return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-3xl rounded-xl border border-zinc-800 bg-zinc-950 p-6">
-          <h1 className="text-2xl font-semibold">Operator view locked</h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Set <code>PACTORA_OPERATOR_KEY</code> and open this page with <code>?key=...</code>.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
+// Authorisation is enforced in middleware.ts via the pactora_operator cookie.
+// This component assumes a valid operator session has already been verified.
+export default async function OperatorBetaPage() {
   const [summary, apiUsage] = await Promise.all([getOperatorSummary(), getApiUsageSummary()]);
 
   return (

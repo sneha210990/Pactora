@@ -1,13 +1,17 @@
+import { getCanonicalAppUrl } from './app-url';
+import { signPayload, verifyAndExtract } from './session-crypto';
+
 export const SESSION_COOKIE_NAME = 'pactora_session';
 
+// The session cookie carries Supabase tokens only — never an identity.
+// Callers MUST derive the authenticated user from `getUserFromAccessToken`
+// against Supabase. The previous embedded `user` field was removed to make
+// impersonation via cookie-tampering impossible even if a future code path
+// forgets to re-validate.
 export type SessionPayload = {
   access_token: string;
   refresh_token: string;
   expires_at: number;
-  user: {
-    id: string;
-    email: string;
-  };
 };
 
 type AuthTokenResponse = {
@@ -32,60 +36,56 @@ export function getSupabaseUrl() {
   return requiredEnv('NEXT_PUBLIC_SUPABASE_URL');
 }
 
-export function getAppUrl() {
-  const value = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL;
-  if (!value) {
-    return null;
-  }
-
-  return value.endsWith('/') ? value.slice(0, -1) : value;
+// Returns the configured app URL when one is explicitly set via env, or null
+// otherwise. Code that has access to a request should prefer
+// `getCanonicalAppUrl(request)` from lib/app-url for a non-null result.
+export function getAppUrl(): string | null {
+  const { origin, source } = getCanonicalAppUrl();
+  return source === 'env' || source === 'vercel_prod' ? origin : null;
 }
 
 function getAnonKey() {
   return requiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
-function encode(data: string) {
-  return encodeURIComponent(data);
-}
-
-function decode(data: string) {
-  return decodeURIComponent(data);
-}
-
-export function buildSessionPayload(
-  auth: AuthTokenResponse,
-  fallbackUser?: { id: string; email: string },
-): SessionPayload {
-  const userId = auth.user?.id ?? fallbackUser?.id;
-  const userEmail = auth.user?.email ?? fallbackUser?.email;
-
-  if (!userId || !userEmail) {
-    throw new Error('Missing authenticated user identity when creating session.');
-  }
-
+export function buildSessionPayload(auth: AuthTokenResponse): SessionPayload {
   return {
     access_token: auth.access_token,
     refresh_token: auth.refresh_token,
     expires_at: Date.now() + auth.expires_in * 1000,
-    user: {
-      id: userId,
-      email: userEmail,
-    },
   };
 }
 
-export function serializeSession(payload: SessionPayload) {
-  return encode(JSON.stringify(payload));
+// On-the-wire payload uses short keys to keep the cookie compact.
+type WirePayload = { a: string; r: string; e: number };
+
+export async function serializeSession(payload: SessionPayload): Promise<string> {
+  const wire: WirePayload = {
+    a: payload.access_token,
+    r: payload.refresh_token,
+    e: payload.expires_at,
+  };
+  return signPayload(JSON.stringify(wire));
 }
 
-export function parseSession(value: string | undefined): SessionPayload | null {
-  if (!value) {
-    return null;
-  }
+export async function parseSession(value: string | undefined): Promise<SessionPayload | null> {
+  const json = await verifyAndExtract(value);
+  if (!json) return null;
 
   try {
-    return JSON.parse(decode(value)) as SessionPayload;
+    const parsed = JSON.parse(json) as Partial<WirePayload>;
+    if (
+      typeof parsed.a !== 'string' || !parsed.a ||
+      typeof parsed.r !== 'string' || !parsed.r ||
+      typeof parsed.e !== 'number' || !Number.isFinite(parsed.e)
+    ) {
+      return null;
+    }
+    return {
+      access_token: parsed.a,
+      refresh_token: parsed.r,
+      expires_at: parsed.e,
+    };
   } catch {
     return null;
   }
@@ -145,7 +145,12 @@ export function authCookieOptions(maxAgeSeconds = 60 * 60 * 24 * 30) {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    // Always Secure — modern browsers (Chrome 89+, Firefox 75+, Safari) treat
+    // localhost as a secure context, so this does not break local HTTP dev.
+    // The previous NODE_ENV gate left Vercel preview deployments (which run
+    // over HTTPS with NODE_ENV !== 'production') vulnerable to cookie
+    // exfiltration over downgraded connections.
+    secure: true,
     path: '/',
     maxAge: maxAgeSeconds,
   };
