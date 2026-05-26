@@ -1,12 +1,20 @@
 import { cookies } from 'next/headers';
-import { authCookieOptions, getUserFromAccessToken, parseSession, refreshSession, SESSION_COOKIE_NAME, serializeSession } from './supabase-auth';
+import {
+  authCookieOptions,
+  buildSessionPayload,
+  getUserFromAccessToken,
+  parseSession,
+  refreshSession,
+  SESSION_COOKIE_NAME,
+  serializeSession,
+} from './supabase-auth';
 import { createOrUpdateUserByIdentity } from './beta-store';
 
 export { SESSION_COOKIE_NAME } from './supabase-auth';
 
 export async function getCurrentSessionUser() {
   const cookieStore = await cookies();
-  let session = parseSession(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  let session = await parseSession(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 
   if (!session) {
     return null;
@@ -24,17 +32,10 @@ export async function getCurrentSessionUser() {
       access_token: string;
       refresh_token: string;
       expires_in: number;
-      user: { id: string; email: string };
     };
 
-    session = {
-      access_token: refreshed.access_token,
-      refresh_token: refreshed.refresh_token,
-      expires_at: Date.now() + refreshed.expires_in * 1000,
-      user: refreshed.user,
-    };
-
-    cookieStore.set(SESSION_COOKIE_NAME, serializeSession(session), authCookieOptions());
+    session = buildSessionPayload(refreshed);
+    cookieStore.set(SESSION_COOKIE_NAME, await serializeSession(session), authCookieOptions());
     userResponse = await getUserFromAccessToken(session.access_token);
   }
 

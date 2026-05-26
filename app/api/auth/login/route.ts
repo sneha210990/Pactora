@@ -100,7 +100,7 @@ async function handleLogin(request: Request) {
   const cookieStore = await cookies();
   cookieStore.set(
     SESSION_COOKIE_NAME,
-    serializeSession(buildSessionPayload(data)),
+    await serializeSession(buildSessionPayload(data)),
     authCookieOptions(),
   );
 

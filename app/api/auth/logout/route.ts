@@ -2,12 +2,16 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createEvent } from '@/lib/beta-store';
 import { getCurrentSessionUser } from '@/lib/auth';
-import { SESSION_COOKIE_NAME } from '@/lib/supabase-auth';
+import { authCookieOptions, SESSION_COOKIE_NAME } from '@/lib/supabase-auth';
 
-export async function POST() {
+export async function POST(request: Request) {
   const sessionData = await getCurrentSessionUser();
   const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+  // Clear with full flags (Secure/HttpOnly/SameSite) so the replacement
+  // Set-Cookie carries the same attributes as the original — `cookies().delete`
+  // emits a flag-less header which can stick around in clients that warn on
+  // attribute mismatch.
+  cookieStore.set(SESSION_COOKIE_NAME, '', authCookieOptions(0));
 
   await createEvent({
     event_type: 'logout',
@@ -16,5 +20,7 @@ export async function POST() {
     page_context: '/logout',
   });
 
-  return NextResponse.redirect(new URL('/', process.env.APP_URL ?? 'http://localhost:3000'), { status: 303 });
+  // Always redirect to the same origin the request arrived on — never trust
+  // process.env.APP_URL to be set, and never default to http://localhost.
+  return NextResponse.redirect(new URL('/', request.url), { status: 303 });
 }

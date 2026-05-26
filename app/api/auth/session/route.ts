@@ -113,7 +113,7 @@ export async function POST(request: Request) {
   const cookieStore = await cookies();
   cookieStore.set(
     SESSION_COOKIE_NAME,
-    serializeSession(buildSessionPayload(sessionTokens, { id: authUser.id, email: authUser.email })),
+    await serializeSession(buildSessionPayload(sessionTokens)),
     authCookieOptions(),
   );
 
