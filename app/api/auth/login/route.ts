@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createEvent, createOrUpdateUserByIdentity } from '@/lib/beta-store';
+import { isAlreadyExistsError, type SupabaseAuthError } from '@/lib/auth-errors';
 import {
   authCookieOptions,
   buildSessionPayload,
@@ -9,17 +10,6 @@ import {
   signInWithEmail,
   signUpWithEmail,
 } from '@/lib/supabase-auth';
-
-type SupabaseAuthError = {
-  msg?: string;
-  message?: string;
-  error_description?: string;
-  error?: string;
-};
-
-function parseSupabaseError(err: SupabaseAuthError | null, fallback: string) {
-  return err?.error_description ?? err?.message ?? err?.msg ?? err?.error ?? fallback;
-}
 
 export async function POST(request: Request) {
   try {
@@ -65,8 +55,17 @@ async function handleLogin(request: Request) {
     }
     if (!signupResponse.ok) {
       const err = (await signupResponse.json().catch(() => null)) as SupabaseAuthError | null;
+      console.warn('[auth/login] signup failed:', err);
+      // Surface a single generic message regardless of cause. The `alreadyExists`
+      // hint preserves the UX that auto-switches the form to login mode — it
+      // still leaks existence (signup as a flow fundamentally does), but the
+      // user-visible text no longer differentiates between "exists",
+      // "rate-limited", "weak password", etc.
       return NextResponse.json(
-        { error: parseSupabaseError(err, 'Unable to sign up right now.') },
+        {
+          error: 'Unable to create account. If you already have one, sign in instead.',
+          alreadyExists: isAlreadyExistsError(err) || undefined,
+        },
         { status: 400 },
       );
     }
@@ -84,8 +83,12 @@ async function handleLogin(request: Request) {
 
   if (!signInResponse.ok) {
     const err = (await signInResponse.json().catch(() => null)) as SupabaseAuthError | null;
+    console.warn('[auth/login] signin failed:', err);
+    // Single generic message for every failure mode (no such user, wrong
+    // password, unconfirmed email, rate-limited, etc.) so the response can't
+    // be used as an enumeration oracle.
     return NextResponse.json(
-      { error: parseSupabaseError(err, 'Unable to log in right now.') },
+      { error: 'Email or password is incorrect. If you just signed up, check your inbox for a verification link.' },
       { status: 400 },
     );
   }
@@ -122,4 +125,3 @@ async function handleLogin(request: Request) {
     return NextResponse.json({ ok: true, user: { email: data.user.email } });
   }
 }
-

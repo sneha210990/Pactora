@@ -49,17 +49,15 @@ export default function LoginPage() {
         try {
           return JSON.parse(fallback) as {
             error?: string;
-            message?: string;
-            error_description?: string;
+            alreadyExists?: boolean;
           };
         } catch {
           return null;
         }
       })();
 
-      const msg = data?.error ?? data?.message ?? data?.error_description ?? (fallback || 'Something went wrong. Please try again.');
-      const alreadyExists = /already registered|already exists|user_already_exists/i.test(msg);
-      if (alreadyExists) {
+      const msg = data?.error ?? (fallback || 'Something went wrong. Please try again.');
+      if (data?.alreadyExists) {
         setMode('login');
         setStatus('You already have an account — please log in below.');
       } else {

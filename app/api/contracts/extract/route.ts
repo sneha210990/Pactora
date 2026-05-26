@@ -187,7 +187,7 @@ export async function POST(request: Request) {
 
     return await extractFromUploadedFile(request);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to extract contract values.';
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error('[extract] error:', error);
+    return NextResponse.json({ error: 'Unable to extract contract values.' }, { status: 400 });
   }
 }

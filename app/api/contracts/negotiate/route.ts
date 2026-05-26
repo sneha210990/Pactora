@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ email: textBlock.text.trim() });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[negotiate] error:', err);
+    return NextResponse.json({ error: 'Unable to generate negotiation response.' }, { status: 500 });
   }
 }

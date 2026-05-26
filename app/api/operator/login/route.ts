@@ -8,10 +8,16 @@ import {
   verifyOperatorKey,
 } from '@/lib/operator-auth';
 
+// Both "operator surface not configured" and "wrong key" return an identical
+// 404 with no body. Differentiating between the two would let an unauth probe
+// learn whether the operator surface is active on this deployment, which
+// narrows attacker focus for online guessing. Real failure reasons are
+// logged server-side only.
+const NOT_FOUND_RESPONSE = () => new NextResponse(null, { status: 404 });
+
 export async function POST(request: Request) {
   if (!isOperatorConfigured()) {
-    // Fail closed without advertising that the operator surface exists.
-    return new NextResponse(null, { status: 404 });
+    return NOT_FOUND_RESPONSE();
   }
 
   const body = (await request.json().catch(() => null)) as { key?: unknown } | null;
@@ -19,7 +25,8 @@ export async function POST(request: Request) {
 
   const ok = await verifyOperatorKey(provided);
   if (!ok) {
-    return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+    console.warn('[operator/login] rejected attempt');
+    return NOT_FOUND_RESPONSE();
   }
 
   const { value, maxAgeSeconds } = await createOperatorSessionCookie();

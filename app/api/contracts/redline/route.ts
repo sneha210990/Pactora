@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ alternative: textBlock.text.trim() });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[redline] error:', err);
+    return NextResponse.json({ error: 'Unable to generate redline suggestion.' }, { status: 500 });
   }
 }
