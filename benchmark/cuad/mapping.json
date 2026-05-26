@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "notes": "Maps Pactora's five internal clause types to CUAD v1 category columns. Update cuad_categories if your CSV uses different column names.",
+  "cuad_categories_required": [
+    "Cap On Liability",
+    "Uncapped Liability",
+    "Indemnification",
+    "IP Ownership Assignment",
+    "License Grant",
+    "Termination For Convenience",
+    "Change Of Control"
+  ],
+  "clause_mappings": {
+    "Liability Cap": {
+      "cuad_categories": ["Cap On Liability", "Uncapped Liability"],
+      "logic": "any",
+      "notes": "CUAD splits liability cap presence into two complementary columns. 'Cap On Liability' marks contracts where an explicit cap exists. 'Uncapped Liability' marks contracts where liability is stated as unlimited — Pactora flags this as High risk. Both represent a Liability Cap clause being present in the contract."
+    },
+    "Indemnities": {
+      "cuad_categories": ["Indemnification"],
+      "logic": "any",
+      "notes": "CUAD includes an explicit Indemnification category covering indemnify, defend, and hold-harmless language."
+    },
+    "IP Ownership": {
+      "cuad_categories": ["IP Ownership Assignment", "License Grant"],
+      "logic": "any",
+      "notes": "Includes both outright IP ownership assignments and broad irrevocable licence grants, which represent de facto IP control over a buyer's data or work product."
+    },
+    "Termination Rights": {
+      "cuad_categories": ["Termination For Convenience", "Change Of Control"],
+      "logic": "any",
+      "notes": "Covers termination for convenience and change-of-control triggers, both of which Pactora's Termination Rights agent is trained to detect."
+    },
+    "Data Protection": {
+      "cuad_categories": [],
+      "logic": "any",
+      "notes": "COVERAGE GAP: CUAD v1 does not include a Data Protection or GDPR compliance category. This is an intentional gap — CUAD was labelled for US commercial contract terms, not EU data-processing obligations. Precision and recall for Data Protection cannot be computed against CUAD. This gap is reported explicitly in the benchmark output."
+    }
+  },
+  "improvement_suggestions": [
+    "CUAD's 'Governing Law' column could supplement Termination Rights analysis by capturing jurisdiction-specific enforceability nuances.",
+    "CUAD's 'Audit Rights' and 'Insurance' columns have no Pactora equivalent — potential expansion targets.",
+    "CUAD's 'License Grant' is broad and may inflate IP Ownership recall. Consider splitting into a separate 'Licence Scope' clause type in a future Pactora version.",
+    "A GDPR/data-processing amendment to CUAD (or a separate privacy-law benchmark) would be needed to score Data Protection properly."
+  ]
+}

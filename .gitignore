@@ -51,3 +51,9 @@ data/beta-store.json
 # claude code — local settings and agent worktrees are machine-specific
 .claude/settings.local.json
 .claude/worktrees/
+
+# CUAD benchmark — dataset and LLM response cache are not committed
+benchmark/cuad/data/
+benchmark/cuad/.cache/
+benchmark/cuad/report.md
+benchmark/cuad/results.json

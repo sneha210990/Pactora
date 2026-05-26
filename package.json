@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "qa": "playwright test",
-    "qa:report": "playwright show-report"
+    "qa:report": "playwright show-report",
+    "benchmark:cuad": "tsx benchmark/cuad/run.ts"
   },
   "dependencies": {
     "@ansonlai/docx-redline-js": "^0.1.4",
@@ -35,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.19.1",
     "typescript": "^5",
     "vitest": "^4.1.6"
   }
