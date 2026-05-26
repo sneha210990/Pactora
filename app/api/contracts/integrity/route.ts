@@ -110,7 +110,7 @@ export async function POST(request: Request) {
     const report = runIntegrityEngine(inputs);
     return NextResponse.json({ report });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to run integrity checks.';
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error('[integrity] error:', error);
+    return NextResponse.json({ error: 'Unable to run integrity checks.' }, { status: 400 });
   }
 }

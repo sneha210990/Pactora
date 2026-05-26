@@ -115,8 +115,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('[redline/export] DOCX generation failed:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[redline/export] DOCX generation failed:', err);
+    return NextResponse.json({ error: 'Unable to generate redlined DOCX.' }, { status: 500 });
   }
 }

@@ -16,7 +16,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ analysis });
   } catch (error) {
     console.error('[analyze] error:', error);
-    const message = error instanceof Error ? error.message : 'Unable to analyse contract.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to analyse contract.' }, { status: 500 });
   }
 }
