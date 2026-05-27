@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getCurrentSessionUser } from '@/lib/auth';
 import { createEvent, createFeedback, FeedbackCategory } from '@/lib/beta-store';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const categories = new Set<FeedbackCategory>(['bug', 'confusing', 'missing_feature', 'general_feedback']);
 
 export async function POST(request: Request) {
+  const { allowed, retryAfter } = checkRateLimit(getClientIp(request), 10);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } },
+    );
+  }
+
   const sessionData = await getCurrentSessionUser();
   const body = await request.json().catch(() => null);
 

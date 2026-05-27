@@ -127,7 +127,12 @@ async function readStore(): Promise<BetaStore> {
 
 async function writeStore(store: BetaStore) {
   await ensureDataFile();
-  await fs.writeFile(dataFile, JSON.stringify(store, null, 2), 'utf8');
+  const serialized = JSON.stringify(store, null, 2);
+  if (serialized.length > 5 * 1024 * 1024) {
+    console.error('[beta-store] store size limit exceeded — write rejected');
+    return;
+  }
+  await fs.writeFile(dataFile, serialized, 'utf8');
 }
 
 function id(prefix: string) {
