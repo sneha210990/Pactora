@@ -60,7 +60,7 @@ export async function middleware(req: NextRequest) {
   // controlled input. Require a valid (signed, unexpired-by-cookie-TTL)
   // session cookie before any handler runs. Identity is still re-derived
   // server-side by route handlers via getCurrentSessionUser().
-  if (pathname.startsWith('/api/contracts/')) {
+  if (pathname.startsWith('/api/contracts/') || pathname.startsWith('/deals') || pathname.startsWith('/review')) {
     const cookieValue = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     let session = null;
     try {
@@ -69,7 +69,7 @@ export async function middleware(req: NextRequest) {
       session = null;
     }
     if (!session) {
-      return unauthenticated(req, 'api', '/login');
+      return unauthenticated(req, pathname.startsWith('/api/') ? 'api' : 'page', '/login');
     }
     return NextResponse.next();
   }
@@ -80,5 +80,5 @@ export async function middleware(req: NextRequest) {
 export const config = {
   // Matchers are evaluated as a union — anything outside these paths skips
   // middleware entirely and remains public.
-  matcher: ['/operator/:path*', '/api/:path*'],
+  matcher: ['/operator/:path*', '/api/:path*', '/deals/:path*', '/deals', '/review/:path*'],
 };

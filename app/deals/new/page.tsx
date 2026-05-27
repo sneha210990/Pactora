@@ -254,6 +254,11 @@ export default function NewDealPage() {
         body: formData,
       });
 
+      if (response.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
         throw new Error(payload?.error ?? 'Could not extract contract values.');
@@ -306,6 +311,11 @@ export default function NewDealPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, sourceName: 'Pasted contract clauses' }),
       });
+
+      if (response.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
