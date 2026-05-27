@@ -10,8 +10,15 @@ const REVIEW_STEPS = [
 ] as const;
 
 type StepKey = (typeof REVIEW_STEPS)[number]['key'];
+type RiskLevel = 'Low' | 'Medium' | 'High';
 
-export function ReviewProgress({ current }: { current: StepKey }) {
+export function ReviewProgress({
+  current,
+  sectionRisks,
+}: {
+  current: StepKey;
+  sectionRisks?: Partial<Record<string, RiskLevel>>;
+}) {
   const currentIndex = REVIEW_STEPS.findIndex((s) => s.key === current);
   return (
     <nav aria-label="Review progress" className="mt-6 overflow-x-auto">
@@ -19,6 +26,7 @@ export function ReviewProgress({ current }: { current: StepKey }) {
         {REVIEW_STEPS.map((step, index) => {
           const isActive = step.key === current;
           const isPast = index < currentIndex;
+          const stepRisk = isPast ? sectionRisks?.[step.key] : undefined;
           return (
             <li key={step.key}>
               <Link
@@ -46,6 +54,18 @@ export function ReviewProgress({ current }: { current: StepKey }) {
                   {isPast ? '✓' : index + 1}
                 </span>
                 {step.label}
+                {stepRisk && (
+                  <span
+                    aria-label={`${stepRisk} risk`}
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                      stepRisk === 'High'
+                        ? 'bg-red-400'
+                        : stepRisk === 'Medium'
+                        ? 'bg-amber-400'
+                        : 'bg-emerald-400'
+                    }`}
+                  />
+                )}
               </Link>
             </li>
           );

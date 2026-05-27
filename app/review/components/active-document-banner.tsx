@@ -7,7 +7,10 @@ import type { ExtractedField } from '@/lib/contract-extraction';
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+  const isToday = date.toDateString() === new Date().toDateString();
+  return isToday
+    ? `today at ${date.toLocaleString('en-GB', { timeStyle: 'short' })}`
+    : date.toLocaleString('en-GB', { dateStyle: 'medium' });
 }
 
 export function formatMoney(value: number) {
@@ -39,8 +42,6 @@ export function ActiveDocumentBanner() {
       {activeDocument ? (
         <>
           <span>{activeDocument.fileName}</span>
-          <span className="mx-2 text-zinc-600">•</span>
-          <span>ID: {activeDocument.id.slice(0, 8)}</span>
           {activeDocument.uploadedAt && (
             <>
               <span className="mx-2 text-zinc-600">•</span>
