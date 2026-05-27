@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createOrUpdateUser, createEvent } from '@/lib/beta-store';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
+  const { allowed, retryAfter } = checkRateLimit(getClientIp(request), 10);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();

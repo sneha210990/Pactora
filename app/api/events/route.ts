@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentSessionUser } from '@/lib/auth';
 import { BetaEventType, createEvent } from '@/lib/beta-store';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const allowedEventTypes = new Set<BetaEventType>([
   'contract_upload_started',
@@ -12,6 +13,14 @@ const allowedEventTypes = new Set<BetaEventType>([
 ]);
 
 export async function POST(request: Request) {
+  const { allowed, retryAfter } = checkRateLimit(getClientIp(request), 30);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } },
+    );
+  }
+
   const sessionData = await getCurrentSessionUser();
 
   const body = await request.json().catch(() => null);
