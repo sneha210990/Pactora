@@ -23,6 +23,8 @@ configureXmlProvider({ DOMParser, XMLSerializer });
 
 type AcceptedRedline = { clauseText: string; proposedText: string; explanation: string };
 
+const MAX_DOCX_BYTES = 20 * 1024 * 1024; // 20 MB decoded
+
 type RequestBody = {
   acceptedRedlines: Record<string, AcceptedRedline>;
   docxBuffer?: string;
@@ -47,9 +49,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No DOCX buffer provided.' }, { status: 400 });
   }
 
+  // Reject oversized base64 payloads before decoding (base64 overhead is ~4/3).
+  if (docxBuffer.length > MAX_DOCX_BYTES * 1.4) {
+    return NextResponse.json({ error: 'Document exceeds the 20 MB size limit.' }, { status: 413 });
+  }
+
   try {
     setDefaultAuthor('Pactora');
     const buffer = Buffer.from(docxBuffer, 'base64');
+
+    // Reject after decoding to catch any padding tricks.
+    if (buffer.length > MAX_DOCX_BYTES) {
+      return NextResponse.json({ error: 'Document exceeds the 20 MB size limit.' }, { status: 413 });
+    }
+
     if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b || buffer[2] !== 0x03 || buffer[3] !== 0x04) {
       return NextResponse.json(
         { error: 'Invalid or corrupted document buffer. Please re-upload the original contract.' },
@@ -60,6 +73,16 @@ export async function POST(request: Request) {
     const xmlFile = zip.file('word/document.xml');
     if (!xmlFile) throw new Error('word/document.xml not found in DOCX');
     let xml = await xmlFile.async('string');
+
+    // Reject DOCTYPE declarations — @xmldom/xmldom expands entities by default,
+    // so a billion-laughs payload in a DTD would OOM the function. Real DOCX
+    // files never contain a DOCTYPE in word/document.xml.
+    if (/<!DOCTYPE/i.test(xml)) {
+      return NextResponse.json(
+        { error: 'Invalid or corrupted document buffer. Please re-upload the original contract.' },
+        { status: 400 },
+      );
+    }
 
     const seenClauseTexts = new Set<string>();
     for (const [clauseType, redline] of Object.entries(acceptedRedlines)) {
