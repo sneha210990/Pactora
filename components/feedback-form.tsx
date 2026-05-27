@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { apiFetch } from '@/lib/api-fetch';
 
 const categories = [
   { value: 'bug', label: 'Bug' },
@@ -34,7 +35,7 @@ export function FeedbackForm({ user, compact = false }: { user?: User | null; co
 
     const ratingNumber = rating ? Number(rating) : undefined;
 
-    const response = await fetch('/api/feedback', {
+    const response = await apiFetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

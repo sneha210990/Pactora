@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '@/lib/api-fetch';
 import { EmailCaptureBanner } from '@/components/email-capture-banner';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
@@ -179,7 +180,7 @@ function ClauseFlagCard({
     setAltLoading(true);
     setAltError('');
     try {
-      const res = await fetch('/api/contracts/redline', {
+      const res = await apiFetch('/api/contracts/redline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -515,7 +516,7 @@ function SummaryContent() {
     setEmailCopied(false);
 
     try {
-      const response = await fetch('/api/contracts/negotiate', {
+      const response = await apiFetch('/api/contracts/negotiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ flags: effectiveFlags, commercialContext: analysis.commercialContext }),
