@@ -134,21 +134,21 @@ type Verdict = {
 function shouldSignVerdict(score: number, highCount: number): Verdict {
   if (highCount >= 2 || score >= 60) {
     return {
-      text: 'Review required',
-      detail: `${highCount} high-risk issue${highCount !== 1 ? 's' : ''} must be resolved before signature.`,
+      text: 'Not ready to sign',
+      detail: `${highCount} high-risk clause${highCount !== 1 ? 's' : ''} need resolution. Use the flags below to prioritise.`,
       colorClass: 'text-red-300',
     };
   }
   if (highCount === 1 || score >= 30) {
     return {
-      text: 'Proceed with caution',
-      detail: 'At least one issue warrants negotiation before you commit.',
+      text: 'Sign with conditions',
+      detail: 'One issue needs negotiation. Suggested redlines are ready below.',
       colorClass: 'text-amber-300',
     };
   }
   return {
-    text: 'Acceptable risk',
-    detail: 'No critical blockers identified. Standard commercial terms apply.',
+    text: 'Ready to sign',
+    detail: 'No critical blockers found. All reviewed clauses are within acceptable range.',
     colorClass: 'text-emerald-300',
   };
 }
@@ -335,19 +335,19 @@ function ClauseFlagCard({
                     type="button"
                     onClick={suggestAlternative}
                     disabled={altLoading}
-                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded border border-zinc-600 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-400 hover:text-zinc-100 disabled:opacity-50"
                   >
                     {altLoading ? (
                       <>
                         <div className="h-3 w-3 animate-spin rounded-full border border-zinc-600 border-t-zinc-300" />
-                        Drafting alternative…
+                        Drafting redline…
                       </>
                     ) : (
                       <>
                         <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                           <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
-                        Suggest alternative language
+                        Suggest redline
                       </>
                     )}
                   </button>
@@ -574,38 +574,13 @@ function SummaryContent() {
         <section className="mt-10">
           <h1 className="text-4xl font-semibold tracking-tight">Deal Summary</h1>
           <p className="mt-2 text-zinc-400">A final view of the commercial and legal risk across the contract.</p>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
-            {lolCap !== null && lolCap > 0 && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
-            )}
-          </div>
-
-          <nav className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-3" aria-label="Review sections">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Review sections</div>
-            <div className="flex flex-wrap gap-2">
-              {reviewSections.map((section) => (
-                <Link
-                  key={section.key}
-                  href={section.href}
-                  className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:border-zinc-500 hover:bg-zinc-900"
-                >
-                  {section.label}
-                </Link>
-              ))}
-            </div>
-          </nav>
         </section>
 
-        <section className={`mt-8 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
+        <section className={`mt-6 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
           <div className="flex items-start justify-between gap-6">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Should I sign?</p>
-              <p className={`mt-2 text-2xl font-bold ${clauseFlags.length > 0 ? verdict.colorClass : 'text-zinc-400'}`}>
+              <p className={`mt-2 text-3xl font-bold ${clauseFlags.length > 0 ? verdict.colorClass : 'text-zinc-400'}`}>
                 {clauseFlags.length > 0 ? verdict.text : 'Insufficient data'}
               </p>
               <p className="mt-2 text-sm text-zinc-300">
@@ -614,7 +589,7 @@ function SummaryContent() {
             </div>
             {clauseFlags.length > 0 && (
               <div className="shrink-0 text-right">
-                <span className={`text-5xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
+                <span className={`text-7xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
                 <p className="mt-1 text-[11px] uppercase tracking-wide text-zinc-500">/ 100</p>
               </div>
             )}
@@ -629,6 +604,33 @@ function SummaryContent() {
             Your analysis is saved in this browser — return anytime to pick up where you left off.
           </div>
         )}
+
+        <div className="mt-6">
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
+            {lolCap !== null && lolCap > 0 && (
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
+            )}
+          </div>
+
+          <nav className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-3" aria-label="Review sections">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Review sections</div>
+            <div className="flex flex-wrap gap-2">
+              {reviewSections.map((section) => (
+                <Link
+                  key={section.key}
+                  href={section.href}
+                  className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:border-zinc-500 hover:bg-zinc-900"
+                >
+                  {section.label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        </div>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
