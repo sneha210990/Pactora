@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiFetch } from '@/lib/api-fetch';
 import { ClauseDiff } from './clause-diff';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
@@ -70,7 +71,7 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
     setAlternative('');
     setErrorMsg('');
     try {
-      const res = await fetch('/api/contracts/redline', {
+      const res = await apiFetch('/api/contracts/redline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clauseText, clauseType, acv: acv ?? null, liabilityCap: liabilityCap ?? null }),

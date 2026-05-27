@@ -11,6 +11,9 @@ const OPERATOR_PUBLIC_PATHS = new Set([
   '/api/operator/logout',
 ]);
 
+// Methods that mutate server state and therefore require a CSRF tripwire.
+const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 function unauthenticated(req: NextRequest, kind: 'api' | 'page', redirectTo: string) {
   if (kind === 'api') {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -21,6 +24,17 @@ function unauthenticated(req: NextRequest, kind: 'api' | 'page', redirectTo: str
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // ── CSRF tripwire ─────────────────────────────────────────────────────
+  // Custom headers can't be sent cross-origin without a CORS preflight,
+  // and we never grant preflight, so requiring this header on every
+  // state-changing /api/* call blocks browser-borne CSRF carrying the
+  // victim's session cookie.
+  if (pathname.startsWith('/api/') && STATE_CHANGING_METHODS.has(req.method)) {
+    if (req.headers.get('x-pactora-client') !== 'web') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  }
 
   // ── Operator surface ──────────────────────────────────────────────────
   if (pathname.startsWith('/operator/') || pathname.startsWith('/api/operator/')) {
@@ -66,5 +80,5 @@ export async function middleware(req: NextRequest) {
 export const config = {
   // Matchers are evaluated as a union — anything outside these paths skips
   // middleware entirely and remains public.
-  matcher: ['/operator/:path*', '/api/operator/:path*', '/api/contracts/:path*'],
+  matcher: ['/operator/:path*', '/api/:path*'],
 };

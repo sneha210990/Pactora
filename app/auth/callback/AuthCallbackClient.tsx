@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { apiFetch } from '@/lib/api-fetch';
 
 type SessionResponse = {
   error?: string;
@@ -44,7 +45,7 @@ export default function AuthCallbackClient() {
         return;
       }
 
-      const response = await fetch('/api/auth/session', {
+      const response = await apiFetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

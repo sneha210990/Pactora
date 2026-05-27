@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiFetch } from '@/lib/api-fetch';
 
 export default function OperatorLoginPage() {
   const [key, setKey] = useState('');
@@ -12,7 +13,7 @@ export default function OperatorLoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/operator/login', {
+      const res = await apiFetch('/api/operator/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key }),

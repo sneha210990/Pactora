@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api-fetch';
 
 const DISMISSED_KEY = 'email_capture_dismissed';
 
@@ -28,7 +29,7 @@ export function EmailCaptureBanner() {
     setSubmitting(true);
 
     try {
-      const res = await fetch('/api/capture-email', {
+      const res = await apiFetch('/api/capture-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

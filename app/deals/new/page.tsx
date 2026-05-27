@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { trackEvent } from '@/components/track-event';
+import { apiFetch } from '@/lib/api-fetch';
 import {
   clearPersistedState,
   DocumentAnalysisState,
@@ -140,7 +141,7 @@ export default function NewDealPage() {
     setAgentProgress({});
     actions.analysisStarted();
     try {
-      const res = await fetch('/api/contracts/analyze-agents', {
+      const res = await apiFetch('/api/contracts/analyze-agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
@@ -248,7 +249,7 @@ export default function NewDealPage() {
       const formData = new FormData();
       formData.append('contract', file);
 
-      const response = await fetch('/api/contracts/extract', {
+      const response = await apiFetch('/api/contracts/extract', {
         method: 'POST',
         body: formData,
       });
@@ -300,7 +301,7 @@ export default function NewDealPage() {
     trackEvent('manual_clause_entry_started', '/deals/new');
 
     try {
-      const response = await fetch('/api/contracts/extract', {
+      const response = await apiFetch('/api/contracts/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, sourceName: 'Pasted contract clauses' }),

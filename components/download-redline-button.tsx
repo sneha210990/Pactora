@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiFetch } from '@/lib/api-fetch';
 
 type AcceptedRedline = { clauseText: string; proposedText: string; explanation: string };
 
@@ -45,7 +46,7 @@ async function downloadDocxRedline(
 ) {
   const docxBuffer = sessionStorage.getItem('pactora.docxBuffer') ?? undefined;
 
-  const res = await fetch('/api/contracts/redline/export', {
+  const res = await apiFetch('/api/contracts/redline/export', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ acceptedRedlines, docxBuffer, fileName }),
