@@ -284,6 +284,22 @@ const LEGACY_DOC_MIME = 'application/msword';
 const PDF_MIME = 'application/pdf';
 const MIN_CONTENT_LENGTH = 20;
 
+const MAX_DOC_BYTES = 2 * 1024 * 1024; // 2 MB — legacy .doc binary scan limit
+const MAX_DOCX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024; // 50 MB — zip bomb guard
+const PARSER_TIMEOUT_MS = 15_000; // 15 s
+
+function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`${label} timed out after ${PARSER_TIMEOUT_MS / 1000}s`)),
+        PARSER_TIMEOUT_MS,
+      ),
+    ),
+  ]);
+}
+
 type ContractFileKind = 'pdf' | 'docx' | 'doc' | 'unsupported';
 
 function detectFileKind(fileName: string, mimeType?: string): ContractFileKind {
@@ -323,14 +339,39 @@ export async function extractContractText(
   let text = '';
 
   if (fileKind === 'pdf') {
+    if (buffer.length < 5 || buffer.slice(0, 5).toString('ascii') !== '%PDF-') {
+      throw new Error('Invalid file: not a valid PDF. Please re-upload the original contract.');
+    }
     const pdfParse = await getPdfParser();
-    const parsed = await pdfParse(buffer);
+    const parsed = await withTimeout(pdfParse(buffer), 'PDF parser');
     text = parsed.text ?? '';
   } else if (fileKind === 'docx') {
+    if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b || buffer[2] !== 0x03 || buffer[3] !== 0x04) {
+      throw new Error('Invalid file: not a valid DOCX. Please re-upload the original contract.');
+    }
+    // Zip bomb guard: read uncompressed sizes from the ZIP central directory
+    // metadata without decompressing any entries, then reject if the total
+    // exceeds the limit before mammoth processes the buffer.
+    const { default: JSZip } = await import('jszip');
+    const zip = await JSZip.loadAsync(buffer);
+    let totalUncompressed = 0;
+    zip.forEach((_, entry) => {
+      totalUncompressed +=
+        (entry as unknown as { _data?: { uncompressedSize?: number } })._data?.uncompressedSize ?? 0;
+    });
+    if (totalUncompressed > MAX_DOCX_UNCOMPRESSED_BYTES) {
+      throw new Error('DOCX file exceeds the 50 MB decompressed size limit. Please upload a smaller document.');
+    }
+    if (!zip.file('word/document.xml')) {
+      throw new Error('Invalid DOCX: missing required document structure. Please re-upload the original contract.');
+    }
     const mammoth = await getMammoth();
-    const parsed = await mammoth.extractRawText({ buffer });
+    const parsed = await withTimeout(mammoth.extractRawText({ buffer }), 'DOCX parser');
     text = parsed.value ?? '';
   } else if (fileKind === 'doc') {
+    if (buffer.length > MAX_DOC_BYTES) {
+      throw new Error('Legacy .doc files must be under 2 MB. Please convert to PDF or DOCX and re-upload.');
+    }
     text = extractLegacyDocText(buffer);
   } else {
     throw new Error('Unsupported file type. Please upload a PDF, DOCX, or DOC contract.');
