@@ -8,7 +8,7 @@ import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
-import { useDocumentAnalysis, useDocumentAnalysisActions } from '@/lib/document-analysis-store';
+import { useDocumentAnalysis, useDocumentAnalysisActions, extractedValue } from '@/lib/document-analysis-store';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
 import { NegotiationLadder } from '../components/negotiation-ladder';
@@ -501,6 +501,7 @@ function SummaryContent() {
   }, [analysis.risks, inferredLolRisk]);
 
   const knownRisks = rankedSections.filter((section) => section.risk !== null) as Array<(typeof rankedSections)[number] & { risk: RiskLevel }>;
+  const sectionRisks = Object.fromEntries(knownRisks.map((s) => [s.key, s.risk]));
   const averageRisk = knownRisks.length > 0 ? knownRisks.reduce((sum, section) => sum + riskScore(section.risk), 0) / knownRisks.length : 0;
   const overallRisk: RiskLevel = knownRisks.some((section) => section.risk === 'High') || averageRisk >= 2.4 ? 'High' : averageRisk >= 1.7 ? 'Medium' : 'Low';
 
@@ -568,7 +569,7 @@ function SummaryContent() {
           </div>
         </div>
 
-        <ReviewProgress current="summary" />
+        <ReviewProgress current="summary" sectionRisks={sectionRisks} />
         <ActiveDocumentBanner />
 
         <section className="mt-10">
@@ -607,10 +608,18 @@ function SummaryContent() {
 
         <div className="mt-6">
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
+            {extractedValue(commercialContext.acv) !== null && (
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Deal value: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            )}
+            {extractedValue(commercialContext.termMonths) !== null && (
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
+            )}
+            {extractedValue(commercialContext.insuranceCover) !== null && (
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
+            )}
+            {extractedValue(dataType) !== null && (
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
+            )}
             {lolCap !== null && lolCap > 0 && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Liability cap: {money(lolCap)}</span>
             )}
@@ -652,7 +661,7 @@ function SummaryContent() {
                       {section.risk ? (
                         <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${riskClass(section.risk)}`}>{section.risk}</span>
                       ) : (
-                        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-400">Not reviewed</span>
+                        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-400">Review now →</span>
                       )}
                     </span>
                     <span className="mt-1 block text-xs text-zinc-500">{section.description}</span>
