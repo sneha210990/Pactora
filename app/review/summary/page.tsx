@@ -16,6 +16,7 @@ import { ReviewProgress } from '../components/review-progress';
 import { ExportPdfButton } from '@/components/export-pdf-button';
 import { ClauseDiff } from '../components/clause-diff';
 import { DownloadRedlineButton } from '@/components/download-redline-button';
+import { ChatPanel } from '../components/chat-panel';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -754,6 +755,8 @@ function SummaryContent() {
             <p className="mt-2 text-sm text-zinc-500">No flags detected — upload a new contract to run AI analysis.</p>
           </section>
         )}
+
+        <ChatPanel contractText={analysis.rawText ?? ''} />
 
         {user === null && clauseFlags.length > 0 && <EmailCaptureBanner />}
 
