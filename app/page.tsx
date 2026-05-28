@@ -12,8 +12,8 @@ export default function Home() {
         </h1>
         <p className="mb-10 max-w-xl text-lg text-zinc-400 md:text-xl">
           Pactora analyses eight key clauses for risk, then gives you a
-          negotiation ladder with clear positions and scripts, so you know
-          exactly what to push back on and how to say it.
+          negotiation ladder with clear positions and scripts. Know exactly
+          what to push back on before the contract reaches legal.
         </p>
         <Link
           href="/deals/new"
