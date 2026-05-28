@@ -48,6 +48,12 @@ function getAnonKey() {
   return requiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
+// True when the server-only service-role key is configured. Callers can use
+// this to choose a durable Supabase-backed path vs. a local fallback.
+export function hasServiceRole(): boolean {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 export function buildSessionPayload(auth: AuthTokenResponse): SessionPayload {
   return {
     access_token: auth.access_token,
@@ -103,6 +109,23 @@ async function supabaseFetch(path: string, init?: RequestInit) {
   });
 
   return response;
+}
+
+// Authenticated PostgREST/Auth calls using the service-role key. Bypasses RLS,
+// so it must only ever run server-side. Used for the rate_limits table, which
+// the public anon key is deliberately locked out of.
+export async function supabaseAdminFetch(path: string, init?: RequestInit) {
+  const key = requiredEnv('SUPABASE_SERVICE_ROLE_KEY');
+  return fetch(`${getSupabaseUrl()}${path}`, {
+    ...init,
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    cache: 'no-store',
+  });
 }
 
 export async function signUpWithEmail(email: string, password: string) {

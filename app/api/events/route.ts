@@ -13,7 +13,7 @@ const allowedEventTypes = new Set<BetaEventType>([
 ]);
 
 export async function POST(request: Request) {
-  const { allowed, retryAfter } = checkRateLimit(getClientIp(request), 30);
+  const { allowed, retryAfter } = await checkRateLimit(getClientIp(request), 30);
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
