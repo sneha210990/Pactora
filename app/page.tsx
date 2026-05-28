@@ -109,6 +109,24 @@ export default function Home() {
           </div>
           <div className="flex flex-col items-center gap-2">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+              Trusted by
+            </span>
+            <a
+              href="https://www.librabit.co.uk/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center opacity-50 transition-opacity hover:opacity-100"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/librabit-logo.svg"
+                alt="Librabit"
+                className="h-10 w-10 rounded-md"
+              />
+            </a>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Member of
             </span>
             <a
