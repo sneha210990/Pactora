@@ -21,11 +21,11 @@ export default function Home() {
         >
           Start contract review
         </Link>
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
-            Featured in
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-6">
+        <div className="mt-8 flex flex-wrap items-start justify-center gap-6 sm:gap-10">
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
+              Featured in
+            </span>
             <a
               href="https://timesofindia.indiatimes.com/city/hyderabad/courtrooms-to-code-hyderabads-young-lawyers-tap-into-ai-to-tackle-legal-hurdles/articleshow/131267827.cms"
               target="_blank"
@@ -44,7 +44,31 @@ export default function Home() {
                 Times of India
               </span>
             </a>
-            <span className="text-zinc-700">·</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
+              Trusted by
+            </span>
+            <a
+              href="https://www.librabit.co.uk/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center opacity-60 transition-opacity hover:opacity-100"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/librabit-logo.svg"
+                alt="Librabit"
+                className="h-10 w-10 rounded-md"
+              />
+            </a>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
+              Member of
+            </span>
             <a
               href="https://www.techscaler.co.uk/"
               target="_blank"
@@ -55,7 +79,6 @@ export default function Home() {
               <img
                 src="/techscaler-logo-white.svg"
                 alt="Techscaler by CodeBase"
-                height={20}
                 className="h-5 w-auto"
               />
             </a>

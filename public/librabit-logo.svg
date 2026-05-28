@@ -1,0 +1,10 @@
+<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="80" height="80" fill="#FF6B4A"/>
+  <!-- Symbol - larger and centered -->
+  <rect x="12" y="18" width="48" height="8" rx="4" fill="#FFFFFF"/>
+  <rect x="20" y="32" width="48" height="8" rx="4" fill="rgba(0,0,0,0.4)"/>
+  <!-- Wordmark - smaller with more spacing -->
+  <text x="39" y="62" text-anchor="middle" font-family="Montserrat" font-weight="700" font-size="14" letter-spacing="-0.02em">
+    <tspan fill="#FFFFFF">Libra</tspan><tspan fill="rgba(0,0,0,0.4)">Bit</tspan>
+  </text>
+</svg>
