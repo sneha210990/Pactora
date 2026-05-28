@@ -9,6 +9,7 @@ import { trackEvent } from '@/components/track-event';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 import { useDocumentAnalysis, useDocumentAnalysisActions, extractedValue } from '@/lib/document-analysis-store';
+import { useSectionRisks } from '@/lib/use-section-risks';
 import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsField, formatOptionalTextField } from '../components/active-document-banner';
 import { NewReviewButton } from '../components/new-review-button';
 import { NegotiationLadder } from '../components/negotiation-ladder';
@@ -99,7 +100,7 @@ function deriveLolRisk(lolCap: number | null, acvAmount: number | null): RiskLev
 function describeOverall(overallRisk: RiskLevel, knownRiskCount: number, capRatio: number | null) {
   if (knownRiskCount === 0) return 'Run each section review to build a complete composite risk score.';
 
-  const ratioText = capRatio !== null ? ` Liability cap is ${capRatio.toFixed(2)}× ACV.` : '';
+  const ratioText = capRatio !== null ? ` Liability cap is ${capRatio.toFixed(2)}× deal value.` : '';
   if (overallRisk === 'High') return `At least one core review area needs attention before signature.${ratioText}`;
   if (overallRisk === 'Medium') return `Most issues look negotiable, but there are still points to tighten.${ratioText}`;
   return `Current inputs indicate a comparatively low-risk position across reviewed areas.${ratioText}`;
@@ -419,9 +420,12 @@ function FeedbackToggle({ user }: { user: { email: string } | null }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-2"
+          className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
         >
-          Share feedback on this summary
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+          Share feedback
         </button>
       ) : (
         <section className="rounded-2xl border border-zinc-900 bg-black/20 p-4 opacity-90">
@@ -502,7 +506,7 @@ function SummaryContent() {
   }, [analysis.risks, inferredLolRisk]);
 
   const knownRisks = rankedSections.filter((section) => section.risk !== null) as Array<(typeof rankedSections)[number] & { risk: RiskLevel }>;
-  const sectionRisks = Object.fromEntries(knownRisks.map((s) => [s.key, s.risk]));
+  const sectionRisks = useSectionRisks();
   const averageRisk = knownRisks.length > 0 ? knownRisks.reduce((sum, section) => sum + riskScore(section.risk), 0) / knownRisks.length : 0;
   const overallRisk: RiskLevel = knownRisks.some((section) => section.risk === 'High') || averageRisk >= 2.4 ? 'High' : averageRisk >= 1.7 ? 'Medium' : 'Low';
 
@@ -846,7 +850,7 @@ function SummaryContent() {
       </div>
 
       {/* Floating chat panel */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
         {chatOpen && (
           <div className="w-[420px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/60">
             <ChatPanel contractText={analysis.rawText ?? ''} onClose={() => setChatOpen(false)} />
@@ -867,7 +871,7 @@ function SummaryContent() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
           )}
-          <span className="text-sm font-medium text-zinc-200">{chatOpen ? 'Close' : 'Ask a question'}</span>
+          <span className="hidden text-sm font-medium text-zinc-200 sm:inline">{chatOpen ? 'Close' : 'Ask a question'}</span>
         </button>
       </div>
     </main>

@@ -9,6 +9,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useSectionRisks } from '@/lib/use-section-risks';
 
 type DataRole = 'Controller' | 'Processor' | 'Joint' | 'Unknown';
 type NotificationWindow = '24h' | '48h' | '72h' | 'Unknown';
@@ -230,6 +231,7 @@ function synthesizeDataFlag(clauseText: string, result: ReviewResult): ClauseFla
 function DataProtectionReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Data Protection');
+  const sectionRisks = useSectionRisks();
 
   const dataType = commercialContext.dataType;
   const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
@@ -274,7 +276,7 @@ function DataProtectionReviewContent() {
           <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
 
-        <ReviewProgress current="data" />
+        <ReviewProgress current="data" sectionRisks={sectionRisks} />
         <ActiveDocumentBanner />
 
         <section className="mt-10">

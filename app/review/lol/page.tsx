@@ -10,6 +10,7 @@ import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useSectionRisks } from '@/lib/use-section-risks';
 
 type CapType =
   | 'fixed_amount'
@@ -353,6 +354,7 @@ function LolReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const actions = useDocumentAnalysisActions();
   const canonicalClause = useClauseByType('Liability Cap');
+  const sectionRisks = useSectionRisks();
 
   useEffect(() => {
     trackEvent('analysis_started', '/review/lol');
@@ -408,7 +410,7 @@ function LolReviewContent() {
           <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
 
-        <ReviewProgress current="lol" />
+        <ReviewProgress current="lol" sectionRisks={sectionRisks} />
         <ActiveDocumentBanner />
 
         <div className="mt-10">

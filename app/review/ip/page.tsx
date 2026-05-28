@@ -9,6 +9,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useSectionRisks } from '@/lib/use-section-risks';
 
 type OwnershipStructure = 'Vendor owns' | 'Customer owns' | 'Shared/retained ownership' | 'Unknown';
 type LicenceModel = 'Limited licence' | 'Perpetual/Broad licence' | 'Broad licence' | 'Unknown';
@@ -179,6 +180,7 @@ function synthesizeIPFlag(clauseText: string, result: ReviewResult): ClauseFlag 
 function IpOwnershipReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('IP Ownership');
+  const sectionRisks = useSectionRisks();
 
   const dataType = commercialContext.dataType;
   const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
@@ -223,7 +225,7 @@ function IpOwnershipReviewContent() {
           <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
 
-        <ReviewProgress current="ip" />
+        <ReviewProgress current="ip" sectionRisks={sectionRisks} />
         <ActiveDocumentBanner />
 
         <section className="mt-10">

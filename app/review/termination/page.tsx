@@ -9,6 +9,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useSectionRisks } from '@/lib/use-section-risks';
 
 type TerminationRight = 'Mutual' | 'One-sided' | 'Unknown';
 type CureRights = 'Present' | 'Absent' | 'Unknown';
@@ -317,6 +318,7 @@ function synthesizeTerminationFlag(clauseText: string, result: ReviewResult): Cl
 function TerminationReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Termination');
+  const sectionRisks = useSectionRisks();
 
   const dataType = commercialContext.dataType;
   const lolCapParam = commercialContext.liabilityCap ? String(commercialContext.liabilityCap) : null;
@@ -356,7 +358,7 @@ function TerminationReviewContent() {
           <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
 
-        <ReviewProgress current="termination" />
+        <ReviewProgress current="termination" sectionRisks={sectionRisks} />
         <ActiveDocumentBanner />
 
         <section className="mt-10">

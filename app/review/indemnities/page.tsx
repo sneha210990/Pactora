@@ -9,6 +9,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useSectionRisks } from '@/lib/use-section-risks';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
 type TriggerScope = 'IP' | 'Data' | 'Third-party claims' | 'Broad breach' | 'Unknown';
@@ -192,6 +193,7 @@ function synthesizeIndemnitiesFlag(clauseText: string, result: ReviewResult): Cl
 function IndemnitiesReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const canonicalClause = useClauseByType('Indemnities');
+  const sectionRisks = useSectionRisks();
 
   const acv = commercialContext.acv.value === null ? null : String(commercialContext.acv.value);
   const dataType = commercialContext.dataType;
@@ -234,7 +236,7 @@ function IndemnitiesReviewContent() {
           <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
 
-        <ReviewProgress current="indemnities" />
+        <ReviewProgress current="indemnities" sectionRisks={sectionRisks} />
         <ActiveDocumentBanner />
 
         <section className="mt-10">
