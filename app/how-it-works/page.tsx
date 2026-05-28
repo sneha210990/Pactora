@@ -4,12 +4,12 @@ const STEPS = [
   {
     step: "01",
     title: "Upload your contract",
-    body: "PDF or Word. Vendor agreements, client contracts, NDAs, service agreements — any contract with standard clauses.",
+    body: "PDF or Word. Vendor agreements, client contracts, NDAs, service agreements and any contract with standard clauses.",
   },
   {
     step: "02",
     title: "Get a risk breakdown",
-    body: "Eight key clauses analysed. Plain English flags on what's unusual, missing, or one-sided — with context on why it matters.",
+    body: "Eight key clauses analysed. Plain English flags on what's unusual, missing, or one-sided, with context on why it matters.",
   },
   {
     step: "03",
@@ -62,7 +62,7 @@ export default function HowItWorks() {
           How it works
         </h1>
         <p className="mt-6 text-lg text-zinc-400">
-          From contract received to negotiation-ready — without a lawyer.
+          From contract received to negotiation-ready, without a lawyer.
         </p>
       </section>
 
@@ -93,8 +93,8 @@ export default function HowItWorks() {
             Eight clauses. Most contracts have at least one issue.
           </h2>
           <p className="mb-10 max-w-xl text-zinc-400">
-            The clauses most likely to create risk for founders and freelancers
-            — buried in standard templates and easy to miss.
+            The clauses most likely to create risk for founders and freelancers,
+            buried in standard templates and easy to miss.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             {CLAUSES.map(({ name, description }) => (
@@ -116,11 +116,11 @@ export default function HowItWorks() {
       <section className="border-t border-zinc-800 py-16">
         <div className="mx-auto max-w-3xl px-4">
           <h2 className="mb-6 text-2xl font-semibold tracking-tight md:text-3xl">
-            Not just what&apos;s wrong — what to do about it.
+            Not just what&apos;s wrong. What to do about it.
           </h2>
           <p className="mb-4 text-zinc-400">
             Most tools flag the problem and stop there. Pactora gives you a
-            negotiation ladder for every flagged clause — your ideal position,
+            negotiation ladder for every flagged clause: your ideal position,
             an acceptable fallback, and the exact script to open the
             conversation.
           </p>

@@ -6,7 +6,7 @@ import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 
 export const metadata: Metadata = {
   title: 'Pactora',
-  description: 'Contract review and negotiation prep for founders and freelancers. Know what\'s in your contract — and how to negotiate it.',
+  description: 'Contract review and negotiation prep for founders and freelancers. Understand what\'s in your contract and how to negotiate it.',
 };
 
 export default function RootLayout({

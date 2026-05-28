@@ -8,12 +8,12 @@ export default function Home() {
           For founders and freelancers
         </p>
         <h1 className="mb-6 max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
-          Know what&apos;s in your contract — and how to negotiate it.
+          Understand what&apos;s in your contract and how to negotiate it.
         </h1>
         <p className="mb-10 max-w-xl text-lg text-zinc-400 md:text-xl">
           Pactora analyses eight key clauses for risk, then gives you a
-          negotiation ladder — clear positions and scripts — so you know exactly
-          what to push back on and how to say it.
+          negotiation ladder with clear positions and scripts, so you know
+          exactly what to push back on and how to say it.
         </p>
         <Link
           href="/deals/new"
