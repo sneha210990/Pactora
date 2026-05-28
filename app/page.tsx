@@ -5,15 +5,15 @@ export default function Home() {
     <main className="min-h-screen bg-black text-white">
       <section className="flex flex-col items-center justify-center px-4 py-20 text-center md:py-36">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
-          For founders and freelancers
+          For founders, freelancers and anyone signing a contract
         </p>
         <h1 className="mb-6 max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
           Understand what&apos;s in your contract and how to negotiate it.
         </h1>
         <p className="mb-10 max-w-xl text-lg text-zinc-400 md:text-xl">
           Pactora analyses eight key clauses for risk, then gives you a
-          negotiation ladder with clear positions and scripts, so you know
-          exactly what to push back on and how to say it.
+          negotiation ladder with clear positions and scripts. Know exactly
+          what to push back on before the contract reaches legal.
         </p>
         <Link
           href="/deals/new"

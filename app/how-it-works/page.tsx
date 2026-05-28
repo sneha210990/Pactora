@@ -62,7 +62,7 @@ export default function HowItWorks() {
           How it works
         </h1>
         <p className="mt-6 text-lg text-zinc-400">
-          From contract received to negotiation-ready, without a lawyer.
+          The step before legal review. Arrive prepared, not blind.
         </p>
       </section>
 
