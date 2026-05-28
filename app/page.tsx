@@ -58,9 +58,9 @@ export default function Home() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/librabit-logo.svg"
+                src="/librabit-logo.png"
                 alt="Librabit"
-                className="h-10 w-10 rounded-md"
+                className="h-7 w-auto rounded-sm"
               />
             </a>
           </div>
