@@ -544,6 +544,35 @@ function SummaryContent() {
     setTimeout(() => setEmailCopied(false), 2000);
   }
 
+  if (!analysis.activeDocument) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black text-white">
+        <div className="mx-auto max-w-5xl px-6 py-10">
+          <Link href="/" className="text-sm text-zinc-300 hover:text-white">
+            Pactora
+          </Link>
+          <div className="mt-32 flex flex-col items-center text-center">
+            <div className="rounded-full border border-zinc-800 bg-zinc-900 p-4">
+              <svg className="h-8 w-8 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+            </div>
+            <h1 className="mt-4 text-xl font-semibold text-zinc-200">No contract analysed yet</h1>
+            <p className="mt-2 max-w-sm text-sm text-zinc-400">
+              Your summary will appear here after you upload a contract and run the AI analysis.
+            </p>
+            <Link
+              href="/deals/new"
+              className="mt-6 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+            >
+              Upload a contract →
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black text-white">
       <div className="mx-auto max-w-5xl px-6 py-10">
@@ -723,12 +752,13 @@ function SummaryContent() {
 
         {crossClauseRisks.length > 0 && (
           <section className="mt-8">
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-1 flex items-center gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
               <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2.5 py-0.5 text-xs text-orange-300">
                 {crossClauseRisks.length} interaction{crossClauseRisks.length !== 1 ? 's' : ''} detected
               </span>
             </div>
+            <p className="mb-4 text-xs text-zinc-500">Where two clauses interact to create a combined exposure — often missed in clause-by-clause review.</p>
             <div className="flex flex-col gap-4">
               {crossClauseRisks.map((risk) => (
                 <CrossClauseRiskCard key={risk.id} risk={risk} />
