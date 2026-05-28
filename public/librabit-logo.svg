@@ -1,0 +1,9 @@
+<svg viewBox="0 0 140 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Symbol -->
+  <rect x="6" y="14" width="28" height="4" rx="2" fill="#FFFFFF"/>
+  <rect x="10" y="22" width="28" height="4" rx="2" fill="#FF6B4A"/>
+  <!-- Wordmark -->
+  <text x="48" y="27" font-family="Montserrat" font-weight="700" font-size="18" letter-spacing="-0.02em">
+    <tspan fill="#FFFFFF">Libra</tspan><tspan fill="#FF6B4A">Bit</tspan>
+  </text>
+</svg>

@@ -50,9 +50,19 @@ export default function Home() {
             <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
               Trusted by
             </span>
-            <span className="text-base font-semibold tracking-tight text-white opacity-60">
-              Librabit
-            </span>
+            <a
+              href="https://www.librabit.co.uk/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center opacity-60 transition-opacity hover:opacity-100"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/librabit-logo.svg"
+                alt="Librabit"
+                className="h-5 w-auto"
+              />
+            </a>
           </div>
 
           <div className="flex flex-col items-center gap-2">
