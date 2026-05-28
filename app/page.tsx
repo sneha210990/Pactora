@@ -3,58 +3,56 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
-      <section className="flex flex-col items-center justify-center px-4 py-16 text-center md:py-32">
+      <section className="flex flex-col items-center justify-center px-4 py-20 text-center md:py-36">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
-          Contract review for SaaS teams
+          For founders and freelancers
         </p>
         <h1 className="mb-6 max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
-          Understand SaaS contract risk before legal review
+          Understand what&apos;s in your contract and how to negotiate it.
         </h1>
         <p className="mb-10 max-w-xl text-lg text-zinc-400 md:text-xl">
-          Pactora helps SaaS teams spot liability, indemnity, IP, termination,
-          and data issues. Know what to push back on before the contract reaches
-          legal.
+          Pactora analyses eight key clauses for risk, then gives you a
+          negotiation ladder with clear positions and scripts, so you know
+          exactly what to push back on and how to say it.
         </p>
         <Link
           href="/deals/new"
           className="inline-block rounded-lg bg-white px-7 py-3.5 font-semibold text-black transition hover:bg-zinc-200"
         >
-          Start contract review
+          Review a contract free
         </Link>
-        <div className="mt-8 flex flex-wrap items-start justify-center gap-6 sm:gap-10">
+
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-10">
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
+            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Featured in
             </span>
             <a
               href="https://timesofindia.indiatimes.com/city/hyderabad/courtrooms-to-code-hyderabads-young-lawyers-tap-into-ai-to-tackle-legal-hurdles/articleshow/131267827.cms"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 opacity-60 transition-opacity hover:opacity-100"
+              className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/toi-logo.png"
                 alt="Times of India"
-                width={24}
-                height={24}
-                className="h-6 w-6 rounded-sm"
+                className="h-5 w-5 rounded-sm"
               />
-              <span className="font-serif text-base font-bold tracking-tight text-white">
+              <span className="font-serif text-sm font-bold tracking-tight text-white">
                 Times of India
               </span>
             </a>
           </div>
-
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
+            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Trusted by
             </span>
             <a
               href="https://www.librabit.co.uk/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center opacity-60 transition-opacity hover:opacity-100"
+              className="flex items-center opacity-50 transition-opacity hover:opacity-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -64,16 +62,15 @@ export default function Home() {
               />
             </a>
           </div>
-
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-600">
+            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Member of
             </span>
             <a
               href="https://www.techscaler.co.uk/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 opacity-60 transition-opacity hover:opacity-100"
+              className="opacity-50 transition-opacity hover:opacity-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -82,25 +79,6 @@ export default function Home() {
                 className="h-5 w-auto"
               />
             </a>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-zinc-800 bg-black py-16">
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/70 p-8 text-center sm:flex-row sm:text-left">
-            <div>
-              <h2 className="text-xl font-semibold">Using Pactora in beta?</h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                Send feedback on the review flow and contract outputs.
-              </p>
-            </div>
-            <Link
-              href="/feedback"
-              className="inline-flex rounded-lg bg-white px-5 py-2.5 font-semibold text-black transition hover:bg-zinc-200"
-            >
-              Send feedback
-            </Link>
           </div>
         </div>
       </section>
