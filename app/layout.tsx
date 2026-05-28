@@ -6,7 +6,7 @@ import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 
 export const metadata: Metadata = {
   title: 'Pactora',
-  description: 'Structured contract review platform for SaaS teams to understand commercial risk before legal review.',
+  description: 'Contract review and negotiation prep for founders and freelancers. Know what\'s in your contract — and how to negotiate it.',
 };
 
 export default function RootLayout({
@@ -63,7 +63,7 @@ export default function RootLayout({
               <div>
                 <p className="text-base font-semibold text-zinc-100">Pactora</p>
                 <p className="mt-1 max-w-md text-gray-500">
-                  Structured contract risk review for SaaS teams
+                  Contract review and negotiation prep for founders and freelancers
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-4 md:justify-end">
