@@ -7,6 +7,7 @@ type Message = { role: 'user' | 'assistant'; content: string };
 
 type Props = {
   contractText: string;
+  onClose?: () => void;
 };
 
 const SUGGESTED_QUESTIONS = [
@@ -32,7 +33,7 @@ function SpinnerIcon() {
   );
 }
 
-export function ChatPanel({ contractText }: Props) {
+export function ChatPanel({ contractText, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,6 @@ export function ChatPanel({ contractText }: Props) {
     setMessages(next);
     setLoading(true);
 
-    // Optimistically add an empty assistant bubble that we'll fill as tokens arrive
     setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
     try {
@@ -84,7 +84,7 @@ export function ChatPanel({ contractText }: Props) {
         });
       }
     } catch (err) {
-      setMessages((prev) => prev.slice(0, -1)); // remove empty assistant bubble
+      setMessages((prev) => prev.slice(0, -1));
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -95,16 +95,30 @@ export function ChatPanel({ contractText }: Props) {
   const hasContract = !!contractText;
 
   return (
-    <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50">
-      <div className="border-b border-zinc-800 px-5 py-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Ask about this contract</h2>
-        <p className="mt-0.5 text-xs text-zinc-500">
-          Ask follow-up questions about any clause, risk, or negotiation position. Responses are contract-specific.
-        </p>
+    <>
+      <div className="flex items-start justify-between gap-2 border-b border-zinc-800 px-5 py-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Ask about this contract</h2>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Ask follow-up questions about any clause, risk, or negotiation position.
+          </p>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close chat"
+            className="shrink-0 rounded p-0.5 text-zinc-500 hover:text-zinc-200"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {messages.length > 0 && (
-        <div className="max-h-[480px] overflow-y-auto px-5 py-4 space-y-4">
+        <div className="max-h-[400px] space-y-4 overflow-y-auto px-5 py-4">
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
@@ -114,9 +128,7 @@ export function ChatPanel({ contractText }: Props) {
                     : 'border border-zinc-800 bg-black/40 text-zinc-200'
                 }`}
               >
-                {msg.content || (
-                  <span className="text-zinc-500 animate-pulse">▋</span>
-                )}
+                {msg.content || <span className="animate-pulse text-zinc-500">▋</span>}
               </div>
             </div>
           ))}
@@ -125,13 +137,13 @@ export function ChatPanel({ contractText }: Props) {
       )}
 
       {messages.length === 0 && hasContract && (
-        <div className="px-5 py-4 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 px-5 py-4">
           {SUGGESTED_QUESTIONS.map((q) => (
             <button
               key={q}
               type="button"
               onClick={() => send(q)}
-              className="rounded-full border border-zinc-700 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
+              className="rounded-full border border-zinc-700 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-500 hover:text-zinc-100"
             >
               {q}
             </button>
@@ -140,9 +152,7 @@ export function ChatPanel({ contractText }: Props) {
       )}
 
       <div className={`${messages.length > 0 ? 'border-t border-zinc-800' : ''} px-5 py-4`}>
-        {error && (
-          <p className="mb-2 text-xs text-red-400">{error}</p>
-        )}
+        {error && <p className="mb-2 text-xs text-red-400">{error}</p>}
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -170,6 +180,6 @@ export function ChatPanel({ contractText }: Props) {
           </button>
         </div>
       </div>
-    </section>
+    </>
   );
 }
