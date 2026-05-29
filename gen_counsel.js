@@ -168,7 +168,7 @@ for (let i = 0; i < 6; i++) {
     children: [new TextRun({ text: "", size: 22 })] }));
   children.push(P("", { after: 60 }));
 }
-children.push(P("End-user disclaimer (shown in the product): “Pactora flags issues to discuss with a lawyer - it’s not legal advice. Speak to a qualified lawyer before you sign.”",
+children.push(P(“End-user disclaimer (shown in the product): “Pactora flags issues to discuss with a lawyer - it's not legal advice. Speak to a qualified lawyer before you sign.””,
   { size: 19, color: ACCENT, before: 200, after: 60 }));
 children.push(P("This document records the rules applied by a software tool and a lawyer's verification of them. It is not itself legal advice to any end user, and does not create a retainer between the preparer and any reviewing lawyer.",
   { italic: true, size: 18, color: "5C554A", before: 200 }));

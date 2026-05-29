@@ -9,6 +9,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
 type TriggerScope = 'IP' | 'Data' | 'Third-party claims' | 'Broad breach' | 'Unknown';
@@ -376,6 +377,7 @@ function IndemnitiesReviewContent() {
               acv={acvAmount}
               liabilityCap={lolCap}
             />
+            <p className="border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </section>
         )}
 
