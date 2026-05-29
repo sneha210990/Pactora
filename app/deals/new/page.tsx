@@ -9,6 +9,8 @@ import {
   DocumentAnalysisState,
   useDocumentAnalysis,
   useDocumentAnalysisActions,
+  JURISDICTION_LABELS,
+  type Jurisdiction,
 } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import { saveDeal } from '@/lib/deals-history';
@@ -144,7 +146,7 @@ export default function NewDealPage() {
       const res = await apiFetch('/api/contracts/analyze-agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, jurisdiction: analysis.commercialContext.jurisdiction }),
       });
 
       if (!res.ok) {
@@ -485,6 +487,24 @@ export default function NewDealPage() {
                 <ReadOnlyField label="Data type" value={commercialContext.dataType.value ?? ''} empty="Not detected" evidence={commercialContext.dataType.evidence} />
                 <ReadOnlyField label="Governing law" value={analysis.extractedTerms.governingLaw} empty="No governing law identified" />
                 <ReadOnlyField label="Termination notice" value={analysis.extractedTerms.terminationNotice} empty="Clause not detected" />
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-zinc-400" htmlFor="jurisdiction-select">
+                  Your jurisdiction
+                </label>
+                <p className="mt-1 text-xs text-zinc-500">Which country&apos;s law applies to you as the reviewing party? This calibrates which legal rules the analysis applies.</p>
+                <select
+                  id="jurisdiction-select"
+                  value={commercialContext.jurisdiction ?? ''}
+                  onChange={(e) => actions.setJurisdiction((e.target.value as Jurisdiction) || null)}
+                  className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">Select jurisdiction…</option>
+                  {(Object.keys(JURISDICTION_LABELS) as Jurisdiction[]).map((j) => (
+                    <option key={j} value={j}>{JURISDICTION_LABELS[j]}</option>
+                  ))}
+                </select>
               </div>
             </section>
 

@@ -37,6 +37,7 @@ import { detectCrossClauseRisks } from '@/lib/agents/cross-clause-engine';
 import { createOverlappingChunks, mergeChunkResults } from '@/lib/chunking-strategy';
 import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
 import type { AgentEvent, PactoraClauseType } from '@/lib/agents/types';
+import type { Jurisdiction } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import { recordApiUsage } from '@/lib/beta-store';
 
@@ -48,10 +49,12 @@ function sseEvent(data: AgentEvent): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
+const VALID_JURISDICTIONS = new Set<string>(['england_wales', 'india', 'germany', 'france']);
+
 export async function POST(request: Request) {
-  let body: { text?: unknown };
+  let body: { text?: unknown; jurisdiction?: unknown };
   try {
-    body = (await request.json()) as { text?: unknown };
+    body = (await request.json()) as { text?: unknown; jurisdiction?: unknown };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
@@ -61,6 +64,10 @@ export async function POST(request: Request) {
   }
 
   const contractText = body.text;
+  const jurisdiction: Jurisdiction | null =
+    typeof body.jurisdiction === 'string' && VALID_JURISDICTIONS.has(body.jurisdiction)
+      ? (body.jurisdiction as Jurisdiction)
+      : null;
 
   const chunks = createOverlappingChunks(contractText);
   console.log(`[CHUNKING] Contract (${contractText.length} chars) split into ${chunks.length} chunk(s)`);
@@ -94,7 +101,7 @@ export async function POST(request: Request) {
         const collectedFlags: ClauseFlag[] = [];
         const agentPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
           emit({ type: 'agent_start', clauseType });
-          const result = await runClauseAgent(clauseType, contractText, chunks[0], contractType);
+          const result = await runClauseAgent(clauseType, contractText, chunks[0], contractType, jurisdiction);
           if (result.ok) {
             emit({ type: 'agent_result', clauseType, flag: result.flag });
             if (result.flag) collectedFlags.push(result.flag);
@@ -114,7 +121,7 @@ export async function POST(request: Request) {
         for (const chunk of chunks) {
           console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
           const chunkPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
-            const result = await runClauseAgent(clauseType, contractText, chunk);
+            const result = await runClauseAgent(clauseType, contractText, chunk, undefined, jurisdiction);
             return {
               chunkIndex: chunk.chunkIndex,
               clauseType,
