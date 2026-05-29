@@ -1,6 +1,6 @@
 # Pactora
 
-AI-powered contract review for SaaS buyers. Upload a contract, get clause-level risk flags, negotiation ladders, and redline suggestions in seconds.
+AI-powered contract risk analysis for founders, freelancers and anyone signing a contract. Upload a contract, get clause-level risk flags, negotiation ladders, and redline suggestions — understand what's in your contract and how to negotiate it.
 
 ## Running locally
 
@@ -26,7 +26,7 @@ pnpm dev                     # http://localhost:3000
 Next.js 16 App Router · React 19 · Tailwind v4 · Supabase auth · Anthropic Claude
 
 Two analysis pipelines:
-- **AI pipeline** — 8 parallel specialist clause agents (Sonnet + extended thinking for hard clauses, Haiku for the rest), SSE streaming, cross-clause risk engine
+- **AI pipeline** — 8 parallel specialist clause agents (Sonnet + extended thinking for hard clauses, Haiku for the rest), SSE streaming, cross-clause risk engine, jurisdiction-aware legal rules (England & Wales, India, Germany, France)
 - **Integrity engine** — deterministic validator (undefined terms, broken cross-refs, duplicate definitions) — no LLM
 
 See [`CLAUDE.md`](CLAUDE.md) for full architecture notes.
@@ -46,6 +46,15 @@ See [`CLAUDE.md`](CLAUDE.md) for full architecture notes.
 | AI-03 | Negotiation ladder on every flag card |
 | AI-03a | Redline suggestion — buyer-protective alternative clause language |
 | AI-08 | Full negotiation playbook — side-by-side diff renderer, all 5 clause types, extended thinking for IP Ownership + Indemnities, clause-specific prompt rules |
+| [AI-06 #80](https://github.com/sneha210990/Pactora/issues/80) | Haiku pre-classification — skip absent clause agents, reduce cost |
+| [AI-07 #99](https://github.com/sneha210990/Pactora/issues/99) | Contract type detection (SaaS, NDA, Employment, SupplyChain, ProfessionalServices) |
+| [AI-09 #138](https://github.com/sneha210990/Pactora/issues/138) | Downloadable DOCX with tracked changes — accept/reject per-clause redlines |
+| [AI-02 #76](https://github.com/sneha210990/Pactora/issues/76) | Multi-turn conversational review — floating chat panel on summary page |
+| [AI-10 #192](https://github.com/sneha210990/Pactora/issues/192) | Jurisdiction-aware clause analysis (England & Wales, India, Germany, France) |
+| [TRUST-01 #97](https://github.com/sneha210990/Pactora/issues/97) | Confidence indicator on ambiguous flags |
+| [TRUST-03 #191](https://github.com/sneha210990/Pactora/issues/191) | Counsel-approved legal disclaimer on all risk-result surfaces |
+| [SCANNER-01 #98](https://github.com/sneha210990/Pactora/issues/98) | Email capture on free scanner result page |
+| [RULES-01 #190](https://github.com/sneha210990/Pactora/issues/190) | Legal rules engine (schema v2) — jurisdiction-aware rule corpus, harness, counsel pipeline |
 | — | Deals history — save and restore past contract reviews |
 | — | Export analysis as PDF |
 | — | Drag-and-drop upload (PDF + DOCX) |
@@ -58,13 +67,7 @@ See [`CLAUDE.md`](CLAUDE.md) for full architecture notes.
 
 | Issue | Feature | Effort |
 |---|---|---|
-| [AI-09 #138](https://github.com/sneha210990/Pactora/issues/138) | **Downloadable redlined contract — DOCX with tracked changes** | ~6–8h |
-| [AI-07 #99](https://github.com/sneha210990/Pactora/issues/99) | Contract type detection — adjust risk benchmarks per type (SaaS, NDA, employment…) | ~4–5h |
-| [AI-06 #80](https://github.com/sneha210990/Pactora/issues/80) | Haiku pre-classification — skip absent clause agents, reduce cost | ~3–4h |
-| [AI-02 #76](https://github.com/sneha210990/Pactora/issues/76) | Multi-turn conversational review — ask follow-up questions about any flag | ~4–5h |
-| [TRUST-01 #97](https://github.com/sneha210990/Pactora/issues/97) | Confidence indicator on ambiguous flags | ~3–4h |
 | [TRUST-02 #101](https://github.com/sneha210990/Pactora/issues/101) | Audit trail — who reviewed what, when, at which version | ~4–5h |
-| [SCANNER-01 #98](https://github.com/sneha210990/Pactora/issues/98) | Email capture on free scanner result page | ~2–3h |
 
 ---
 
