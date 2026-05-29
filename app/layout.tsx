@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { BetaNav } from '@/components/beta-nav';
 import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -65,6 +66,7 @@ export default function RootLayout({
                 <p className="mt-1 max-w-md text-gray-500">
                   Contract review and negotiation prep for founders and freelancers
                 </p>
+                <p className="mt-3 max-w-md text-xs text-gray-500">{LEGAL_DISCLAIMER}</p>
               </div>
               <div className="flex flex-wrap items-center gap-4 md:justify-end">
                 <Link href="/terms" className="hover:text-white">

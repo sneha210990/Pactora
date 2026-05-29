@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '@/lib/api-fetch';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { EmailCaptureBanner } from '@/components/email-capture-banner';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
@@ -835,6 +836,8 @@ function SummaryContent() {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
+
+        <p className="mt-4 text-center text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
 
         <div className="mt-3 text-center">
           <Link href="/" className="text-sm text-zinc-500 transition-colors hover:text-zinc-300">
