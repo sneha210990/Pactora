@@ -140,6 +140,7 @@ h1{font-family:'Fraunces',serif;font-weight:600;font-size:43px;margin:0;letter-s
 
 .foot{max-width:1180px;margin:34px auto 0;padding:16px 34px 0;border-top:1px solid var(--line);
   font-size:12px;color:var(--ink-40);font-style:italic;text-align:center}
+.disclaimer{display:block;font-style:normal;font-weight:500;color:var(--ink);font-size:13px;margin-bottom:8px}
 
 .rid{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--ink)}
 .badge{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;
@@ -307,7 +308,7 @@ function exportRun(contract, facts, findings, cross, mode) {
       high: (findings || []).filter((f) => f.severity === "high").length,
       cross_fired: (cross || []).filter((r) => r.status === "fired").length,
     },
-    disclaimer: "Testing output only. Not legal advice. Only verified rules are served; civil-law (DE/FR) rules await counsel sign-off.",
+    disclaimer: "Pactora flags issues to discuss with a lawyer - it's not legal advice. Speak to a qualified lawyer before you sign. (Testing output; only verified rules are served, and civil-law DE/FR rules await counsel sign-off.)",
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -662,6 +663,8 @@ export default function App() {
       </div>
 
       <footer className="foot">
+        <span className="disclaimer">Pactora flags issues to discuss with a lawyer - it's not legal
+          advice. Speak to a qualified lawyer before you sign.</span>
         Per-clause detection is semantic. Cross-clause logic is deterministic. The engine serves only
         verified rules; civil-law (DE/FR) rules await counsel sign-off.
       </footer>

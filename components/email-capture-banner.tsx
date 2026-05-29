@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api-fetch';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 
 const DISMISSED_KEY = 'email_capture_dismissed';
 
@@ -97,6 +98,7 @@ export function EmailCaptureBanner() {
             </button>
           </form>
           {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+          <p className="mt-3 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
         </div>
       )}
     </div>
