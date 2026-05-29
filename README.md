@@ -63,7 +63,7 @@ See [`CLAUDE.md`](CLAUDE.md) for full architecture notes.
 
 ---
 
-### 🔨 Phase 1 — In progress (Weeks 4–8, Starter £49/month)
+### 🔨 Phase 1 — In progress (Weeks 4–8)
 
 | Issue | Feature | Effort |
 |---|---|---|
@@ -71,7 +71,7 @@ See [`CLAUDE.md`](CLAUDE.md) for full architecture notes.
 
 ---
 
-### 🗓 Phase 2 — Growth (Months 2–4, £99/month)
+### 🗓 Phase 2 — Growth (Months 2–4)
 
 | Issue | Feature | Effort |
 |---|---|---|
