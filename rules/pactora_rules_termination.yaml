@@ -1,0 +1,436 @@
+clause: termination
+clause_id: TERM
+version: '0.2'
+last_reviewed: '2026-05-29'
+detection:
+  mode: semantic
+  typical_headings:
+  - Termination
+  - Term and Termination
+  - Termination for Cause
+  - Consequences of Termination
+  semantic_signals:
+  - confers a right to end the contract (for cause, for convenience, on notice)
+  - sets a notice period or cure / remedy period
+  - triggers on insolvency, change of control, or material breach
+  - sets out survival, return/deletion, transition or payment on termination
+  cross_reference:
+  - Which obligations survive termination ties into every other clause; assess the survival list against
+    LOL, IND, IPO and DP.
+  - A termination payment interacts with the penalty analysis in LoL (LOL).
+jurisdictions:
+  england_wales:
+    legal_system: common_law
+    primary_authority:
+    - 'Insolvency Act 1986 s.233B (inserted by CIGA 2020): a supplier cannot terminate a goods/services
+      contract because the customer enters a relevant insolvency procedure; excluded contracts in Sch.4ZZA
+      (mainly financial services)'
+    - 'Cavendish Square Holding BV v Makdessi [2015] UKSC 67 (penalty test: a secondary obligation imposing
+      a detriment out of all proportion to a legitimate interest is unenforceable)'
+    - 'Common law: termination for repudiatory breach; contractual termination rights and notice provisions
+      construed strictly; affirmation/waiver can lose the right'
+    enforceability_threshold: 'Contractual termination rights and notice mechanics are construed strictly
+      - a defective notice or a wrongful termination is itself a repudiation. Insolvency-triggered termination
+      against a customer is unenforceable once a relevant insolvency procedure begins. A termination payment
+      that is disproportionate to a legitimate interest is an unenforceable penalty.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: EW-TERM-001
+      legacy_id: ew_ipso_facto_insolvency
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: a supplier's right to terminate (or do any other thing) is triggered by the
+        customer's insolvency
+      excluded_when: contract is within a Sch.4ZZA exclusion (e.g. financial services)
+      legal_basis:
+      - authority: Insolvency Act 1986 s.233B (CIGA 2020)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Insolvency-triggered termination is unenforceable once the customer enters
+        a relevant insolvency procedure; the supplier must keep performing.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id001
+        - https://www.legislation.gov.uk/
+      overriding_mandatory: true
+    - rule_id: EW-TERM-002
+      legacy_id: ew_no_cure_period
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: termination for material breach with no cure / remedy period
+      legal_basis:
+      - authority: construction (strict reading of termination rights)
+        type: construction
+      non_excludable: []
+      engine_interpretation: Termination bites on any material breach with no chance to remedy; consider
+        a cure period to reduce wrongful-termination risk.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EW-TERM-003
+      legacy_id: ew_termination_penalty
+      rule_type: litigation_risk
+      stability: settled
+      severity: medium
+      detection_condition: termination triggers a payment that may exceed a genuine protection of legitimate
+        interest
+      legal_basis:
+      - authority: Cavendish Square v Makdessi [2015] UKSC 67
+        type: case
+      non_excludable: []
+      engine_interpretation: Termination payment may be an unenforceable penalty if out of all proportion
+        to a legitimate interest.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EW-TERM-004
+      legacy_id: ew_defective_notice_risk
+      rule_type: drafting_risk
+      stability: settled
+      severity: low
+      detection_condition: notice mechanics (method, recipient, timing) are not clearly specified
+      legal_basis:
+      - authority: construction (notice provisions read strictly)
+        type: construction
+      non_excludable: []
+      engine_interpretation: Termination notices are read strictly; defective service can render the termination
+        wrongful.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+  india:
+    legal_system: common_law
+    primary_authority:
+    - Insolvency and Bankruptcy Code 2016 s.14 (moratorium on CIRP commencement); s.14(2) (supply of essential
+      goods/services cannot be suspended/terminated during the moratorium)
+    - Gujarat Urja Vikas Nigam Ltd v Amit Gupta (2021); TATA Consultancy Services v Vishal Ghisulal Jain
+      (ipso facto termination may be restrained only where solely insolvency-triggered AND the contract
+      is central to the CIRP)
+    - Indian Contract Act 1872 s.39 (end contract on the other's refusal/disability to perform); s.74
+      (penalty cut to reasonable compensation); s.75 (compensation on rightful rescission)
+    - 'Specific Relief Act 1963 (as amended 2018): specific performance is now more readily available'
+    enforceability_threshold: 'Unlike the UK, India has no blanket ban on ipso facto clauses. During a
+      CIRP, termination can be restrained only if it is based solely on the insolvency AND the contract
+      is central to the rescue; termination for a pre-existing breach unrelated to insolvency survives.
+      Essential supply cannot be cut during the moratorium. Termination penalties are cut to reasonable
+      compensation, and wrongful termination may now be specifically enforced rather than only sounding
+      in damages.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: IN-TERM-001
+      legacy_id: in_essential_supply_during_moratorium
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: contract is for the supply of essential goods/services to a corporate debtor
+        in CIRP
+      legal_basis:
+      - authority: IBC 2016 s.14(2)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Essential supply cannot be suspended, interrupted or terminated during the
+        moratorium.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id002
+        - https://www.indiacode.nic.in/
+      overriding_mandatory: true
+    - rule_id: IN-TERM-002
+      legacy_id: in_ipso_facto_central_contract
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: termination is solely on the ground of insolvency AND the contract is central
+        to the counterparty's CIRP
+      legal_basis:
+      - authority: IBC 2016 s.14
+        type: statute
+      - authority: Gujarat Urja Vikas v Amit Gupta (2021)
+        type: case
+      non_excludable: []
+      engine_interpretation: Insolvency-only termination of a CIRP-central contract may be restrained
+        by the NCLT. Termination for genuine pre-existing breach is not barred.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls: *id002
+    - rule_id: IN-TERM-003
+      legacy_id: in_termination_penalty
+      rule_type: litigation_risk
+      stability: settled
+      severity: medium
+      detection_condition: forfeiture or a fixed payment on termination
+      legal_basis:
+      - authority: ICA 1872 s.74
+        type: statute
+      non_excludable: []
+      engine_interpretation: Termination penalty/forfeiture is cut to reasonable compensation not exceeding
+        the stipulated sum.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id002
+  germany:
+    legal_system: civil_law
+    primary_authority:
+    - BGB §314 (termination of a continuing obligation for good cause / wichtiger Grund; this right cannot
+      be excluded by contract)
+    - BGB §323 (withdrawal for non-performance, generally after a reasonable cure period / Nachfrist)
+    - InsO §119 (agreements limiting the insolvency code in advance are ineffective); §103 (administrator
+      elects performance) - insolvency-dependent termination clauses largely unenforceable
+    - BGB §§339-343 (contractual penalty; court may reduce a disproportionate one) - but §348 HGB excludes
+      reduction between merchants
+    enforceability_threshold: 'The right to terminate a continuing obligation for good cause is mandatory
+      and cannot be contracted away. Withdrawal for non-performance generally needs a cure period first.
+      Insolvency-dependent termination clauses are largely unenforceable, since the administrator chooses
+      whether to perform. A disproportionate penalty can be reduced, except between merchants.
+
+      '
+    non_excludable:
+    - right to terminate a continuing obligation for good cause (§314)
+    triggers:
+    - rule_id: DE-TERM-001
+      legacy_id: de_exclude_good_cause
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: clause purports to exclude or unduly limit the right to terminate for good
+        cause
+      legal_basis:
+      - authority: BGB §314
+        type: statute
+      non_excludable: []
+      engine_interpretation: The right to terminate a continuing obligation for good cause cannot be excluded;
+        the limitation is ineffective.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: &id003
+        - https://www.gesetze-im-internet.de/
+    - rule_id: DE-TERM-002
+      legacy_id: de_ipso_facto
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: termination triggered by the counterparty's insolvency
+      legal_basis:
+      - authority: InsO §119
+        type: statute
+      - authority: §103
+        type: statute
+      non_excludable: []
+      engine_interpretation: Insolvency-dependent termination clauses are largely unenforceable; the administrator
+        elects performance.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id003
+      overriding_mandatory: true
+    - rule_id: DE-TERM-003
+      legacy_id: de_no_nachfrist
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: termination/withdrawal for non-performance with no cure period
+      legal_basis:
+      - authority: BGB §323
+        type: statute
+      non_excludable: []
+      engine_interpretation: Withdrawal for non-performance generally requires a reasonable cure period
+        (Nachfrist) first.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id003
+    - rule_id: DE-TERM-004
+      legacy_id: de_penalty
+      rule_type: litigation_risk
+      stability: settled
+      severity: low
+      detection_condition: contractual penalty (Vertragsstrafe) on termination
+      excluded_when: both parties are merchants (Kaufleute) under §348 HGB
+      legal_basis:
+      - authority: BGB §343
+        type: statute
+      - authority: §348 HGB
+        type: statute
+      non_excludable: []
+      engine_interpretation: A disproportionate penalty may be reduced by the court, except between merchants.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id003
+  france:
+    legal_system: civil_law
+    primary_authority:
+    - Code civil art. 1225 (clause resolutoire - generally requires a mise en demeure that goes unheeded);
+      art. 1226 (unilateral termination by notice at the creditor's risk, with prior mise en demeure and
+      reasons)
+    - Code civil art. 1211 (open-ended contracts terminable on reasonable notice / preavis)
+    - Code civil art. 1231-5 (penalty clause; court may revise a manifestly excessive or derisory one
+      - mandatory)
+    - Code de commerce art. L622-13 et seq. (clauses terminating on the opening of insolvency proceedings
+      are deemed unwritten; administrator may require continuation)
+    enforceability_threshold: 'A resolution clause generally requires a mise en demeure before it bites,
+      and unilateral termination by notice needs prior notice and reasons. Open-ended contracts require
+      reasonable notice. A manifestly excessive penalty can be revised by the court, and that power cannot
+      be excluded. Clauses terminating on insolvency are deemed unwritten.
+
+      '
+    non_excludable:
+    - court power to revise a manifestly excessive penalty (art. 1231-5)
+    triggers:
+    - rule_id: FR-TERM-001
+      legacy_id: fr_ipso_facto
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: termination triggered by the opening of insolvency proceedings
+      legal_basis:
+      - authority: Code de commerce art. L622-13 et seq.
+        type: statute
+      non_excludable: []
+      engine_interpretation: Clauses terminating on the opening of insolvency proceedings are deemed unwritten;
+        the administrator may require continuation.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: &id004
+        - https://www.legifrance.gouv.fr/
+      overriding_mandatory: true
+    - rule_id: FR-TERM-002
+      legacy_id: fr_clause_resolutoire_no_notice
+      rule_type: drafting_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: clause resolutoire takes effect without a mise en demeure
+      excluded_when: contract expressly provides that mere non-performance suffices
+      legal_basis:
+      - authority: Code civil arts. 1225-1226
+        type: statute
+      non_excludable: []
+      engine_interpretation: A resolution clause generally requires a mise en demeure that goes unheeded;
+        immediate termination may be read down.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: unverified
+        source_urls: *id004
+    - rule_id: FR-TERM-003
+      legacy_id: fr_indefinite_no_notice
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: open-ended contract terminable without reasonable notice
+      legal_basis:
+      - authority: Code civil art. 1211
+        type: statute
+      non_excludable: []
+      engine_interpretation: Open-ended contracts require reasonable notice (preavis) before termination.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id004
+    - rule_id: FR-TERM-004
+      legacy_id: fr_penalty
+      rule_type: litigation_risk
+      stability: settled
+      severity: medium
+      detection_condition: penalty/forfeiture on termination
+      legal_basis:
+      - authority: Code civil art. 1231-5
+        type: statute
+      non_excludable: []
+      engine_interpretation: A manifestly excessive termination penalty may be revised by the court; the
+        power cannot be excluded.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id004
+fallback_ladder:
+  ideal: 'Mutual rights: termination for cause with a defined cure period, termination for convenience
+    on reasonable notice, a clear survival clause, no reliance on an insolvency-only trigger, plus transition
+    assistance and orderly wind-down.'
+  acceptable: Termination for cause (with cure) and for convenience (reasonable notice); survival of confidentiality,
+    IP and liability; any insolvency trigger understood to be limited by local insolvency law.
+  walk_away: Immediate termination for any breach with no cure, one-sided rights, a disproportionate termination
+    penalty, sole reliance on an insolvency trigger local law will not enforce, and no survival clause.
+output_contract:
+  required_fields:
+  - rule_id
+  - clause_id
+  - jurisdiction
+  - severity
+  - rule_type
+  - stability
+  - legal_basis
+  - engine_interpretation
+  - evidence_span
+  rules:
+  - every finding must carry the rule_id it fired from
+  - legal_basis is reported verbatim; the model must not invent authorities
+  - engine_interpretation must not assert invalidity for litigation_risk / negotiation_risk rules
+  - 'respect excluded_when: do not raise a finding where its excluded_when condition holds'
+  - evidence_span must quote the contract text that triggered the rule
+  - the engine must not serve a rule whose meta.status is not 'verified' or is past due
+schema_version: 2
+cadence_by_stability:
+  settled: 24
+  context_sensitive: 12
+  evolving: 3
+  jurisdictionally_variable: 6

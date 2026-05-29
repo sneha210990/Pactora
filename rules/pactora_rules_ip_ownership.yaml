@@ -1,0 +1,379 @@
+clause: ip_ownership
+clause_id: IPO
+version: '0.2'
+last_reviewed: '2026-05-29'
+detection:
+  mode: semantic
+  typical_headings:
+  - Intellectual Property
+  - Ownership
+  - Title
+  - Assignment of IP
+  - Work Product
+  semantic_signals:
+  - allocates ownership of, or assigns, IP / work product / deliverables
+  - language such as "all right, title and interest", "hereby assigns", "shall vest in"
+  - distinguishes background IP from foreground / developed IP
+  - waives or addresses moral rights
+  - grants a licence-back to the assignor
+  cross_reference:
+  - 'IP infringement cover: assess jointly with indemnities block (IND)'
+jurisdictions:
+  england_wales:
+    legal_system: common_law
+    primary_authority:
+    - CDPA 1988 s.11(2) (employer owns employee works made in the course of employment; contractors are
+      NOT caught)
+    - CDPA 1988 s.90(3) (assignment of copyright must be in writing signed by or on behalf of the assignor)
+    - CDPA 1988 s.91 (future copyright assignable by present assignment; vests automatically on creation)
+    - CDPA 1988 ss.77-87, s.94 (moral rights; waivable in writing s.87; not assignable s.94)
+    - Patents Act 1977 s.30(6) (assignment in writing signed by or on behalf of the parties); s.39 (employee
+      inventions)
+    enforceability_threshold: 'Absent an express written assignment, a contractor or consultant keeps
+      ownership of what they create - the employer default in s.11(2) reaches employees only. Future IP
+      can be captured, but only by a present assignment ("hereby assigns"), which vests on creation; a
+      mere agreement to assign creates only an equitable interest needing a further deed. Moral rights
+      must be waived expressly in writing.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: EW-IPO-001
+      legacy_id: ew_contractor_no_assignment
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: deliverables created by a contractor / consultant AND no express written assignment
+        of IP
+      excluded_when: creator is an employee acting in the course of employment
+      legal_basis:
+      - authority: CDPA 1988 s.11(2)
+        type: statute
+      - authority: s.90(3)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Contractor-created IP stays with the contractor without an express written
+        assignment; the client gets a bare licence at best.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id001
+        - https://www.legislation.gov.uk/
+    - rule_id: EW-IPO-002
+      legacy_id: ew_future_ip_agreement_only
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: clause is an agreement to assign future IP rather than a present assignment
+        ("will assign" not "hereby assigns")
+      legal_basis:
+      - authority: CDPA 1988 s.91
+        type: statute
+      non_excludable: []
+      engine_interpretation: Future IP is only captured by a present assignment; 'will assign' leaves
+        an equitable interest requiring a further deed.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EW-IPO-003
+      legacy_id: ew_no_writing
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: assignment of copyright or patents not in writing / not signed by the assignor
+      legal_basis:
+      - authority: CDPA 1988 s.90(3)
+        type: statute
+      - authority: Patents Act 1977 s.30(6)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Assignment is void without writing signed by the assignor.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EW-IPO-004
+      legacy_id: ew_moral_rights_unwaived
+      rule_type: drafting_risk
+      stability: settled
+      severity: low
+      detection_condition: no express written waiver of moral rights
+      legal_basis:
+      - authority: CDPA 1988 s.87
+        type: statute
+      non_excludable: []
+      engine_interpretation: Moral rights are not waived; author may assert identification / object to
+        derogatory treatment.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+  india:
+    legal_system: common_law
+    primary_authority:
+    - Copyright Act 1957 s.17(c) (employer first owner of works made under a contract of service; contractors
+      retain)
+    - Copyright Act 1957 s.18 (future works assignable, but assignment takes effect only on creation)
+    - Copyright Act 1957 s.19 (assignment in writing+signed; must specify rights, duration, territory,
+      royalty)
+    - 'Copyright Act 1957 s.19(5)-(6) (defaults: 5 years if duration unstated; India only if territory
+      unstated); s.19(4) (lapse if rights unused within 1 year)'
+    - Copyright Act 1957 s.57 (author's moral rights; independent of assignment)
+    - Patents Act 1970 s.68 (assignment in writing, in a document embodying all terms, duly executed)
+    enforceability_threshold: 'As in England, an employer is first owner only for works under a contract
+      of service; contractors retain ownership absent assignment. Assignment must be in writing and signed.
+      Critically, statute fills gaps AGAINST the assignee: if duration is unstated the assignment lasts
+      only 5 years (s.19(5)); if territory is unstated it is confined to India (s.19(6)); and unused rights
+      lapse after a year (s.19(4)). Moral rights under s.57 are independent of assignment.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: IN-IPO-001
+      legacy_id: in_contractor_no_assignment
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: deliverables created by a contractor AND no written signed assignment
+      excluded_when: creator is an employee under a contract of service
+      legal_basis:
+      - authority: Copyright Act 1957 s.17(c)
+        type: statute
+      - authority: s.19(1)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Contractor-created IP stays with the contractor without a written signed
+        assignment.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id002
+        - https://www.indiacode.nic.in/
+    - rule_id: IN-IPO-002
+      legacy_id: in_missing_duration_or_territory
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: assignment omits duration and/or territorial extent
+      legal_basis:
+      - authority: Copyright Act 1957 s.19(5)-(6)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Silence on duration caps the assignment at 5 years; silence on territory
+        confines it to India. The intended global/perpetual grant is statutorily cut down.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id002
+      overriding_mandatory: true
+    - rule_id: IN-IPO-003
+      legacy_id: in_unused_rights_lapse
+      rule_type: operational_risk
+      stability: settled
+      severity: medium
+      detection_condition: broad bundle of rights assigned with no plan to exercise all of them
+      legal_basis:
+      - authority: Copyright Act 1957 s.19(4)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Rights not exercised within one year may lapse unless the assignment says
+        otherwise.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id002
+  germany:
+    legal_system: civil_law
+    primary_authority:
+    - UrhG §29 (copyright is NOT transferable except by inheritance; only exploitation rights may be granted)
+    - UrhG §31 (grant of exploitation rights / Nutzungsrechte; exclusive or non-exclusive)
+    - 'UrhG §31(5) (purpose-transfer rule: rights not specified are construed narrowly by the contract''s
+      purpose)'
+    - 'UrhG §43 (employee works: employer obtains usage rights per purpose; author remains author)'
+    - 'UrhG §69b (software by an employee: employer entitled to exercise all economic rights)'
+    enforceability_threshold: 'An English-style assignment of copyright does not work in Germany: authorship
+      cannot be transferred (§29). The clause must instead grant exclusive exploitation rights. Rights
+      not expressly and specifically granted are read narrowly under the purpose-transfer rule. Software
+      is the main exception, where the employer may exercise all economic rights. Moral rights are inalienable.
+
+      '
+    non_excludable:
+    - authorship itself (cannot be assigned, §29)
+    - moral rights (inalienable)
+    triggers:
+    - rule_id: DE-IPO-001
+      legacy_id: de_assignment_ineffective
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: clause purports to ASSIGN copyright in works created in Germany
+      excluded_when: the work is software AND the creator is an employee (§69b)
+      legal_basis:
+      - authority: UrhG §29
+        type: statute
+      - authority: §31
+        type: statute
+      non_excludable: []
+      engine_interpretation: Copyright cannot be assigned under German law; recast as an exclusive grant
+        of exploitation rights or the clause is ineffective.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: &id003
+        - https://www.gesetze-im-internet.de/
+      overriding_mandatory: true
+    - rule_id: DE-IPO-002
+      legacy_id: de_unspecified_rights_read_down
+      rule_type: litigation_risk
+      stability: settled
+      severity: medium
+      detection_condition: broad/blanket grant of rights without specifying the types of use
+      legal_basis:
+      - authority: UrhG §31(5)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Unspecified rights are construed narrowly by purpose; the broad grant will
+        be read down.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id003
+  france:
+    legal_system: civil_law
+    primary_authority:
+    - CPI art. L131-1 (total/global assignment of FUTURE works is null and void)
+    - CPI art. L131-3 (each right assigned must be separately stated, with scope, purpose, place and duration
+      defined)
+    - CPI art. L121-1 (droit moral is perpetual, inalienable and imprescriptible - cannot be waived)
+    - 'CPI art. L113-9 / L131-4 5° (software: economic rights of an employee author vest in the employer)'
+    enforceability_threshold: 'A blanket "assigns all future IP" clause is null under L131-1. A valid
+      assignment must specify each right with its scope, purpose, territory and duration (L131-3). The
+      droit moral cannot be waived, so any moral-rights waiver is ineffective. Case law allows assignment
+      limited to determinable works produced under the contract, taking effect once created. Software
+      is the main exception.
+
+      '
+    non_excludable:
+    - droit moral (perpetual, inalienable - any waiver is ineffective)
+    triggers:
+    - rule_id: FR-IPO-001
+      legacy_id: fr_global_future_assignment
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: clause assigns all future works / all future IP globally
+      excluded_when: assignment is limited to determinable, separable works produced under the contract
+        and takes effect on creation
+      legal_basis:
+      - authority: CPI art. L131-1
+        type: statute
+      non_excludable: []
+      engine_interpretation: Global assignment of future works is null under L131-1; limit it to determinable
+        works taking effect on creation.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: &id004
+        - https://www.legifrance.gouv.fr/
+      overriding_mandatory: true
+    - rule_id: FR-IPO-002
+      legacy_id: fr_unspecified_rights
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: assignment does not separately state each right with scope, purpose, place
+        and duration
+      legal_basis:
+      - authority: CPI art. L131-3
+        type: statute
+      non_excludable: []
+      engine_interpretation: Assignment fails L131-3 specificity; unspecified rights are not validly transferred.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id004
+    - rule_id: FR-IPO-003
+      legacy_id: fr_moral_rights_waiver
+      rule_type: mandatory_law
+      stability: settled
+      severity: medium
+      detection_condition: clause purports to waive the author's moral rights
+      legal_basis:
+      - authority: CPI art. L121-1
+        type: statute
+      non_excludable: []
+      engine_interpretation: Moral-rights waiver is ineffective under French law; the droit moral is inalienable.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id004
+      overriding_mandatory: true
+fallback_ladder:
+  ideal: Present assignment of foreground IP (recast as exclusive licence for DE/FR), in writing and signed,
+    with background IP retained and a licence-back to the assignor; moral rights waived where the jurisdiction
+    allows.
+  acceptable: Assignment/exclusive licence of foreground IP with duration and territory expressly stated
+    (avoids India s.19 defaults), software handled under the local employee exception.
+  walk_away: Blanket assignment of all background and future IP, no writing/signature, moral-rights waiver
+    relied on in a jurisdiction that forbids it, contractor work with no assignment at all.
+output_contract:
+  required_fields:
+  - rule_id
+  - clause_id
+  - jurisdiction
+  - severity
+  - rule_type
+  - stability
+  - legal_basis
+  - engine_interpretation
+  - evidence_span
+  rules:
+  - every finding must carry the rule_id it fired from
+  - legal_basis is reported verbatim; the model must not invent authorities
+  - engine_interpretation must not assert invalidity for litigation_risk / negotiation_risk rules
+  - 'respect excluded_when: do not raise a finding where its excluded_when condition holds'
+  - evidence_span must quote the contract text that triggered the rule
+  - the engine must not serve a rule whose meta.status is not 'verified' or is past due
+schema_version: 2
+cadence_by_stability:
+  settled: 24
+  context_sensitive: 12
+  evolving: 3
+  jurisdictionally_variable: 6

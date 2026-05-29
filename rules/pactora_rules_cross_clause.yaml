@@ -1,0 +1,180 @@
+ruleset: cross_clause
+ruleset_id: XC
+version: 0.1
+last_reviewed: 2026-05-29
+run_order: after_per_clause_agents
+contract_level_inputs:
+- governing_law
+- place_of_performance
+- place_of_ip_creation
+- place_of_data_processing
+- liability_cap_present
+- liability_cap_carveouts
+- survival_list
+rules:
+- id: xc_indemnity_outside_cap
+  description: An uncapped indemnity sitting outside the liability cap defeats the negotiated cap.
+  when:
+  - a finding from IND with trigger matching *_uncapped_outside_cap / *_outside_cap
+  - liability_cap_present is true
+  severity: high
+  message: 'The negotiated cap is undermined: an indemnity sits outside it and is uncapped, so total exposure
+    is effectively unlimited.'
+  recommendation: Bring the indemnity within the cap or set an explicit super-cap, unless uncapped exposure
+    is a deliberate, priced decision.
+  cross_rule_id: XC-001
+  rule_type: cross_clause
+  depends_on:
+  - clause:IND
+  - clause:LOL
+  meta:
+    last_verified: '2026-05-29'
+    verified_by: deterministic (Pactora)
+    review_cadence_months: 12
+    status: verified
+    source_urls: []
+- id: xc_ip_indemnity_vs_ownership
+  description: An IP-infringement indemnity is only as strong as the ownership position behind it.
+  when:
+  - a finding from IND with trigger ind_ip_infringement_scope
+  - a finding from IPO indicating defective or ineffective ownership (contractor IP unassigned, or an
+    assignment void / cut down under local law)
+  severity: high
+  message: The IP-infringement indemnity rests on an ownership position that is defective in this jurisdiction;
+    the indemnitor may be warranting title it does not hold, or the indemnity may be triggered by its
+    own ownership gap.
+  recommendation: Fix the ownership / assignment position (IPO) first, then size the indemnity to the
+    corrected position.
+  cross_rule_id: XC-002
+  rule_type: cross_clause
+  depends_on:
+  - IND:ind_ip_infringement_scope
+  - clause:IPO
+  meta:
+    last_verified: '2026-05-29'
+    verified_by: deterministic (Pactora)
+    review_cadence_months: 12
+    status: verified
+    source_urls: []
+- id: xc_survival_gap
+  description: Protections evaporate on termination if they are not in the survival list.
+  when:
+  - a TERM clause is present
+  - survival_list omits any of [confidentiality, IP assignment/licence, liability cap, indemnities, data
+    deletion/return]
+  severity: high
+  message: One or more core protections are not stated to survive termination; they may fall away exactly
+    when they are needed most.
+  recommendation: Add the missing items to an express survival clause.
+  cross_rule_id: XC-003
+  rule_type: cross_clause
+  depends_on:
+  - clause:TERM
+  meta:
+    last_verified: '2026-05-29'
+    verified_by: deterministic (Pactora)
+    review_cadence_months: 12
+    status: verified
+    source_urls: []
+- id: xc_data_breach_vs_cap
+  description: Data-breach exposure and fine indemnities interact with the cap and may be ineffective.
+  when:
+  - a finding from DP relating to breach liability or a regulatory-fine indemnity
+  severity: medium
+  message: Data-breach liability or a regulatory-fine indemnity must be read against the cap. An indemnity
+    for the other party's OWN regulatory fine may be ineffective, since a regulator pursues the infringer
+    directly.
+  recommendation: Decide deliberately whether data-breach liability sits inside or outside the cap; do
+    not rely on indemnifying another party's own fine.
+  cross_rule_id: XC-004
+  rule_type: cross_clause
+  depends_on:
+  - clause:DP
+  - clause:LOL
+  meta:
+    last_verified: '2026-05-29'
+    verified_by: deterministic (Pactora)
+    review_cadence_months: 12
+    status: verified
+    source_urls: []
+- id: xc_governing_law_vs_mandatory_rules
+  description: Choosing one governing law does not escape the mandatory rules of the place of performance,
+    IP creation, data processing or insolvency. This is the rule that ties the whole matrix together.
+  when:
+  - governing_law differs from place_of_ip_creation OR place_of_data_processing OR place_of_performance
+  - any per-clause finding cites a MANDATORY local rule for that other place (examples: DE BGB §314 or
+      UrhG §29; FR droit moral L121-1 or L131-1; IN Copyright Act s.19(5)-(6); UK Insolvency Act s.233B)
+  severity: high
+  message: The governing-law clause cannot override mandatory local rules where work is created, data
+    is processed, or insolvency occurs. The contract is partly governed by laws it does not name.
+  recommendation: Surface the conflict. Mandatory local rules - inalienable moral rights, non-assignable
+    copyright, insolvency termination bans, statutory assignment defaults - apply regardless of the chosen
+    law.
+  cross_rule_id: XC-005
+  rule_type: cross_clause
+  depends_on:
+  - clause:IPO
+  - clause:DP
+  - clause:TERM
+  meta:
+    last_verified: '2026-05-29'
+    verified_by: deterministic (Pactora)
+    review_cadence_months: 12
+    status: verified
+    source_urls: []
+- id: xc_termination_penalty_vs_cap
+  description: A termination payment is both a penalty-risk and a cap-interaction issue.
+  when:
+  - a finding from TERM relating to a termination penalty / forfeiture
+  severity: medium
+  message: A termination payment engages the penalty doctrine and also sits against the cap; it should
+    be treated consistently with the LoL analysis.
+  recommendation: Confirm the payment protects a legitimate interest and reconcile it with the cap and
+    its carve-outs.
+  cross_rule_id: XC-006
+  rule_type: cross_clause
+  depends_on:
+  - clause:TERM
+  - clause:LOL
+  meta:
+    last_verified: '2026-05-29'
+    verified_by: deterministic (Pactora)
+    review_cadence_months: 12
+    status: verified
+    source_urls: []
+- id: xc_carveout_consistency
+  description: Cap carve-outs should be consistent across the contract.
+  when:
+  - liability_cap_carveouts is defined
+  - an indemnity or data-breach liability is carved out of the cap without being listed in liability_cap_carveouts
+    (or a listed carve-out has no matching clause)
+  severity: medium
+  message: Cap carve-outs are inconsistent across clauses; an exposure is escaping the cap (or trapped
+    in it) unintentionally.
+  recommendation: Reconcile the carve-out list in the LoL clause with the indemnity and data-protection
+    clauses.
+  cross_rule_id: XC-007
+  rule_type: cross_clause
+  depends_on:
+  - clause:LOL
+  - clause:IND
+  meta:
+    last_verified: '2026-05-29'
+    verified_by: deterministic (Pactora)
+    review_cadence_months: 12
+    status: verified
+    source_urls: []
+output_contract:
+  required_fields:
+  - rule_id
+  - contributing_findings
+  - severity
+  - message
+  - recommendation
+  rules:
+  - contributing_findings must reference the per-clause findings (clause_id + trigger_id) that triggered
+    the cross-rule
+  - do not raise a cross-rule unless its contributing findings are present in the input
+  - 'if a contract-level input a rule needs is unknown, set status: needs_input rather than firing or
+    silently suppressing the rule'
+schema_version: 2

@@ -1,0 +1,445 @@
+clause: indemnities
+clause_id: IND
+version: '0.2'
+last_reviewed: '2026-05-29'
+detection:
+  mode: semantic
+  typical_headings:
+  - Indemnity
+  - Indemnification
+  - Hold Harmless
+  semantic_signals:
+  - one party agrees to compensate the other for specified losses or third-party claims
+  - shall indemnify and hold harmless
+  - a duty to defend, or to control/settle third-party claims
+  - cover for IP infringement, data breach, or personal injury claims
+  cross_reference:
+  - 'IP infringement indemnities: assess scope jointly with ip_ownership block (IPO)'
+jurisdictions:
+  england_wales:
+    legal_system: common_law
+    primary_authority:
+    - Indemnities are creatures of contract; construed strictly / contra proferentem
+    - Canada Steamship Lines Ltd v The King [1952] AC 192 (clear words needed to indemnify a party against
+      its OWN negligence)
+    - Consumer Rights Act 2015, Sch.4 para 6 (repealed UCTA s.4; no standalone reasonableness test for
+      B2B indemnities)
+    - UCTA 1977 ss.2-3 (engaged ONLY where the indemnity in substance excludes/restricts liability)
+    enforceability_threshold: 'In B2B, indemnities are enforced as drafted and are not subject to a standalone
+      UCTA reasonableness test (former s.4 repealed). Clear express words are required to indemnify a
+      party against its own negligence; modern courts apply contra proferentem less mechanically between
+      commercial parties. A party cannot be indemnified against its own fraud (public policy).
+
+      '
+    non_excludable:
+    - indemnity against a party's own fraud (unenforceable)
+    triggers:
+    - rule_id: EW-IND-001
+      legacy_id: ew_uncapped_outside_cap
+      rule_type: negotiation_risk
+      stability: settled
+      severity: high
+      detection_condition: indemnity is uncapped AND carved out of / sits outside the liability cap
+      legal_basis:
+      - authority: construction
+        type: construction
+      non_excludable: []
+      engine_interpretation: Indemnity sits outside the liability cap and is uncapped, creating unlimited
+        exposure that defeats the negotiated cap.
+      depends_on:
+      - clause:LOL
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id001
+        - https://www.legislation.gov.uk/
+    - rule_id: EW-IND-002
+      legacy_id: ew_own_negligence_unclear
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: indemnity appears to cover the indemnified party's own negligence without clear
+        express words
+      legal_basis:
+      - authority: Canada Steamship Lines v The King [1952] AC 192
+        type: case
+      non_excludable: []
+      engine_interpretation: Indemnity may cover the indemnitee's own negligence but lacks clear words;
+        likely read down on a Canada Steamship basis.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EW-IND-003
+      legacy_id: ew_bypasses_damages_limits
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: indemnity framed as a debt claim, bypassing remoteness and the duty to mitigate
+      legal_basis:
+      - authority: construction (indemnity vs damages)
+        type: construction
+      non_excludable: []
+      engine_interpretation: Indemnity avoids the usual limits on damages (remoteness, mitigation). Confirm
+        this breadth is intended, not inadvertent.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EW-IND-004
+      legacy_id: ew_fraud_indemnity
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: purports to indemnify a party against the consequences of its own fraud
+      legal_basis:
+      - authority: public policy
+        type: construction
+      non_excludable: []
+      engine_interpretation: Indemnity against a party's own fraud is unenforceable.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EW-IND-005
+      legacy_id: ind_ip_infringement_scope
+      rule_type: drafting_risk
+      stability: settled
+      severity: high
+      detection_condition: an IP-infringement indemnity is given AND its scope is unqualified (no carve-out
+        for client-supplied materials, client modifications, combination/use outside spec, or open-source)
+        OR it is not backed by a sound ownership/licence position
+      legal_basis:
+      - authority: construction
+        type: construction
+      non_excludable: []
+      engine_interpretation: IP-infringement indemnity is unqualified or rests on an unverified ownership
+        position; the indemnitor may be warranting title it cannot stand behind. Scope to defined third-party
+        IP claims and confirm the IPO position first.
+      depends_on:
+      - clause:IPO
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+  india:
+    legal_system: common_law
+    primary_authority:
+    - Indian Contract Act 1872, s.124 (contract of indemnity defined)
+    - Indian Contract Act 1872, s.125 (rights of the indemnity-holder when sued)
+    - Gajanan Moreshwar Parelkar v Moreshwar Madan Mantri, AIR 1942 Bom 302 (holder may compel the indemnifier
+      once liability is absolute, before paying out)
+    enforceability_threshold: 'Indemnity is defined in s.124 and the holder''s rights in s.125. The literal
+      wording of s.124 is conduct-based (loss caused by the promisor or another person); Indian courts,
+      following English law, have extended indemnities to losses not caused by human agency. An indemnity-holder
+      may require the indemnifier to meet a liability once it is absolute, without first discharging it
+      (Gajanan Moreshwar).
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: IN-IND-001
+      legacy_id: in_pay_first_wording
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: indemnity payable only after the indemnified party has actually paid the third
+        party
+      legal_basis:
+      - authority: ICA 1872 s.125
+        type: statute
+      - authority: Gajanan Moreshwar (1942)
+        type: case
+      non_excludable: []
+      engine_interpretation: '''Pay first'' wording weakens the holder''s right to be put in funds once
+        liability is absolute; consider express ''on demand'' drafting.'
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id002
+        - https://www.indiacode.nic.in/
+    - rule_id: IN-IND-002
+      legacy_id: in_scope_non_human_agency
+      rule_type: drafting_risk
+      stability: context_sensitive
+      severity: low
+      detection_condition: indemnity relies on cover for losses not caused by any person's conduct
+      legal_basis:
+      - authority: ICA 1872 s.124 (literal scope)
+        type: statute
+      non_excludable: []
+      engine_interpretation: s.124's literal wording is conduct-based; modern courts extend cover, but
+        draft the trigger expressly to avoid argument.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls: *id002
+    - rule_id: IN-IND-003
+      legacy_id: in_uncapped_outside_cap
+      rule_type: negotiation_risk
+      stability: settled
+      severity: high
+      detection_condition: indemnity is uncapped AND sits outside the liability cap
+      legal_basis:
+      - authority: interaction with LoL cap
+        type: construction
+      non_excludable: []
+      engine_interpretation: Uncapped indemnity outside the cap creates unlimited exposure.
+      depends_on:
+      - clause:LOL
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id002
+    - rule_id: IN-IND-004
+      legacy_id: ind_ip_infringement_scope
+      rule_type: drafting_risk
+      stability: settled
+      severity: high
+      detection_condition: an IP-infringement indemnity is given AND its scope is unqualified (no carve-out
+        for client-supplied materials, client modifications, combination/use outside spec, or open-source)
+        OR it is not backed by a sound ownership/licence position
+      legal_basis:
+      - authority: ICA 1872 ss.124-125
+        type: statute
+      non_excludable: []
+      engine_interpretation: IP-infringement indemnity is unqualified or rests on an unverified ownership
+        position; the indemnitor may be warranting title it cannot stand behind. Scope to defined third-party
+        IP claims and confirm the IPO position first.
+      depends_on:
+      - clause:IPO
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id002
+  germany:
+    legal_system: civil_law
+    primary_authority:
+    - BGB - no standalone 'indemnity'; hold-harmless is a Freistellung (release) or a damages claim
+    - BGB §307 (broad Freistellung in standard terms (AGB) subject to unreasonable-disadvantage control)
+    - BGB §276(3) (cannot release liability for intent in advance)
+    enforceability_threshold: 'German law has no common-law indemnity concept; hold-harmless is structured
+      as a Freistellung. A broad Freistellung in standard business terms is policed under §307 and may
+      be void if it unreasonably disadvantages the counterparty. A release covering the released party''s
+      intent is invalid.
+
+      '
+    non_excludable:
+    - release of liability for intent / Vorsatz (§276(3))
+    triggers:
+    - rule_id: DE-IND-001
+      legacy_id: de_agb_broad_freistellung
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: standard-form (AGB) AND broad hold-harmless with no carve-out for intent
+      excluded_when: term was individually negotiated (Individualvereinbarung escapes AGB control)
+      legal_basis:
+      - authority: BGB §307
+        type: statute
+      - authority: §276(3)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Broad Freistellung in standard terms with no carve-out for intent is presumptively
+        void under §307.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: &id003
+        - https://www.gesetze-im-internet.de/
+    - rule_id: DE-IND-002
+      legacy_id: de_uncapped_outside_cap
+      rule_type: negotiation_risk
+      stability: settled
+      severity: high
+      detection_condition: uncapped AND outside the liability cap
+      legal_basis:
+      - authority: interaction with LoL cap
+        type: construction
+      non_excludable: []
+      engine_interpretation: Uncapped release outside the cap creates unlimited exposure.
+      depends_on:
+      - clause:LOL
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id003
+    - rule_id: DE-IND-003
+      legacy_id: ind_ip_infringement_scope
+      rule_type: drafting_risk
+      stability: settled
+      severity: high
+      detection_condition: an IP-infringement Freistellung is given AND its scope is unqualified (no carve-out
+        for client-supplied materials, client modifications, combination/use outside spec, or open-source)
+        OR it is not backed by a sound ownership/licence position
+      legal_basis:
+      - authority: BGB §307 (AGB control)
+        type: statute
+      non_excludable: []
+      engine_interpretation: IP-infringement release is unqualified or rests on an unverified ownership
+        position; in standard terms a broad unqualified release also risks §307. Scope to defined third-party
+        IP claims and confirm the IPO position first.
+      depends_on:
+      - clause:IPO
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id003
+  france:
+    legal_system: civil_law
+    primary_authority:
+    - Code civil art. 1231-5 (clause penale; court may reduce a manifestly excessive sum)
+    - Code civil art. 1171 (significant imbalance in a contrat d'adhesion deemed unwritten)
+    - Code civil arts. 1626 ff. (garantie d'eviction - overlaps with IP warranties)
+    enforceability_threshold: 'Indemnity-style protection is expressed as a garantie / clause de garantie.
+      Where an indemnity operates as a fixed penalty, art. 1231-5 lets a court reduce a manifestly excessive
+      amount. In an adhesion contract, an indemnity creating significant imbalance may be deemed unwritten
+      under art. 1171. IP-related protection overlaps with the statutory garantie d''eviction.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: FR-IND-001
+      legacy_id: fr_penalty_excessive
+      rule_type: litigation_risk
+      stability: settled
+      severity: medium
+      detection_condition: indemnity set as a fixed sum that is manifestly excessive (or derisory)
+      legal_basis:
+      - authority: Code civil art. 1231-5
+        type: statute
+      non_excludable: []
+      engine_interpretation: Fixed indemnity sum may be revised by a court as manifestly excessive under
+        art. 1231-5.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: &id004
+        - https://www.legifrance.gouv.fr/
+    - rule_id: FR-IND-002
+      legacy_id: fr_adhesion_imbalance
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: contrat d'adhesion AND indemnity creates significant imbalance
+      excluded_when: term was negotiated, or bears on main subject-matter / price
+      legal_basis:
+      - authority: Code civil art. 1171
+        type: statute
+      non_excludable: []
+      engine_interpretation: Non-negotiated indemnity creating significant imbalance in an adhesion contract
+        is at risk under art. 1171; fact-sensitive (turns on adhesion status and negotiation), so surface
+        for review rather than asserting the term falls away.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: unverified
+        source_urls: *id004
+    - rule_id: FR-IND-003
+      legacy_id: fr_uncapped_outside_cap
+      rule_type: negotiation_risk
+      stability: settled
+      severity: high
+      detection_condition: uncapped AND outside the liability cap
+      legal_basis:
+      - authority: interaction with LoL cap
+        type: construction
+      non_excludable: []
+      engine_interpretation: Uncapped garantie outside the cap creates unlimited exposure.
+      depends_on:
+      - clause:LOL
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id004
+    - rule_id: FR-IND-004
+      legacy_id: ind_ip_infringement_scope
+      rule_type: drafting_risk
+      stability: settled
+      severity: high
+      detection_condition: an IP-infringement garantie is given AND its scope is unqualified (no carve-out
+        for client-supplied materials, client modifications, combination/use outside spec, or open-source)
+        OR it is not backed by a sound ownership/licence position
+      legal_basis:
+      - authority: Code civil arts. 1626 ff. (garantie d'eviction)
+        type: statute
+      non_excludable: []
+      engine_interpretation: IP-infringement garantie is unqualified or rests on an unverified ownership
+        position; it overlaps the statutory garantie d'eviction. Scope to defined third-party IP claims
+        and confirm the IPO position first.
+      depends_on:
+      - clause:IPO
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: unverified
+        source_urls: *id004
+fallback_ladder:
+  ideal: Mutual, capped indemnities limited to defined third-party claim categories (IP infringement,
+    data breach, death/personal injury), indemnitor controls the defence, cap expressly applies.
+  acceptable: Indemnities capped at the aggregate liability cap, limited to third-party claims, carve-outs
+    only for fraud and (where mandatory) intent.
+  walk_away: Uncapped, one-sided indemnity outside the cap, covering first-party losses and the indemnitee's
+    own negligence or fraud.
+output_contract:
+  required_fields:
+  - rule_id
+  - clause_id
+  - jurisdiction
+  - severity
+  - rule_type
+  - stability
+  - legal_basis
+  - engine_interpretation
+  - evidence_span
+  rules:
+  - every finding must carry the rule_id it fired from
+  - legal_basis is reported verbatim; the model must not invent authorities
+  - engine_interpretation must not assert invalidity for litigation_risk / negotiation_risk rules
+  - 'respect excluded_when: do not raise a finding where its excluded_when condition holds'
+  - evidence_span must quote the contract text that triggered the rule
+  - the engine must not serve a rule whose meta.status is not 'verified' or is past due
+schema_version: 2
+cadence_by_stability:
+  settled: 24
+  context_sensitive: 12
+  evolving: 3
+  jurisdictionally_variable: 6

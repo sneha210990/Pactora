@@ -90,3 +90,66 @@ Tracked in [issue #138](https://github.com/sneha210990/Pactora/issues/138). When
 - Override `clauseType` from the known agent identity, not the model's returned string (see `run-clause-agent.ts` — guards against category hallucination).
 - `pdf-parse` is in `serverExternalPackages` because its `createRequire` path defeats Next's static tracer. If touching extraction, preserve `outputFileTracingIncludes` in `next.config.ts`.
 - Tests excluded from `tsconfig.json`; Vitest has its own `@` alias in `vitest.config.ts`.
+
+---
+
+## Pactora rules engine (schema v2)
+
+A jurisdiction-aware legal rules corpus lives alongside the Next.js app in `rules/`.
+It is the source of truth for which legal rules the AI analysis pipeline flags against.
+
+### Layout
+
+```
+rules/                          # Six YAML rule files (schema v2)
+pactora_maint.py                # validate-v2, staleness, scaffold-jurisdiction
+pactora_harness.py              # Analysis pipeline — v2 port is Task 1 (not yet written)
+extract_counsel_data.py         # Reads rules/, writes counsel.json
+gen_counsel.js                  # Reads counsel.json, writes .docx (requires: npm install docx)
+tester/PactoraTester.jsx        # Reference React tester — already fully v2-correct
+docs/Pactora_Counsel_Signoff.docx  # Sample generated counsel sign-off document
+TASKS.md                        # Remaining task brief
+```
+
+### Commands
+
+```sh
+# Validate a rule file
+python3 pactora_maint.py validate-v2 rules/pactora_rules_termination.yaml
+
+# Staleness report (run after any rule change; 24 unverified civil-law rules expected)
+python3 pactora_maint.py staleness rules/
+
+# Counsel pipeline
+python3 extract_counsel_data.py rules/ counsel.json
+node gen_counsel.js counsel.json docs/Pactora_Counsel_Signoff.docx
+
+# Analysis harness (once Task 1 is complete)
+python3 pactora_harness.py --rules-dir rules analyze --mock
+```
+
+### Schema v2 invariants — do NOT break these
+
+1. `rule_id` values are stable and never renumbered or reused.
+2. `legal_basis` holds authorities only, each `{authority, type}`. Recommendations
+   and market-practice statements belong in `engine_interpretation`, not `legal_basis`.
+3. A `litigation_risk` or `negotiation_risk` rule's `engine_interpretation` must not
+   assert invalidity (no "is void / unenforceable / is invalid / deemed unwritten").
+4. Civil-law (Germany, France) rules stay `meta.status: unverified` until counsel
+   signs off. Never flip them to verified.
+5. The engine must never serve a rule that is not verified or is past its review due
+   date. Honour `is_servable()` from `pactora_maint.py`.
+6. `overriding_mandatory: true` marks rules that survive a foreign choice-of-law
+   clause (IP formalities/moral rights, insolvency bans). It is NOT derived from
+   `rule_type: mandatory_law` — do not conflate the two.
+7. House style for generated text and docs: British English; hyphens, never em dashes;
+   avoid "genuinely", "honestly", "straightforward".
+
+### Workflow rules
+
+- Use plan mode for any change touching the YAML rule files — show the diff before writing.
+- After any YAML change: re-run `validate-v2` and `staleness`.
+- After any change to the counsel pipeline: re-run `extract_counsel_data.py` and
+  confirm the overriding-mandatory count is still 8.
+- Do not alter legal content (thresholds, authorities, interpretations) without
+  raising it as a note first.

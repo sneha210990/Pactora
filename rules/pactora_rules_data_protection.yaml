@@ -1,0 +1,380 @@
+clause: data_protection
+clause_id: DP
+version: '0.2'
+last_reviewed: '2026-05-29'
+detection:
+  mode: semantic
+  typical_headings:
+  - Data Protection
+  - Data Processing Agreement
+  - GDPR
+  - Privacy
+  - Processing of Personal Data
+  semantic_signals:
+  - allocates controller / processor (or fiduciary / processor) roles
+  - sets security, breach-notification, sub-processor or audit obligations
+  - addresses international / cross-border transfers of personal data
+  - return or deletion of personal data on termination
+  cross_reference:
+  - 'Data-breach liability and indemnity for regulatory fines: assess jointly with LoL (LOL) and indemnities
+    (IND) blocks. Note: an indemnity for the other party''s OWN regulatory fine may be ineffective; a
+    regulator pursues the infringer directly.'
+jurisdictions:
+  european_union:
+    legal_system: eu_regulation
+    primary_authority:
+    - GDPR (Reg. (EU) 2016/679) Art. 28(3) (mandatory processor-contract terms)
+    - GDPR Art. 32 (security of processing)
+    - GDPR Art. 33 (breach notification to the supervisory authority without undue delay, within 72 hours
+      where feasible)
+    - GDPR Arts. 44-49 (international transfers; SCCs - Commission Decision 2021/914 + transfer impact
+      assessment)
+    - GDPR Art. 83 (fines up to EUR 20m or 4% of total worldwide annual turnover)
+    national_overlay:
+    - 'Germany: BDSG (employee data, §26 BDSG; works-council involvement)'
+    - 'France: Loi Informatique et Libertes + CNIL guidance'
+    enforceability_threshold: 'A processor clause must contain the Art. 28(3) mandatory terms, or the
+      controller is itself in breach for engaging a processor on non-compliant terms. Transfers outside
+      the EEA need a Chapter V mechanism (adequacy or SCCs plus a transfer impact assessment). Notify
+      the authority within 72 hours.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: EU-DP-001
+      legacy_id: eu_art28_missing_terms
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: processor engaged but the clause omits any Art. 28(3) mandatory term (documented
+        instructions, confidentiality, Art. 32 security, sub-processor controls, assistance with data-subject
+        rights, breach/DPIA assistance, deletion/return, audit)
+      legal_basis:
+      - authority: GDPR Art. 28(3)
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Processor clause is missing mandatory Art. 28(3) terms; the controller is
+        in breach by engaging a processor on these terms.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id001
+        - https://eur-lex.europa.eu/eli/reg/2016/679/oj
+    - rule_id: EU-DP-002
+      legacy_id: eu_transfer_no_mechanism
+      rule_type: mandatory_law
+      stability: context_sensitive
+      severity: high
+      detection_condition: personal data transferred outside the EEA with no adequacy decision and no
+        Chapter V safeguard / transfer impact assessment
+      legal_basis:
+      - authority: GDPR Arts. 44-46
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Cross-border transfer lacks a valid Chapter V mechanism (adequacy or SCCs
+        + TIA).
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls: *id001
+    - rule_id: EU-DP-003
+      legacy_id: eu_breach_timing
+      rule_type: operational_risk
+      stability: settled
+      severity: medium
+      detection_condition: processor not required to notify the controller without undue delay, or a stated
+        timeline is inconsistent with the controller's 72-hour duty
+      legal_basis:
+      - authority: GDPR Art. 33
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Breach-notification wording does not support the controller's 72-hour deadline.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EU-DP-004
+      legacy_id: eu_subprocessor_no_authorisation
+      rule_type: mandatory_law
+      stability: settled
+      severity: medium
+      detection_condition: sub-processors permitted without prior specific or general written authorisation
+        and equivalent flow-down terms
+      legal_basis:
+      - authority: GDPR Art. 28(2),(4)
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Sub-processor engagement lacks the required authorisation and flow-down of
+        Art. 28 terms.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: *id001
+    - rule_id: EU-DP-005
+      legacy_id: eu_role_mischaracterised
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: a party labelled 'processor' appears to determine purposes or means of processing
+      legal_basis:
+      - authority: GDPR Arts. 4(7),(8)
+        type: regulation
+      - authority: '26'
+        type: statute
+      - authority: '28'
+        type: statute
+      non_excludable: []
+      engine_interpretation: Role is mislabelled; a party determining purposes/means is a controller or
+        joint controller, not a processor.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls: *id001
+  united_kingdom:
+    legal_system: uk_statute
+    primary_authority:
+    - UK GDPR + Data Protection Act 2018, as amended by the Data (Use and Access) Act 2025 (Part 5 transfer
+      changes in force 5 Feb 2026)
+    - UK GDPR Art. 28 (processor-contract terms)
+    - 'DUAA 2025 ''data protection test'' for transfers: destination protection ''not materially lower''
+      than UK (replaces ''essentially equivalent''); IDTA or UK Addendum to EU SCCs; transfer risk assessment
+      still required'
+    - 'DUAA 2025: ''recognised legitimate interests'' lawful basis (no balancing test for listed purposes)'
+    - 'DUAA 2025: right to complain to the controller (in force 19 Jun 2026; acknowledge within 30 days)'
+    - Fines up to GBP 17.5m or 4% of global annual turnover
+    enforceability_threshold: 'Same Art. 28 processor-term requirements as the EU, but the transfer test
+      changed on 5 Feb 2026: assess whether the destination''s protection is ''not materially lower''
+      than UK standards, using the IDTA or UK Addendum plus a transfer risk assessment. DUAA diverges
+      from EU GDPR, so a single clause cannot assume the two regimes are identical.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: UK-DP-001
+      legacy_id: uk_art28_missing_terms
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: processor clause omits the UK GDPR Art. 28 mandatory terms
+      legal_basis:
+      - authority: UK GDPR Art. 28
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Processor clause missing mandatory Art. 28 terms under UK GDPR.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls: &id002
+        - https://www.legislation.gov.uk/ukpga/2018/12
+        - https://www.legislation.gov.uk/ukpga/2025/18
+    - rule_id: UK-DP-002
+      legacy_id: uk_transfer_test_outdated
+      rule_type: mandatory_law
+      stability: evolving
+      severity: high
+      detection_condition: transfer clause relies on the old 'essentially equivalent' standard, or uses
+        EU SCCs without the UK IDTA / Addendum
+      legal_basis:
+      - authority: DUAA 2025 'data protection test' (in force 5 Feb 2026)
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Transfer wording predates the DUAA 'data protection test' or lacks UK transfer
+        tooling (IDTA / UK Addendum); update and keep a transfer risk assessment.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 3
+        status: verified
+        source_urls: *id002
+    - rule_id: UK-DP-003
+      legacy_id: uk_dual_regime_assumption
+      rule_type: operational_risk
+      stability: evolving
+      severity: medium
+      detection_condition: one clause treats UK and EU regimes as identical for transfers / lawful basis
+      legal_basis:
+      - authority: DUAA 2025 (UK-EU divergence)
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Post-DUAA, UK and EU requirements diverge; cross-border deals may need separate
+        UK and EU transfer documentation.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 3
+        status: verified
+        source_urls: *id002
+    - rule_id: UK-DP-004
+      legacy_id: uk_complaint_handling
+      rule_type: operational_risk
+      stability: evolving
+      severity: low
+      detection_condition: no mechanism for handling data-subject complaints to the controller
+      legal_basis:
+      - authority: DUAA 2025 right to complain (in force 19 Jun 2026)
+        type: regulation
+      non_excludable: []
+      engine_interpretation: From 19 Jun 2026 controllers must facilitate and acknowledge complaints within
+        30 days; clause/process should provide for this.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 3
+        status: verified
+        source_urls: *id002
+  india:
+    legal_system: india_statute
+    primary_authority:
+    - Digital Personal Data Protection Act 2023, s.8(2) (Data Fiduciary may engage a Data Processor only
+      under a valid contract)
+    - DPDP Act 2023, s.8 (security safeguards); s.5 (notice)
+    - 'DPDP Rules 2025 (notified 13 Nov 2025): breach notification to the Data Protection Board and to
+      affected Data Principals; failure to notify - up to INR 200 crore'
+    - 'DPDP Act 2023, s.16 (cross-border: transfers permitted to any country except those on a Government
+      ''negative list''; no list notified as of early 2026)'
+    - Penalties up to INR 250 crore per breach; NO cure period before penalty
+    enforceability_threshold: 'A Data Fiduciary may engage a processor only under a valid contract. Breach
+      notification runs to the Data Protection Board and to affected Data Principals. Cross-border transfer
+      uses a permissive negative-list model (the inverse of GDPR adequacy), but accountability stays with
+      the Indian fiduciary, so overseas-recipient terms must flow down Indian-law compliance and breach
+      reporting. There is no cure period.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: IN-DP-001
+      legacy_id: in_no_valid_processor_contract
+      rule_type: mandatory_law
+      stability: evolving
+      severity: high
+      detection_condition: a Data Fiduciary uses a processor without a valid written contract
+      legal_basis:
+      - authority: DPDP Act 2023 s.8(2)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Processor engaged without the valid contract the DPDP Act requires of a Data
+        Fiduciary.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 3
+        status: verified
+        source_urls: &id003
+        - https://www.indiacode.nic.in/
+    - rule_id: IN-DP-002
+      legacy_id: in_breach_notification_missing
+      rule_type: mandatory_law
+      stability: evolving
+      severity: high
+      detection_condition: clause does not require notification to the Data Protection Board and to affected
+        Data Principals
+      legal_basis:
+      - authority: DPDP Rules 2025 (breach notification)
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Breach-notification duties to the Board and to Data Principals are not provided
+        for; failure to notify carries penalties up to INR 200 crore.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 3
+        status: verified
+        source_urls: *id003
+    - rule_id: IN-DP-003
+      legacy_id: in_transfer_no_flowdown
+      rule_type: operational_risk
+      stability: evolving
+      severity: medium
+      detection_condition: overseas-recipient terms lack Indian-law compliance, breach reporting and recipient
+        due-diligence obligations
+      legal_basis:
+      - authority: DPDP Act 2023 s.16
+        type: statute
+      - authority: DPDP Rules 2025
+        type: regulation
+      non_excludable: []
+      engine_interpretation: Cross-border recipient terms do not flow down Indian-law compliance and breach
+        reporting; the fiduciary remains accountable.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 3
+        status: verified
+        source_urls: *id003
+    - rule_id: IN-DP-004
+      legacy_id: in_sdf_localisation
+      rule_type: operational_risk
+      stability: evolving
+      severity: low
+      detection_condition: a party may be designated a Significant Data Fiduciary
+      legal_basis:
+      - authority: DPDP Act 2023 s.10
+        type: statute
+      - authority: DPDP Rules 2025
+        type: regulation
+      non_excludable: []
+      engine_interpretation: If designated an SDF, localisation of specified data categories and added
+        obligations may apply; confirm status.
+      depends_on: []
+      meta:
+        last_verified: '2026-05-29'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 3
+        status: verified
+        source_urls: *id003
+fallback_ladder:
+  ideal: Full Art. 28-compliant DPA schedule, valid transfer mechanism with TIA/TRA, breach-notification
+    timelines aligned to the strictest applicable deadline (72 hours), sub-processor flow-down, deletion/return
+    and audit; data-breach liability carved sensibly against the cap.
+  acceptable: DPA present with all mandatory terms, a transfer mechanism in place, breach notification
+    'without undue delay' with a concrete timeline.
+  walk_away: No DPA / Art. 28 terms, transfers with no mechanism, breach notification silent, and an uncapped
+    data-breach indemnity sitting outside the liability cap.
+output_contract:
+  required_fields:
+  - rule_id
+  - clause_id
+  - jurisdiction
+  - severity
+  - rule_type
+  - stability
+  - legal_basis
+  - engine_interpretation
+  - evidence_span
+  rules:
+  - every finding must carry the rule_id it fired from
+  - legal_basis is reported verbatim; the model must not invent authorities
+  - engine_interpretation must not assert invalidity for litigation_risk / negotiation_risk rules
+  - 'respect excluded_when: do not raise a finding where its excluded_when condition holds'
+  - evidence_span must quote the contract text that triggered the rule
+  - the engine must not serve a rule whose meta.status is not 'verified' or is past due
+schema_version: 2
+cadence_by_stability:
+  settled: 24
+  context_sensitive: 12
+  evolving: 3
+  jurisdictionally_variable: 6

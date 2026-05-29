@@ -57,3 +57,6 @@ benchmark/cuad/data/
 benchmark/cuad/.cache/
 benchmark/cuad/report.md
 benchmark/cuad/results.json
+
+# pactora rules engine — generated artifacts
+counsel.json
