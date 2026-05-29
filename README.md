@@ -1,5 +1,7 @@
 # Pactora
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 AI-powered contract risk analysis for founders, freelancers and anyone signing a contract. Upload a contract, get clause-level risk flags, negotiation ladders, and redline suggestions — understand what's in your contract and how to negotiate it.
 
 ## Running locally
@@ -93,3 +95,9 @@ See [`CLAUDE.md`](CLAUDE.md) for full architecture notes.
 | Issue | Feature |
 |---|---|
 | [PRODUCT-02 #104](https://github.com/sneha210990/Pactora/issues/104) | Clause library — searchable market standard benchmarks |
+
+---
+
+## Licence
+
+AGPLv3 — see [LICENSE](LICENSE). Commercial licences available for organisations that need to integrate Pactora without the copyleft obligation.
