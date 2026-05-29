@@ -2,6 +2,7 @@ import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { ContractChunk } from '@/lib/chunking-strategy';
 import type { PactoraClauseType } from './types';
 import type { ContractType } from './classify-contract-type';
+import type { Jurisdiction } from '@/lib/document-analysis-store';
 import { getAnthropicClient } from './client';
 import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
@@ -19,6 +20,13 @@ const EXTENDED_THINKING_CLAUSE_TYPES = new Set<PactoraClauseType>([
   'IP Ownership',
   'Indemnities',
 ]);
+
+const JURISDICTION_CONTEXT: Record<Jurisdiction, string> = {
+  england_wales: 'Jurisdiction: England & Wales. Apply English law — UCTA 1977 controls on exclusion clauses, Misrepresentation Act 1967, and standard English commercial law risk thresholds.',
+  india: 'Jurisdiction: India. Apply Indian law — Indian Contract Act 1872 (penalty clause limits under s.74, restraint-of-trade under s.27), and standard Indian commercial law risk thresholds.',
+  germany: 'Jurisdiction: Germany. Apply German law — BGB §§ 305-310 AGB-Recht standard terms controls, § 309 prohibited clauses, and civil-law risk thresholds.',
+  france: 'Jurisdiction: France. Apply French law — Code civil significant imbalance rules (art. 1171), lois de police mandatory provisions, and civil-law risk thresholds.',
+};
 
 const CONTRACT_TYPE_CONTEXT: Record<ContractType, string> = {
   SaaS: 'Apply standard SaaS buyer-side risk thresholds.',
@@ -68,6 +76,7 @@ export async function runClauseAgent(
   contractText: string,
   chunk?: ContractChunk,
   contractType?: ContractType,
+  jurisdiction?: Jurisdiction | null,
 ): Promise<ClauseAgentResult> {
   const client = getAnthropicClient();
 
@@ -110,7 +119,7 @@ export async function runClauseAgent(
           content: [
             {
               type: 'text',
-              text: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.${contractType ? `\n\nContract type context: ${CONTRACT_TYPE_CONTEXT[contractType]}` : ''}`,
+              text: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.${contractType ? `\n\nContract type context: ${CONTRACT_TYPE_CONTEXT[contractType]}` : ''}${jurisdiction ? `\n\n${JURISDICTION_CONTEXT[jurisdiction]}` : ''}`,
             },
           ],
         },

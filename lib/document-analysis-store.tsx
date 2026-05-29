@@ -60,12 +60,22 @@ export type ActiveDocument = {
   uploadedAt: string;
 };
 
+export type Jurisdiction = 'england_wales' | 'india' | 'germany' | 'france';
+
+export const JURISDICTION_LABELS: Record<Jurisdiction, string> = {
+  england_wales: 'England & Wales',
+  india: 'India',
+  germany: 'Germany',
+  france: 'France',
+};
+
 export type CommercialContext = {
   acv: ExtractedField<number>;
   termMonths: ExtractedField<number>;
   insuranceCover: ExtractedField<number>;
   dataType: ExtractedField<'standard' | 'personal' | 'sensitive'>;
   liabilityCap: number | null;
+  jurisdiction: Jurisdiction | null;
 };
 
 export type DocumentAnalysisState = {
@@ -132,6 +142,7 @@ type Action =
   | { type: 'analysisFailed'; error: string }
   | { type: 'setError'; error: string }
   | { type: 'setLiabilityCap'; value: number | null }
+  | { type: 'setJurisdiction'; jurisdiction: Jurisdiction | null }
   | { type: 'setManualReviewFlag'; flag: ClauseFlag }
   | { type: 'appendFlag'; flag: ClauseFlag }
   | { type: 'restoreState'; state: DocumentAnalysisState }
@@ -189,6 +200,7 @@ export function emptyCommercialContext(): CommercialContext {
     insuranceCover: emptyExtractedField<number>(),
     dataType: emptyExtractedField<'standard' | 'personal' | 'sensitive'>(),
     liabilityCap: null,
+    jurisdiction: null,
   };
 }
 
@@ -329,13 +341,14 @@ function asExtractedField<T>(raw: unknown): ExtractedField<T> {
   };
 }
 
-function normalizeCommercialContext(raw?: Partial<ExtractedContractValues> & { liabilityCap?: number | null }): CommercialContext {
+function normalizeCommercialContext(raw?: Partial<ExtractedContractValues> & { liabilityCap?: number | null; jurisdiction?: Jurisdiction | null }): CommercialContext {
   return {
     acv: asExtractedField<number>(raw?.acv),
     termMonths: asExtractedField<number>(raw?.termMonths),
     insuranceCover: asExtractedField<number>(raw?.insuranceCover),
     dataType: asExtractedField<'standard' | 'personal' | 'sensitive'>(raw?.dataType),
     liabilityCap: typeof raw?.liabilityCap === 'number' ? raw.liabilityCap : null,
+    jurisdiction: raw?.jurisdiction ?? null,
   };
 }
 
@@ -457,6 +470,15 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
         },
       };
       break;
+    case 'setJurisdiction':
+      next = {
+        ...state,
+        commercialContext: {
+          ...state.commercialContext,
+          jurisdiction: action.jurisdiction,
+        },
+      };
+      break;
     case 'setManualReviewFlag': {
       const existing = state.manualFlags ?? [];
       const others = existing.filter((f) => f.clauseType !== action.flag.clauseType);
@@ -544,8 +566,8 @@ function normalizeStoredState(rawState: Partial<DocumentAnalysisState>): Documen
           uploadedAt,
         }
       : null,
-    commercialContext: normalizeCommercialContext(rawState.commercialContext as Partial<ExtractedContractValues> & { liabilityCap?: number | null }),
-    extractionWarnings: rawState.extractionWarnings ?? extractionWarningsFromContext(normalizeCommercialContext(rawState.commercialContext as Partial<ExtractedContractValues> & { liabilityCap?: number | null })),
+    commercialContext: normalizeCommercialContext(rawState.commercialContext as Partial<ExtractedContractValues> & { liabilityCap?: number | null; jurisdiction?: Jurisdiction | null }),
+    extractionWarnings: rawState.extractionWarnings ?? extractionWarningsFromContext(normalizeCommercialContext(rawState.commercialContext as Partial<ExtractedContractValues> & { liabilityCap?: number | null; jurisdiction?: Jurisdiction | null })),
   };
 }
 
@@ -582,6 +604,7 @@ type StoreValue = {
     analysisFailed: (error: string) => void;
     setError: (error: string) => void;
     setLiabilityCap: (value: number | null) => void;
+    setJurisdiction: (jurisdiction: Jurisdiction | null) => void;
     setManualReviewFlag: (flag: ClauseFlag) => void;
     appendFlag: (flag: ClauseFlag) => void;
     restoreState: (state: DocumentAnalysisState) => void;
@@ -616,6 +639,7 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
     analysisFailed: (error) => dispatch({ type: 'analysisFailed', error }),
     setError: (error) => dispatch({ type: 'setError', error }),
     setLiabilityCap: (value) => dispatch({ type: 'setLiabilityCap', value }),
+    setJurisdiction: (jurisdiction) => dispatch({ type: 'setJurisdiction', jurisdiction }),
     setManualReviewFlag: (flag) => dispatch({ type: 'setManualReviewFlag', flag }),
     appendFlag: (flag) => dispatch({ type: 'appendFlag', flag }),
     restoreState: (state) => dispatch({ type: 'restoreState', state }),
