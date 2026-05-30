@@ -125,6 +125,8 @@ export default function NewDealPage() {
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
   const [agentProgress, setAgentProgress] = useState<AgentProgressMap>({});
   const [isDragging, setIsDragging] = useState(false);
+  const [pendingText, setPendingText] = useState<string | null>(null);
+  const [analysisRunning, setAnalysisRunning] = useState(false);
 
   // Save completed analyses to the deals history. Keyed by documentId so a stale
   // localStorage state loaded on arrival doesn't get re-saved.
@@ -138,7 +140,7 @@ export default function NewDealPage() {
 
   const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';
-  const canContinue = analysis.uploadStatus === 'complete' && hasAcceptedLegalNotice && hasConfirmedDataCaution;
+  const canContinue = pendingText !== null && !analysisRunning && hasAcceptedLegalNotice && hasConfirmedDataCaution;
   const runClauseAnalysis = async (text: string) => {
     setAgentProgress({});
     actions.analysisStarted();
@@ -230,9 +232,19 @@ export default function NewDealPage() {
     }
 
     if (payload.contractText) {
-      void runClauseAnalysis(payload.contractText);
+      setPendingText(payload.contractText);
     } else {
       actions.analysisFailed('Analysis incomplete: no raw text returned by parser.');
+    }
+  };
+
+  const confirmAndAnalyse = async () => {
+    if (!pendingText) return;
+    setAnalysisRunning(true);
+    try {
+      await runClauseAnalysis(pendingText);
+    } finally {
+      setAnalysisRunning(false);
     }
   };
 
@@ -447,21 +459,17 @@ export default function NewDealPage() {
                 <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC under 20 MB, or paste at least 20 characters of clause text.</p>
               </div>
             ) : null}
-            <ProcessingPipeline analysis={analysis} agentProgress={agentProgress} />
+            {analysis.uploadStatus === 'uploading' && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-zinc-400">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+                Reading your contract…
+              </div>
+            )}
           </div>
         </section>
 
-        {analysis.uploadStatus === 'complete' && (
+        {pendingText !== null && (
           <>
-            {warnings.length > 0 ? (
-              <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-                <h2 className="font-semibold">Partial analysis warning</h2>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {warnings.map((warning) => <li key={warning}>{warning}</li>)}
-                </ul>
-              </section>
-            ) : null}
-
             {analysis.extractionWarnings.length > 0 ? (
               <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
                 <h2 className="font-semibold text-zinc-100">Extraction diagnostics</h2>
@@ -469,6 +477,15 @@ export default function NewDealPage() {
                   {analysis.extractionWarnings.map((warning) => (
                     <li key={`${warning.field}-${warning.reason}`}>{warning.reason}</li>
                   ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {analysis.uploadStatus === 'complete' && warnings.length > 0 ? (
+              <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+                <h2 className="font-semibold">Partial analysis warning</h2>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {warnings.map((warning) => <li key={warning}>{warning}</li>)}
                 </ul>
               </section>
             ) : null}
@@ -499,6 +516,7 @@ export default function NewDealPage() {
                   value={commercialContext.jurisdiction ?? ''}
                   onChange={(e) => actions.setJurisdiction((e.target.value as Jurisdiction) || null)}
                   className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus:border-blue-500 focus:outline-none"
+                  disabled={analysisRunning || analysis.uploadStatus === 'complete'}
                 >
                   <option value="">Select jurisdiction…</option>
                   {(Object.keys(JURISDICTION_LABELS) as Jurisdiction[]).map((j) => (
@@ -531,17 +549,17 @@ export default function NewDealPage() {
 
               <div className="mt-4 space-y-3">
                 <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-                  <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+                  <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} disabled={analysisRunning || analysis.uploadStatus === 'complete'} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
                   <span>I confirm that I am authorised to upload or paste this material and understand Pactora outputs may be incomplete or inaccurate.</span>
                 </label>
                 <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-                  <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+                  <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} disabled={analysisRunning || analysis.uploadStatus === 'complete'} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
                   <span>I understand extracted values are parser outputs and should be checked before legal or commercial decisions.</span>
                 </label>
               </div>
             </section>
 
-            {!canContinue && (
+            {!canContinue && !analysisRunning && analysis.uploadStatus !== 'complete' && (
               <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">
                 <p className="font-medium text-zinc-100">Before you can continue:</p>
                 <ul className="mt-2 space-y-1">
@@ -554,17 +572,26 @@ export default function NewDealPage() {
                 </ul>
               </div>
             )}
+
             <div className="flex justify-end">
-              {canContinue ? (
+              {analysis.uploadStatus === 'complete' ? (
                 <Link href="/review/summary" className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
-                  View contract analysis
+                  View contract analysis →
                 </Link>
               ) : (
-                <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
-                  View contract analysis
+                <button
+                  onClick={() => void confirmAndAnalyse()}
+                  disabled={!canContinue}
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+                >
+                  {analysisRunning ? 'Analysing…' : 'Confirm and analyse'}
                 </button>
               )}
             </div>
+
+            {(analysisRunning || analysis.uploadStatus === 'complete') && (
+              <ProcessingPipeline analysis={analysis} agentProgress={agentProgress} />
+            )}
           </>
         )}
       </div>
