@@ -348,7 +348,7 @@ function ClauseFlagCard({
                         <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                           <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
-                        Suggest redline
+                        Get suggested wording
                       </>
                     )}
                   </button>
@@ -619,6 +619,8 @@ function SummaryContent() {
             )}
           </div>
         </section>
+
+        <p className="mt-2 text-xs text-zinc-600">Pactora identifies risks for review — not legal advice and does not replace a solicitor.</p>
 
         {clauseFlags.length > 0 && (
           <div className="mt-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 text-xs text-zinc-400">
