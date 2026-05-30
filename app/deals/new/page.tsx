@@ -32,11 +32,11 @@ type ExtractionResponse = {
 };
 
 const processingStages: Array<{ key: keyof DocumentAnalysisState['processingSteps']; label: string }> = [
-  { key: 'upload', label: 'Capturing contract input…' },
-  { key: 'extraction', label: 'Extracting supported values…' },
-  { key: 'clauseDetection', label: 'Identifying clauses…' },
+  { key: 'upload', label: 'Reading your contract…' },
+  { key: 'extraction', label: 'Identifying key terms…' },
+  { key: 'clauseDetection', label: 'Detecting clauses…' },
   { key: 'riskAnalysis', label: 'Analysing risks…' },
-  { key: 'recommendations', label: 'Generating recommendations…' },
+  { key: 'recommendations', label: 'Preparing recommendations…' },
 ];
 
 function formatOptionalMoneyValue(value: number | null) {
@@ -86,7 +86,7 @@ function ProcessingPipeline({ analysis, agentProgress }: { analysis: DocumentAna
         ))}
         <li className="flex items-center gap-3 text-zinc-300">
           <span className={`h-2.5 w-2.5 rounded-full ${analysis.uploadStatus === 'complete' ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-          <span>Finalizing workspace</span>
+          <span>Analysis ready</span>
         </li>
       </ol>
     </div>

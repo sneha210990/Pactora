@@ -348,7 +348,7 @@ function ClauseFlagCard({
                         <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                           <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
-                        Suggest redline
+                        Get suggested wording
                       </>
                     )}
                   </button>
