@@ -271,6 +271,7 @@ export default function NewDealPage() {
   };
 
   const handleContractUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
     void handleFile(event.target.files?.[0]);
   };
 
@@ -290,6 +291,9 @@ export default function NewDealPage() {
   const handleManualClauseSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = manualClauseText.trim();
+
+    // If a file is already selected, manual submit is a no-op — the file takes precedence.
+    if (selectedFileName) return;
 
     if (text.length < 20) {
       const message = 'Please paste at least 20 characters of contract clauses.';
@@ -433,7 +437,7 @@ export default function NewDealPage() {
                 <p className="text-xs text-zinc-500">Manual mode accepts pasted text when a file is unavailable or you only need to review selected clauses.</p>
                 <button
                   type="submit"
-                  disabled={analysis.uploadStatus === 'uploading' || analysis.uploadStatus === 'processing'}
+                  disabled={!!selectedFileName || analysis.uploadStatus === 'uploading' || analysis.uploadStatus === 'processing'}
                   className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
                 >
                   Analyse clauses
