@@ -119,6 +119,8 @@ export default function NewDealPage() {
     actions.reset();
     setManualClauseText('');
     setShowStaleBanner(false);
+    setPendingText(null);
+    setAnalysisRunning(false);
   }
 
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
@@ -127,6 +129,14 @@ export default function NewDealPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [pendingText, setPendingText] = useState<string | null>(null);
   const [analysisRunning, setAnalysisRunning] = useState(false);
+
+  // Auto-scroll to Step 2 when extraction finishes and pendingText is first set.
+  const step2Ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (pendingText !== null) {
+      setTimeout(() => step2Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, [pendingText]);
 
   // Save completed analyses to the deals history. Keyed by documentId so a stale
   // localStorage state loaded on arrival doesn't get re-saved.
@@ -256,6 +266,7 @@ export default function NewDealPage() {
     }
 
     setUploadError(null);
+    setPendingText(null);
     actions.uploadStarted(file);
     trackEvent('contract_upload_started', '/deals/new');
 
@@ -311,6 +322,7 @@ export default function NewDealPage() {
     }
 
     setUploadError(null);
+    setPendingText(null);
     actions.uploadStarted({ name: 'Pasted contract clauses', type: 'text/plain' });
     trackEvent('manual_clause_entry_started', '/deals/new');
 
@@ -465,6 +477,12 @@ export default function NewDealPage() {
                 Reading your contract…
               </div>
             )}
+            {pendingText !== null && analysis.uploadStatus !== 'complete' && (
+              <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                <span className="shrink-0 text-emerald-400">✓</span>
+                Contract read — review the extracted details below, tick both boxes, then click <strong>Confirm and analyse</strong>.
+              </div>
+            )}
           </div>
         </section>
 
@@ -490,7 +508,7 @@ export default function NewDealPage() {
               </section>
             ) : null}
 
-            <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+            <section ref={step2Ref} className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
               <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
               <h2 className="mt-1 text-lg font-medium text-white">Extracted commercial context</h2>
               <p className="mt-2 text-sm text-zinc-400">
