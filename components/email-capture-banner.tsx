@@ -2,10 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api-fetch';
+import type { EmailFlag } from '@/lib/email/analysis-email';
+
+export type { EmailFlag };
+
+type AnalysisPayload = {
+  riskScore: number;
+  verdict: string;
+  verdictDetail: string;
+  flags: EmailFlag[];
+};
 
 const DISMISSED_KEY = 'email_capture_dismissed';
 
-export function EmailCaptureBanner() {
+export function EmailCaptureBanner({ analysisPayload }: { analysisPayload?: AnalysisPayload }) {
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +42,7 @@ export function EmailCaptureBanner() {
       const res = await apiFetch('/api/capture-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...analysisPayload }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
@@ -55,8 +65,8 @@ export function EmailCaptureBanner() {
       {submitted ? (
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-blue-200">You&apos;re on the list</p>
-            <p className="mt-1 text-sm text-zinc-400">We&apos;ll send your full report and notify you when new features land.</p>
+            <p className="text-sm font-semibold text-blue-200">Report sent</p>
+            <p className="mt-1 text-sm text-zinc-400">Check your inbox — your full analysis is on its way.</p>
           </div>
           <button onClick={dismiss} className="shrink-0 text-zinc-500 hover:text-zinc-300" aria-label="Dismiss">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +103,7 @@ export function EmailCaptureBanner() {
               disabled={submitting}
               className="shrink-0 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-400"
             >
-              {submitting ? 'Saving…' : 'Save report'}
+              {submitting ? 'Sending…' : 'Send report'}
             </button>
           </form>
           {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
