@@ -281,7 +281,7 @@ async function callClaude(userPrompt) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514", max_tokens: 1800,
+      model: "claude-sonnet-4-6", max_tokens: 1800,
       system: SYSTEM_PROMPT, messages: [{ role: "user", content: userPrompt }],
     }),
   });
