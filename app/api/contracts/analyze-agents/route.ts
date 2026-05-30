@@ -96,6 +96,8 @@ export async function POST(request: Request) {
         emit({ type: 'agent_result', clauseType, flag: null });
       }
 
+      const allUsages: ClauseAgentUsage[] = [];
+
       if (chunks.length === 1) {
         // Single-chunk path: preserve existing streaming behaviour — emit events as each agent resolves.
         const collectedFlags: ClauseFlag[] = [];
@@ -105,6 +107,7 @@ export async function POST(request: Request) {
           if (result.ok) {
             emit({ type: 'agent_result', clauseType, flag: result.flag });
             if (result.flag) collectedFlags.push(result.flag);
+            allUsages.push(result.usage);
           } else {
             emit({ type: 'agent_error', clauseType, message: result.error });
           }
@@ -122,6 +125,7 @@ export async function POST(request: Request) {
           console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
           const chunkPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
             const result = await runClauseAgent(clauseType, contractText, chunk, undefined, jurisdiction);
+            if (result.ok) allUsages.push(result.usage);
             return {
               chunkIndex: chunk.chunkIndex,
               clauseType,
@@ -146,6 +150,25 @@ export async function POST(request: Request) {
 
         const crossClauseRisks = detectCrossClauseRisks(mergedFlags);
         emit({ type: 'analysis_complete', flags: mergedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
+      }
+
+      if (allUsages.length > 0) {
+        const agg = allUsages.reduce((acc, u) => ({
+          inputTokens: acc.inputTokens + u.inputTokens,
+          outputTokens: acc.outputTokens + u.outputTokens,
+          cacheCreationTokens: acc.cacheCreationTokens + u.cacheCreationTokens,
+          cacheReadTokens: acc.cacheReadTokens + u.cacheReadTokens,
+          costUsd: acc.costUsd + u.costUsd,
+        }));
+        recordApiUsage({
+          operation: 'clause_analysis',
+          model: 'mixed',
+          input_tokens: agg.inputTokens,
+          output_tokens: agg.outputTokens,
+          cache_creation_tokens: agg.cacheCreationTokens,
+          cache_read_tokens: agg.cacheReadTokens,
+          cost_usd: agg.costUsd,
+        }).catch(console.error);
       }
 
       controller.close();
