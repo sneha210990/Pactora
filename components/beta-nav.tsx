@@ -17,10 +17,14 @@ export async function BetaNav() {
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="max-w-[110px] truncate text-xs text-zinc-400 sm:max-w-[160px]">
-        {session.user.email}
+    <div className="flex items-center gap-2">
+      <span
+        title={session.user.email}
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-xs font-semibold text-zinc-200"
+      >
+        {session.user.email.charAt(0).toUpperCase()}
       </span>
+      <span className="h-4 w-px bg-zinc-700" aria-hidden="true" />
       <form action="/api/auth/logout" method="POST">
         <LogoutSubmitButton />
       </form>

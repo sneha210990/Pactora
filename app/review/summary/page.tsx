@@ -620,6 +620,8 @@ function SummaryContent() {
           </div>
         </section>
 
+        <p className="mt-2 text-xs text-zinc-600">Pactora identifies risks for review — not legal advice and does not replace a solicitor.</p>
+
         {clauseFlags.length > 0 && (
           <div className="mt-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 text-xs text-zinc-400">
             <svg className="h-3.5 w-3.5 shrink-0 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

@@ -21,67 +21,70 @@ export function ReviewProgress({
 }) {
   const currentIndex = REVIEW_STEPS.findIndex((s) => s.key === current);
   return (
-    <nav aria-label="Review progress" className="mt-6 overflow-x-auto">
-      <ol className="flex min-w-max gap-1.5 pb-1">
-        {REVIEW_STEPS.map((step, index) => {
-          const isActive = step.key === current;
-          const isPast = index < currentIndex;
-          const stepRisk = isPast ? sectionRisks?.[step.key] : undefined;
-          return (
-            <li key={step.key}>
-              <Link
-                href={step.href}
-                aria-current={isActive ? 'step' : undefined}
-                className={[
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors',
-                  isActive
-                    ? 'border-zinc-400 bg-zinc-800 text-white'
-                    : isPast && stepRisk === 'High'
-                    ? 'border-red-500/60 bg-red-500/5 text-red-300 hover:border-red-400 hover:text-red-200'
-                    : isPast && stepRisk === 'Medium'
-                    ? 'border-amber-500/50 bg-amber-500/5 text-amber-300 hover:border-amber-400 hover:text-amber-200'
-                    : isPast
-                    ? 'border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
-                    : 'border-zinc-800 text-zinc-600 hover:border-zinc-700 hover:text-zinc-400',
-                ].join(' ')}
-              >
-                <span
+    <div className="relative mt-6">
+      <nav aria-label="Review progress" className="overflow-x-auto">
+        <ol className="flex min-w-max gap-1.5 pb-1">
+          {REVIEW_STEPS.map((step, index) => {
+            const isActive = step.key === current;
+            const isPast = index < currentIndex;
+            const stepRisk = isPast ? sectionRisks?.[step.key] : undefined;
+            return (
+              <li key={step.key}>
+                <Link
+                  href={step.href}
+                  aria-current={isActive ? 'step' : undefined}
                   className={[
-                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors',
                     isActive
-                      ? 'bg-white text-black'
+                      ? 'border-zinc-400 bg-zinc-800 text-white'
                       : isPast && stepRisk === 'High'
-                      ? 'bg-red-500/20 text-red-300'
+                      ? 'border-red-500/60 bg-red-500/5 text-red-300 hover:border-red-400 hover:text-red-200'
                       : isPast && stepRisk === 'Medium'
-                      ? 'bg-amber-500/20 text-amber-300'
+                      ? 'border-amber-500/50 bg-amber-500/5 text-amber-300 hover:border-amber-400 hover:text-amber-200'
                       : isPast
-                      ? 'bg-zinc-600 text-zinc-200'
-                      : 'bg-zinc-800 text-zinc-600',
+                      ? 'border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
+                      : 'border-zinc-800 text-zinc-600 hover:border-zinc-700 hover:text-zinc-400',
                   ].join(' ')}
                 >
-                  {isPast ? '✓' : index + 1}
-                </span>
-                {step.label}
-                {stepRisk && (
                   <span
-                    aria-label={`${stepRisk} risk`}
                     className={[
-                      'shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold leading-none',
-                      stepRisk === 'High'
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
+                      isActive
+                        ? 'bg-white text-black'
+                        : isPast && stepRisk === 'High'
                         ? 'bg-red-500/20 text-red-300'
-                        : stepRisk === 'Medium'
+                        : isPast && stepRisk === 'Medium'
                         ? 'bg-amber-500/20 text-amber-300'
-                        : 'bg-emerald-500/20 text-emerald-300',
+                        : isPast
+                        ? 'bg-zinc-600 text-zinc-200'
+                        : 'bg-zinc-800 text-zinc-600',
                     ].join(' ')}
                   >
-                    {stepRisk === 'High' ? 'H' : stepRisk === 'Medium' ? 'M' : 'L'}
+                    {isPast ? '✓' : index + 1}
                   </span>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+                  {step.label}
+                  {stepRisk && (
+                    <span
+                      aria-label={`${stepRisk} risk`}
+                      className={[
+                        'shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold leading-none',
+                        stepRisk === 'High'
+                          ? 'bg-red-500/20 text-red-300'
+                          : stepRisk === 'Medium'
+                          ? 'bg-amber-500/20 text-amber-300'
+                          : 'bg-emerald-500/20 text-emerald-300',
+                      ].join(' ')}
+                    >
+                      {stepRisk === 'High' ? 'H' : stepRisk === 'Medium' ? 'M' : 'L'}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-black to-transparent sm:hidden" aria-hidden="true" />
+    </div>
   );
 }
