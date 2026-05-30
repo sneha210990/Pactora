@@ -600,14 +600,6 @@ function SummaryContent() {
           </div>
         </div>
 
-        <ReviewProgress current="summary" sectionRisks={sectionRisks} />
-        <ActiveDocumentBanner />
-
-        <section className="mt-10">
-          <h1 className="text-4xl font-semibold tracking-tight">Deal Summary</h1>
-          <p className="mt-2 text-zinc-400">A final view of the commercial and legal risk across the contract.</p>
-        </section>
-
         <section className={`mt-6 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
           <div className="flex items-start justify-between gap-6">
             <div>
@@ -636,6 +628,9 @@ function SummaryContent() {
             Your analysis is saved in this browser — return anytime to pick up where you left off.
           </div>
         )}
+
+        <ReviewProgress current="summary" sectionRisks={sectionRisks} />
+        <ActiveDocumentBanner />
 
         <div className="mt-6">
           <div className="flex flex-wrap gap-2">
