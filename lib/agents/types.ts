@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { ClauseFlag } from '@/lib/clause-analysis';
 export type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';

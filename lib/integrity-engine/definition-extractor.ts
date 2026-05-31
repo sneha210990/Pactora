@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { ContractDefinition, ContractSection, DefinitionPattern } from './types';
 import { excerptAt, isLikelyDefinedTerm, lineForIndex, normalizeTerm, normalizeWhitespace, stableId } from './normalization';
 

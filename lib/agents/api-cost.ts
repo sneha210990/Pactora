@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Anthropic model pricing (USD per million tokens), correct as of 2025-05.
 // Cache write is billed at 1.25× the base input price.
 // Cache read is billed at 0.10× the base input price.
