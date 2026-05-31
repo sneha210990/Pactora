@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { ContractChunk } from '@/lib/chunking-strategy';
 import type { PactoraClauseType } from './types';

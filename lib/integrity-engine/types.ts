@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 export type ContractDocumentKind = 'msa' | 'sow' | 'dpa' | 'order_form' | 'schedule' | 'annex' | 'exhibit' | 'unknown';
 
 export type IntegritySeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
