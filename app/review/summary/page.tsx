@@ -160,7 +160,7 @@ function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
   return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
 }
 
-const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities', 'IP Ownership', 'Data Protection', 'Termination']);
+const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities', 'IP Ownership', 'Data Protection', 'Termination Rights']);
 
 function ClauseFlagCard({
   flag, acv, liabilityCap, onAccept, isAccepted, onDismiss,
