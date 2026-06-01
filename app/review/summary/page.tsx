@@ -819,7 +819,22 @@ function SummaryContent() {
           </section>
         )}
 
-        {user === null && clauseFlags.length > 0 && <EmailCaptureBanner />}
+        {user === null && clauseFlags.length > 0 && (
+          <EmailCaptureBanner
+            analysisPayload={{
+              riskScore: riskScore100,
+              verdict: verdict.text,
+              verdictDetail: verdict.detail,
+              flags: effectiveFlags.map((f) => ({
+                clauseType: f.clauseType,
+                riskLevel: f.riskLevel,
+                plainEnglish: f.plainEnglish,
+                negotiationPoint: f.negotiationPoint,
+                pageNumber: f.pageNumber ?? null,
+              })),
+            }}
+          />
+        )}
 
         <div className="mt-8">
           <ExportPdfButton
