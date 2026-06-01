@@ -38,37 +38,41 @@ export function ActiveDocumentBanner() {
 
   return (
     <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-300">
-      <span className="font-semibold text-zinc-100">Active document:</span>{' '}
-      {activeDocument ? (
-        <>
-          <span>{activeDocument.fileName}</span>
-          {activeDocument.uploadedAt && (
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <span className="font-semibold text-zinc-100">Active document: </span>
+          {activeDocument ? (
             <>
-              <span className="mx-2 text-zinc-600">•</span>
-              <span>Uploaded {formatDate(activeDocument.uploadedAt)}</span>
+              <span className="truncate">{activeDocument.fileName}</span>
+              {activeDocument.uploadedAt && (
+                <>
+                  <span className="mx-2 text-zinc-600">•</span>
+                  <span>Uploaded {formatDate(activeDocument.uploadedAt)}</span>
+                </>
+              )}
             </>
+          ) : (
+            <span>None selected</span>
           )}
-        </>
-      ) : (
-        <span>None selected</span>
-      )}
-      {contractType && (
-        <div className="mt-2 flex items-center gap-2">
-          <span className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400">
-            {contractType}
-          </span>
-          <select
-            value={contractType}
-            onChange={(e) => actions.setContractType(e.target.value as ContractType)}
-            className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-400 hover:border-zinc-500 cursor-pointer"
-            aria-label="Override contract type"
-          >
-            {CONTRACT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
         </div>
-      )}
+        {contractType && (
+          <div className="flex shrink-0 items-center gap-1.5">
+            <label htmlFor="contract-type-select" className="whitespace-nowrap text-[11px] text-zinc-500">
+              Contract type
+            </label>
+            <select
+              id="contract-type-select"
+              value={contractType}
+              onChange={(e) => actions.setContractType(e.target.value as ContractType)}
+              className="cursor-pointer rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-300 hover:border-zinc-500"
+            >
+              {CONTRACT_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

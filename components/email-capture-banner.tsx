@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api-fetch';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import type { EmailFlag } from '@/lib/email/analysis-email';
 
 export type { EmailFlag };
@@ -107,6 +108,7 @@ export function EmailCaptureBanner({ analysisPayload }: { analysisPayload?: Anal
             </button>
           </form>
           {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+          <p className="mt-3 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
         </div>
       )}
     </div>

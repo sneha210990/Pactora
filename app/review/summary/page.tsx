@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '@/lib/api-fetch';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { EmailCaptureBanner } from '@/components/email-capture-banner';
 import { FeedbackForm } from '@/components/feedback-form';
 import { trackEvent } from '@/components/track-event';
@@ -347,7 +348,7 @@ function ClauseFlagCard({
                         <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                           <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
-                        Suggest redline
+                        Get suggested wording
                       </>
                     )}
                   </button>
@@ -599,14 +600,6 @@ function SummaryContent() {
           </div>
         </div>
 
-        <ReviewProgress current="summary" sectionRisks={sectionRisks} />
-        <ActiveDocumentBanner />
-
-        <section className="mt-10">
-          <h1 className="text-4xl font-semibold tracking-tight">Deal Summary</h1>
-          <p className="mt-2 text-zinc-400">A final view of the commercial and legal risk across the contract.</p>
-        </section>
-
         <section className={`mt-6 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
           <div className="flex items-start justify-between gap-6">
             <div>
@@ -627,6 +620,8 @@ function SummaryContent() {
           </div>
         </section>
 
+        <p className="mt-2 text-xs text-zinc-600">Pactora identifies risks for review — not legal advice and does not replace a solicitor.</p>
+
         {clauseFlags.length > 0 && (
           <div className="mt-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 text-xs text-zinc-400">
             <svg className="h-3.5 w-3.5 shrink-0 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -635,6 +630,9 @@ function SummaryContent() {
             Your analysis is saved in this browser — return anytime to pick up where you left off.
           </div>
         )}
+
+        <ReviewProgress current="summary" sectionRisks={sectionRisks} />
+        <ActiveDocumentBanner />
 
         <div className="mt-6">
           <div className="flex flex-wrap gap-2">
@@ -850,6 +848,8 @@ function SummaryContent() {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
+
+        <p className="mt-4 text-center text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
 
         <div className="mt-3 text-center">
           <Link href="/" className="text-sm text-zinc-500 transition-colors hover:text-zinc-300">

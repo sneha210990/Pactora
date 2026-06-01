@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { BetaNav } from '@/components/beta-nav';
 import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
+import { APP_VERSION } from '@/lib/version';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -61,10 +63,14 @@ export default function RootLayout({
           <footer className="border-t border-zinc-800 bg-zinc-950/60">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-8 text-sm text-gray-500 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-base font-semibold text-zinc-100">Pactora</p>
+                <p className="text-base font-semibold text-zinc-100">
+                  Pactora{' '}
+                  <span className="text-xs font-normal text-zinc-500">v{APP_VERSION}</span>
+                </p>
                 <p className="mt-1 max-w-md text-gray-500">
                   Contract review and negotiation prep for founders and freelancers
                 </p>
+                <p className="mt-3 max-w-md text-xs text-gray-500">{LEGAL_DISCLAIMER}</p>
               </div>
               <div className="flex flex-wrap items-center gap-4 md:justify-end">
                 <Link href="/terms" className="hover:text-white">

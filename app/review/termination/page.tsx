@@ -9,6 +9,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 
 type TerminationRight = 'Mutual' | 'One-sided' | 'Unknown';
 type CureRights = 'Present' | 'Absent' | 'Unknown';
@@ -501,6 +502,7 @@ function TerminationReviewContent() {
               acv={commercialContext.acv.value}
               liabilityCap={lolCap}
             />
+            <p className="border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </section>
         )}
 

@@ -10,6 +10,7 @@ import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { LEGAL_DISCLAIMER } from '@/lib/constants';
 
 type CapType =
   | 'fixed_amount'
@@ -574,6 +575,7 @@ function LolReviewContent() {
             acv={acv}
             liabilityCap={derived.impliedCapAmountGBP}
           />
+          <p className="mt-4 border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </>
           )}
 
