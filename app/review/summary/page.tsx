@@ -459,6 +459,8 @@ function SummaryContent() {
   const [emailError, setEmailError] = useState('');
   const [emailCopied, setEmailCopied] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchError, setBatchError] = useState('');
 
   useEffect(() => {
     trackEvent('analysis_completed', '/review/summary');
@@ -486,6 +488,10 @@ function SummaryContent() {
 
   const effectiveFlags: ClauseFlag[] = clauseFlags.length > 0 ? clauseFlags : (analysis.manualFlags ?? []);
   const uncertainFlagCount = effectiveFlags.filter((f) => f.confidence === 'Uncertain').length;
+
+  const playbookFlags = effectiveFlags.filter(
+    (f) => PLAYBOOK_CLAUSE_TYPES.has(f.clauseType) && !!(f.clauseText || f.problematicLanguage),
+  );
 
   const rankedSections = useMemo(() => {
     return reviewSections
@@ -543,6 +549,52 @@ function SummaryContent() {
     await navigator.clipboard.writeText(emailContent);
     setEmailCopied(true);
     setTimeout(() => setEmailCopied(false), 2000);
+  }
+
+  async function generateAllRedlines() {
+    if (playbookFlags.length === 0 || batchGenerating) return;
+    setBatchGenerating(true);
+    setBatchError('');
+    try {
+      const results = await Promise.allSettled(
+        playbookFlags.map((flag) =>
+          apiFetch('/api/contracts/redline', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clauseText: flag.clauseText ?? flag.problematicLanguage ?? '',
+              clauseType: flag.clauseType,
+              acv: acvAmount ?? null,
+              liabilityCap: lolCap ?? null,
+            }),
+          }).then((res) => res.json() as Promise<{ alternative?: string; error?: string }>),
+        ),
+      );
+      let successCount = 0;
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const flag = playbookFlags[i];
+        if (result.status === 'fulfilled' && result.value.alternative) {
+          const alt = result.value.alternative;
+          const proposedText = alt.replace(/\nWhy this works:[\s\S]*/i, '').trim();
+          const explanation = alt.match(/\nWhy this works:([\s\S]*)/i)?.[0]?.replace(/^\n/, '').trim() ?? '';
+          actions.acceptRedline(
+            flag.clauseType,
+            flag.clauseText ?? flag.problematicLanguage ?? '',
+            proposedText,
+            explanation,
+          );
+          successCount++;
+        }
+      }
+      if (successCount === 0) {
+        setBatchError('Could not generate redlines. Please try again.');
+      }
+    } catch {
+      setBatchError('Network error. Please try again.');
+    } finally {
+      setBatchGenerating(false);
+    }
   }
 
   if (!analysis.activeDocument) {
@@ -767,13 +819,38 @@ function SummaryContent() {
 
         {effectiveFlags.length > 0 ? (
           <section className="mt-8">
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
                 {clauseFlags.length > 0 ? 'AI Clause Analysis' : 'Manual Review Findings'}
               </h2>
               <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
                 {effectiveFlags.length} {effectiveFlags.length === 1 ? 'flag' : 'flags'}
               </span>
+              {sourceFileType === 'docx' && playbookFlags.length > 0 && (
+                <div className="ml-auto flex flex-col items-end gap-1">
+                  <button
+                    type="button"
+                    onClick={generateAllRedlines}
+                    disabled={batchGenerating}
+                    className="flex items-center gap-1.5 rounded border border-emerald-700/60 bg-emerald-950/40 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:border-emerald-500 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {batchGenerating ? (
+                      <>
+                        <div className="h-3 w-3 animate-spin rounded-full border border-emerald-700 border-t-emerald-300" />
+                        Generating redlines…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                        Generate all redlines
+                      </>
+                    )}
+                  </button>
+                  {batchError && <p className="text-[11px] text-red-400">{batchError}</p>}
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-6">
               {uncertainFlagCount >= 2 && (
