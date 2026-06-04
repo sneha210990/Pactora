@@ -236,10 +236,10 @@ jurisdictions:
         the limitation is ineffective.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: &id003
         - https://www.gesetze-im-internet.de/
     - rule_id: DE-TERM-002
@@ -258,10 +258,10 @@ jurisdictions:
         elects performance.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id003
       overriding_mandatory: true
     - rule_id: DE-TERM-003
@@ -278,10 +278,10 @@ jurisdictions:
         (Nachfrist) first.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id003
     - rule_id: DE-TERM-004
       legacy_id: de_penalty
@@ -299,10 +299,10 @@ jurisdictions:
       engine_interpretation: A disproportionate penalty may be reduced by the court, except between merchants.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id003
   france:
     legal_system: civil_law
@@ -338,10 +338,10 @@ jurisdictions:
         the administrator may require continuation.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: &id004
         - https://www.legifrance.gouv.fr/
       overriding_mandatory: true
@@ -360,10 +360,10 @@ jurisdictions:
         immediate termination may be read down.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 12
-        status: verified
+        status: unverified
         source_urls: *id004
     - rule_id: FR-TERM-003
       legacy_id: fr_indefinite_no_notice
@@ -378,10 +378,10 @@ jurisdictions:
       engine_interpretation: Open-ended contracts require reasonable notice (preavis) before termination.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id004
     - rule_id: FR-TERM-004
       legacy_id: fr_penalty
@@ -397,10 +397,10 @@ jurisdictions:
         power cannot be excluded.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id004
 fallback_ladder:
   ideal: 'Mutual rights: termination for cause with a defined cure period, termination for convenience
