@@ -821,7 +821,7 @@ function SummaryContent() {
           <section className="mt-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
-                {clauseFlags.length > 0 ? 'AI Clause Analysis' : 'Manual Review Findings'}
+                {clauseFlags.length > 0 ? 'Clause Analysis' : 'Manual Review Findings'}
               </h2>
               <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
                 {effectiveFlags.length} {effectiveFlags.length === 1 ? 'flag' : 'flags'}
