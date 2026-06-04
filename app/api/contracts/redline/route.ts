@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAnthropicClient } from '@/lib/agents/client';
+import { recordAuditEvent } from '@/lib/beta-store';
+import { getCurrentSessionUser } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -76,6 +78,15 @@ export async function POST(request: Request) {
     if (!textBlock || textBlock.type !== 'text') {
       return NextResponse.json({ error: 'No response from Claude.' }, { status: 500 });
     }
+
+    getCurrentSessionUser()
+      .then((s) => recordAuditEvent({
+        user_id: s?.user.id ?? null,
+        action: 'redline_generated',
+        document_id: null,
+        metadata: { clause_type: body.clauseType ?? null },
+      }))
+      .catch(console.error);
 
     return NextResponse.json({ alternative: textBlock.text.trim() });
   } catch (err) {

@@ -39,7 +39,8 @@ import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
 import type { AgentEvent, PactoraClauseType } from '@/lib/agents/types';
 import type { Jurisdiction } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
-import { recordApiUsage } from '@/lib/beta-store';
+import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
+import { getCurrentSessionUser } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 // 5 parallel agents each with up to 60 s → 120 s ceiling gives headroom
@@ -68,6 +69,15 @@ export async function POST(request: Request) {
     typeof body.jurisdiction === 'string' && VALID_JURISDICTIONS.has(body.jurisdiction)
       ? (body.jurisdiction as Jurisdiction)
       : null;
+
+  getCurrentSessionUser()
+    .then((s) => recordAuditEvent({
+      user_id: s?.user.id ?? null,
+      action: 'clause_analysed',
+      document_id: null,
+      metadata: { text_length: contractText.length, jurisdiction: jurisdiction ?? null },
+    }))
+    .catch(console.error);
 
   const chunks = createOverlappingChunks(contractText);
   console.log(`[CHUNKING] Contract (${contractText.length} chars) split into ${chunks.length} chunk(s)`);

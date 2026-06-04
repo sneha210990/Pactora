@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { detectContractValues, extractContractText } from '@/lib/contract-extraction';
 import { extractContractValuesWithAI } from '@/lib/ai-extraction';
-import { recordApiUsage } from '@/lib/beta-store';
+import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
+import { getCurrentSessionUser } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -131,11 +132,19 @@ async function extractFromManualText(request: Request) {
 
   console.log('[extract] manualText.length:', text.length);
 
-  return NextResponse.json(await buildExtractionPayload(text, {
-    fileName: sourceName,
-    fileType: 'text/plain',
-    uploadedAt: new Date().toISOString(),
-  }));
+  const documentMeta = { fileName: sourceName, fileType: 'text/plain', uploadedAt: new Date().toISOString() };
+  const payload = await buildExtractionPayload(text, documentMeta);
+
+  getCurrentSessionUser()
+    .then((s) => recordAuditEvent({
+      user_id: s?.user.id ?? null,
+      action: 'contract_extracted',
+      document_id: payload.documentId,
+      metadata: { file_name: documentMeta.fileName, file_type: documentMeta.fileType },
+    }))
+    .catch(console.error);
+
+  return NextResponse.json(payload);
 }
 
 async function extractFromUploadedFile(request: Request) {
@@ -160,15 +169,25 @@ async function extractFromUploadedFile(request: Request) {
   const buffer = Buffer.from(await uploaded.arrayBuffer());
   const text = await extractContractText(uploaded.name, buffer, uploaded.type);
 
+  const uploadedAt = new Date().toISOString();
   const payload = await buildExtractionPayload(text, {
     fileName: uploaded.name,
     fileType: uploaded.type,
-    uploadedAt: new Date().toISOString(),
+    uploadedAt,
   });
 
   const isDocx =
     uploaded.name.toLowerCase().endsWith('.docx') ||
     uploaded.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  getCurrentSessionUser()
+    .then((s) => recordAuditEvent({
+      user_id: s?.user.id ?? null,
+      action: 'contract_extracted',
+      document_id: payload.documentId,
+      metadata: { file_name: uploaded.name, file_type: uploaded.type, source_type: isDocx ? 'docx' : 'pdf' },
+    }))
+    .catch(console.error);
 
   return NextResponse.json({
     ...payload,
