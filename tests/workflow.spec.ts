@@ -116,10 +116,10 @@ test.afterEach(async ({ page }) => {
 test('Test 1: Homepage loads and primary CTA works', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Understand SaaS contract risk before legal review', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: "Understand what's in your contract and how to negotiate it.", level: 1 })).toBeVisible();
   await expect(page.getByText('Pactora helps SaaS teams spot liability', { exact: false })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Start contract review' }).click();
+  await page.getByRole('link', { name: 'Review a contract free' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
 });
 
@@ -153,9 +153,40 @@ test('Test 3: New Deal page loads and upload UI works', async ({ page }) => {
 });
 
 test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        documentId: 'test-4-doc',
+        documentMeta: { fileName: 'dummy-contract.pdf', fileType: 'application/pdf', uploadedAt: '2026-01-01T00:00:00Z' },
+        detectedValues: {
+          acv: { value: 25000, confidence: 0.9, evidence: '£25,000', extractionMethod: 'regex' },
+          termMonths: { value: 12, confidence: 0.8, evidence: '12 months', extractionMethod: 'regex' },
+          insuranceCover: { value: 1000000, confidence: 0.7, evidence: '£1,000,000', extractionMethod: 'regex' },
+          dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
+        },
+        extractedTerms: {},
+        contractText: 'Sample contract text for test 4.',
+        sourceFileType: 'pdf',
+      }),
+    });
+  });
+  await page.route('**/api/contracts/analyze-agents', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"type":"analysis_complete","flags":[]}\n\n',
+    });
+  });
+
   await uploadContractAndConfirm(page);
 
-  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 45000 });
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
+
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('£25,000', { exact: true })).toBeVisible();
   await expect(page.getByText('12 months', { exact: true })).toBeVisible();
   await expect(page.getByText('£1,000,000', { exact: true })).toBeVisible();
@@ -169,13 +200,7 @@ test('Test 5: Commercial context carries through to LoL review', async ({ page }
   await expect(page.getByText('£12,345', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
 
-  await page
-    .getByLabel(/I confirm that I am authorised to upload or paste this material/i)
-    .check();
-  await page
-    .getByLabel(/I understand extracted values are parser outputs/i)
-    .check();
-
+  // Analysis is already complete (seeded) — link is immediately accessible, no checkboxes needed
   await page.getByRole('link', { name: 'View contract analysis' }).click();
 
   await expect(page).toHaveURL(/\/review\/summary/);
@@ -218,7 +243,7 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Start contract review' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Review a contract free' })).toBeVisible();
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
@@ -240,12 +265,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await expect(page.getByText('£2,000,000', { exact: true })).toBeVisible();
   await expect(page.getByText('personal', { exact: true })).toBeVisible();
 
-  await page
-    .getByLabel(/I confirm that I am authorised to upload or paste this material/i)
-    .check();
-  await page
-    .getByLabel(/I understand extracted values are parser outputs/i)
-    .check();
+  // Analysis is already complete (seeded) — link is immediately accessible, no checkboxes needed
   await page.getByRole('link', { name: 'View contract analysis' }).click();
 
   await expect(page).toHaveURL(/\/review\/summary/);
@@ -331,6 +351,37 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
 });
 
 test('Test 10: DOCX upload parses correctly and populates deal context fields', async ({ page }) => {
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        documentId: 'test-10-doc',
+        documentMeta: {
+          fileName: 'dummy-contract.docx',
+          fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          uploadedAt: '2026-01-01T00:00:00Z',
+        },
+        detectedValues: {
+          acv: { value: 30000, confidence: 0.9, evidence: '£30,000', extractionMethod: 'regex' },
+          termMonths: { value: 24, confidence: 0.8, evidence: '24 months', extractionMethod: 'regex' },
+          insuranceCover: { value: 2000000, confidence: 0.7, evidence: '£2,000,000', extractionMethod: 'regex' },
+          dataType: { value: 'personal', confidence: 0.8, evidence: 'personal data', extractionMethod: 'regex' },
+        },
+        extractedTerms: {},
+        contractText: 'Sample contract text for test 10.',
+        sourceFileType: 'docx',
+      }),
+    });
+  });
+  await page.route('**/api/contracts/analyze-agents', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"type":"analysis_complete","flags":[]}\n\n',
+    });
+  });
+
   await page.goto('/deals/new');
   await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 
@@ -339,7 +390,11 @@ test('Test 10: DOCX upload parses correctly and populates deal context fields', 
   await expect(page.getByText('dummy-contract.docx')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 
-  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 45000 });
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
+
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('£30,000', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
   await expect(page.getByText('£2,000,000', { exact: true })).toBeVisible();
@@ -367,7 +422,7 @@ test('Test 11: Termination review detects notice of termination period wording',
 test('Test 12: How-it-works page loads correctly', async ({ page }) => {
   await page.goto('/how-it-works');
   await expect(page.getByRole('heading', { name: 'How it works' })).toBeVisible();
-  await expect(page.getByText('Step 1')).toBeVisible();
+  await expect(page.getByText('01')).toBeVisible();
   await expect(page.getByText('Upload contract')).toBeVisible();
 });
 
@@ -884,21 +939,14 @@ test('Test 51: New review link from summary returns to deals intake', async ({ p
 
 // ─── Acknowledgment gating ─────────────────────────────────────────────────────
 
-test('Test 52: Continue button stays disabled until both checkboxes are ticked', async ({ page }) => {
+test('Test 52: View contract analysis link is directly accessible when analysis is complete', async ({ page }) => {
   await seedStore(page, { acv: 10000, termMonths: 12 });
   await page.goto('/deals/new');
 
-  // Initially disabled
-  await expect(page.getByRole('button', { name: 'View contract analysis' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'View contract analysis' })).not.toBeVisible();
-
-  // Tick first checkbox only — still disabled
-  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
-  await expect(page.getByRole('link', { name: 'View contract analysis' })).not.toBeVisible();
-
-  // Tick second checkbox — now enabled
-  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  // When uploadStatus is 'complete' (from seedStore), the link is immediately visible —
+  // no acknowledgment checkboxes are required (they are hidden in the completed state).
   await expect(page.getByRole('link', { name: 'View contract analysis' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Confirm and analyse' })).not.toBeVisible();
 });
 
 // ─── Commercial context display on review pages ────────────────────────────────
@@ -988,6 +1036,7 @@ test('Test 56: Uploading a second document clears stale extracted ACV and change
   await expect(page.getByText('£100,000', { exact: true })).toBeVisible();
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
   await page.getByRole('link', { name: 'View contract analysis' }).click();
   await expect(page).toHaveURL(/\/review\/summary/);
   await page.goto('/review/lol');
@@ -1003,6 +1052,7 @@ test('Test 56: Uploading a second document clears stale extracted ACV and change
   await expect(page.getByText('Not detected', { exact: true }).first()).toBeVisible();
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
   await page.getByRole('link', { name: 'View contract analysis' }).click();
   await expect(page).toHaveURL(/\/review\/summary/);
   await page.goto('/review/lol');
@@ -1018,7 +1068,7 @@ test('Test 57: Tablet viewport smoke test across key pages', async ({ page }) =>
   await page.setViewportSize({ width: 768, height: 1024 });
 
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Start contract review' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Review a contract free' })).toBeVisible();
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
@@ -1050,7 +1100,7 @@ test('Test 58: Summary shows Review required verdict with two or more High-risk 
   ]);
   await page.goto('/review/summary');
 
-  await expect(page.getByText('Review required')).toBeVisible();
+  await expect(page.getByText('Not ready to sign')).toBeVisible();
 });
 
 test('Test 59: Summary shows Proceed with caution verdict with exactly one High flag', async ({ page }) => {
@@ -1060,7 +1110,7 @@ test('Test 59: Summary shows Proceed with caution verdict with exactly one High 
   ]);
   await page.goto('/review/summary');
 
-  await expect(page.getByText('Proceed with caution')).toBeVisible();
+  await expect(page.getByText('Sign with conditions')).toBeVisible();
 });
 
 test('Test 60: Summary shows Acceptable risk verdict with only Low-risk flags', async ({ page }) => {
@@ -1069,7 +1119,7 @@ test('Test 60: Summary shows Acceptable risk verdict with only Low-risk flags', 
   ]);
   await page.goto('/review/summary');
 
-  await expect(page.getByText('Acceptable risk')).toBeVisible();
+  await expect(page.getByText('Ready to sign')).toBeVisible();
 });
 
 // ─── MVP-04: Risk score (0–100) ───────────────────────────────────────────────
@@ -1155,6 +1205,14 @@ test('Test 65: Processing pipeline shows per-agent sub-list after analysis compl
   await page.goto('/deals/new');
   await page.fill('#manualClauses', 'This agreement limits liability to fees paid in the preceding twelve months.');
   await page.click('button[type=submit]');
+
+  // Wait for extraction to complete (Step 2 heading appears)
+  await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible({ timeout: 10000 });
+
+  // Acknowledge the legal notice (required by the P1 confirmation gate)
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
 
   // Wait for the analysis to complete (pipeline status badge shows complete)
   await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 15000 });
@@ -1287,7 +1345,7 @@ async function acceptRedlineViaUI(page: Page) {
   });
 
   // The Liability Cap card is auto-expanded (High risk). Get a suggestion and accept it.
-  await page.getByRole('button', { name: 'Suggest alternative language' }).click();
+  await page.getByRole('button', { name: 'Get suggested wording' }).click();
   await expect(page.getByText('Alternative language')).toBeVisible({ timeout: 10000 });
   await page.getByRole('button', { name: 'Accept redline' }).click();
   await expect(page.getByText('Accepted')).toBeVisible();
