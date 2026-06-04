@@ -267,10 +267,10 @@ jurisdictions:
         void under §307.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: &id003
         - https://www.gesetze-im-internet.de/
     - rule_id: DE-IND-002
@@ -287,10 +287,10 @@ jurisdictions:
       depends_on:
       - clause:LOL
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id003
     - rule_id: DE-IND-003
       legacy_id: ind_ip_infringement_scope
@@ -310,10 +310,10 @@ jurisdictions:
       depends_on:
       - clause:IPO
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id003
   france:
     legal_system: civil_law
@@ -343,10 +343,10 @@ jurisdictions:
         art. 1231-5.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: &id004
         - https://www.legifrance.gouv.fr/
     - rule_id: FR-IND-002
@@ -365,10 +365,10 @@ jurisdictions:
         for review rather than asserting the term falls away.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 12
-        status: verified
+        status: unverified
         source_urls: *id004
     - rule_id: FR-IND-003
       legacy_id: fr_uncapped_outside_cap
@@ -384,10 +384,10 @@ jurisdictions:
       depends_on:
       - clause:LOL
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id004
     - rule_id: FR-IND-004
       legacy_id: ind_ip_infringement_scope
@@ -407,10 +407,10 @@ jurisdictions:
       depends_on:
       - clause:IPO
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id004
 fallback_ladder:
   ideal: Mutual, capped indemnities limited to defined third-party claim categories (IP infringement,

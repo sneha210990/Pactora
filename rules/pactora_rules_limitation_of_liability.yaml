@@ -3,282 +3,313 @@ clause: limitation_of_liability
 clause_id: LOL
 version: 0.2
 last_reviewed: 2026-05-29
-
 detection:
   mode: semantic
   typical_headings:
-    - "Limitation of Liability"
-    - "Liability"
-    - "Exclusion of Liability"
-    - "Risk Allocation"
+  - Limitation of Liability
+  - Liability
+  - Exclusion of Liability
+  - Risk Allocation
   semantic_signals:
-    - caps or excludes a category of loss (direct, indirect, consequential, loss of profit)
-    - sets a monetary ceiling on aggregate liability
-    - excludes liability "in no event" / "under no circumstances"
-    - ties a cap to fees paid or a multiple of fees
-
+  - caps or excludes a category of loss (direct, indirect, consequential, loss of profit)
+  - sets a monetary ceiling on aggregate liability
+  - excludes liability "in no event" / "under no circumstances"
+  - ties a cap to fees paid or a multiple of fees
 cadence_by_stability:
   settled: 24
   context_sensitive: 12
   evolving: 3
   jurisdictionally_variable: 6
-
 jurisdictions:
-
   england_wales:
     legal_system: common_law
     triggers:
-      - rule_id: EW-LOL-001
-        legacy_id: ew_blanket_no_carveout
-        rule_type: mandatory_law
-        stability: settled
-        severity: high
-        detection_condition: blanket exclusion or cap present AND no carve-out for death/personal injury (negligence) or fraud
-        signals: ["in no event shall", "under no circumstances", "to the maximum extent permitted by law"]
-        legal_basis:
-          - { authority: "Unfair Contract Terms Act 1977, s.2(1)", type: statute }
-          - { authority: "HIH Casualty v Chase Manhattan Bank [2003] UKHL 6", type: case }
-        non_excludable:
-          - death or personal injury caused by negligence (s.2(1))
-          - fraud and fraudulent misrepresentation
-        engine_interpretation: >
-          Cap/exclusion lacks the mandatory carve-outs; the relevant limb is
-          likely unenforceable. Recommend adding express carve-outs for death or
-          personal injury (negligence) and for fraud.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 24
-          status: verified
-          source_urls:
-            - "https://www.legislation.gov.uk/ukpga/1977/50"
+    - rule_id: EW-LOL-001
+      legacy_id: ew_blanket_no_carveout
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: blanket exclusion or cap present AND no carve-out for death/personal injury
+        (negligence) or fraud
+      signals:
+      - in no event shall
+      - under no circumstances
+      - to the maximum extent permitted by law
+      legal_basis:
+      - authority: Unfair Contract Terms Act 1977, s.2(1)
+        type: statute
+      - authority: HIH Casualty v Chase Manhattan Bank [2003] UKHL 6
+        type: case
+      non_excludable:
+      - death or personal injury caused by negligence (s.2(1))
+      - fraud and fraudulent misrepresentation
+      engine_interpretation: 'Cap/exclusion lacks the mandatory carve-outs; the relevant limb is likely
+        unenforceable. Recommend adding express carve-outs for death or personal injury (negligence) and
+        for fraud.
 
-      - rule_id: EW-LOL-002
-        legacy_id: ew_standard_terms_reasonableness
-        rule_type: litigation_risk
-        stability: context_sensitive
-        severity: medium
-        detection_condition: contract on one party's written standard terms AND exclusion of liability for breach of a central obligation
-        legal_basis:
-          - { authority: "Unfair Contract Terms Act 1977, s.3", type: statute }
-          - { authority: "Unfair Contract Terms Act 1977, s.11 + Sch.2", type: statute }
-        non_excludable: []
-        engine_interpretation: >
-          Exclusion on written standard terms must pass the UCTA reasonableness
-          test; as drafted it may not. Fact-sensitive - surface for review rather
-          than asserting invalidity.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 12
-          status: verified
-          source_urls:
-            - "https://www.legislation.gov.uk/ukpga/1977/50"
+        '
+      depends_on: []
+      meta:
+        last_verified: 2026-05-29
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1977/50
+    - rule_id: EW-LOL-002
+      legacy_id: ew_standard_terms_reasonableness
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: contract on one party's written standard terms AND exclusion of liability for
+        breach of a central obligation
+      legal_basis:
+      - authority: Unfair Contract Terms Act 1977, s.3
+        type: statute
+      - authority: Unfair Contract Terms Act 1977, s.11 + Sch.2
+        type: statute
+      non_excludable: []
+      engine_interpretation: 'Exclusion on written standard terms must pass the UCTA reasonableness test;
+        as drafted it may not. Fact-sensitive - surface for review rather than asserting invalidity.
 
-      - rule_id: EW-LOL-003
-        legacy_id: ew_one_sided_cap
-        rule_type: negotiation_risk
-        stability: context_sensitive
-        severity: medium
-        detection_condition: only one party's liability is capped
-        legal_basis:
-          - { authority: "Unfair Contract Terms Act 1977, Sch.2 (relative bargaining position is a reasonableness factor)", type: statute }
-        non_excludable: []
-        engine_interpretation: >
-          A one-sided cap weighs against reasonableness under Sch.2. The
-          suggestion to adopt a MUTUAL cap is market practice, not a legal
-          requirement - presented as a negotiation point, not an enforceability
-          finding.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 12
-          status: verified
-          source_urls:
-            - "https://www.legislation.gov.uk/ukpga/1977/50"
+        '
+      depends_on: []
+      meta:
+        last_verified: 2026-05-29
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1977/50
+    - rule_id: EW-LOL-003
+      legacy_id: ew_one_sided_cap
+      rule_type: negotiation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: only one party's liability is capped
+      legal_basis:
+      - authority: Unfair Contract Terms Act 1977, Sch.2 (relative bargaining position is a reasonableness
+          factor)
+        type: statute
+      non_excludable: []
+      engine_interpretation: 'A one-sided cap weighs against reasonableness under Sch.2. The suggestion
+        to adopt a MUTUAL cap is market practice, not a legal requirement - presented as a negotiation
+        point, not an enforceability finding.
 
+        '
+      depends_on: []
+      meta:
+        last_verified: 2026-05-29
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1977/50
   india:
     legal_system: common_law
     triggers:
-      - rule_id: IN-LOL-001
-        legacy_id: in_unconscionable_standard_form
-        rule_type: litigation_risk
-        stability: context_sensitive
-        severity: high
-        detection_condition: total or near-total exclusion in a standard-form / 'dotted line' contract AND weaker party with no meaningful choice
-        excluded_when: parties are commercial equals with comparable bargaining power
-        legal_basis:
-          - { authority: "Indian Contract Act 1872, s.23", type: statute }
-          - { authority: "Central Inland Water Transport Corp v Brojo Nath Ganguly (1986) 3 SCC 156", type: case }
-          - { authority: "LIC of India v Consumer Education & Research Centre (1995) 5 SCC 482", type: case }
-        non_excludable: []
-        engine_interpretation: >
-          A blanket exclusion in a take-it-or-leave-it contract against a weaker
-          party may be void as unconscionable. Does NOT apply between commercial
-          equals. Fact-sensitive; surface for review, do not assert invalidity.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 12
-          status: verified
-          source_urls:
-            - "https://www.indiacode.nic.in/handle/123456789/2187"
+    - rule_id: IN-LOL-001
+      legacy_id: in_unconscionable_standard_form
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: high
+      detection_condition: total or near-total exclusion in a standard-form / 'dotted line' contract AND
+        weaker party with no meaningful choice
+      excluded_when: parties are commercial equals with comparable bargaining power
+      legal_basis:
+      - authority: Indian Contract Act 1872, s.23
+        type: statute
+      - authority: Central Inland Water Transport Corp v Brojo Nath Ganguly (1986) 3 SCC 156
+        type: case
+      - authority: LIC of India v Consumer Education & Research Centre (1995) 5 SCC 482
+        type: case
+      non_excludable: []
+      engine_interpretation: 'A blanket exclusion in a take-it-or-leave-it contract against a weaker party
+        may be void as unconscionable. Does NOT apply between commercial equals. Fact-sensitive; surface
+        for review, do not assert invalidity.
 
-      - rule_id: IN-LOL-002
-        legacy_id: in_core_obligation_exclusion
-        rule_type: litigation_risk
-        stability: context_sensitive
-        severity: medium
-        detection_condition: exclusion purports to cover non-performance of the core obligation
-        legal_basis:
-          - { authority: "Indian Contract Act 1872 - construction; contra proferentem", type: construction }
-        non_excludable: []
-        engine_interpretation: >
-          Exclusion of the core obligation will be read narrowly by Indian
-          courts; likely ineffective as drafted.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 12
-          status: verified
-          source_urls:
-            - "https://www.indiacode.nic.in/handle/123456789/2187"
+        '
+      depends_on: []
+      meta:
+        last_verified: 2026-05-29
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls:
+        - https://www.indiacode.nic.in/handle/123456789/2187
+    - rule_id: IN-LOL-002
+      legacy_id: in_core_obligation_exclusion
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: exclusion purports to cover non-performance of the core obligation
+      legal_basis:
+      - authority: Indian Contract Act 1872 - construction; contra proferentem
+        type: construction
+      non_excludable: []
+      engine_interpretation: 'Exclusion of the core obligation will be read narrowly by Indian courts;
+        likely ineffective as drafted.
 
-      - rule_id: IN-LOL-003
-        legacy_id: in_fixed_sum_cap
-        rule_type: operational_risk
-        stability: settled
-        severity: low
-        detection_condition: liability capped at a named fixed sum framed as agreed/liquidated
-        legal_basis:
-          - { authority: "Indian Contract Act 1872, s.74", type: statute }
-        non_excludable: []
-        engine_interpretation: >
-          A fixed-sum cap engages s.74; a court awards reasonable compensation
-          not exceeding the sum, so the cap is a ceiling, not a guarantee.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 24
-          status: verified
-          source_urls:
-            - "https://www.indiacode.nic.in/handle/123456789/2187"
+        '
+      depends_on: []
+      meta:
+        last_verified: 2026-05-29
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls:
+        - https://www.indiacode.nic.in/handle/123456789/2187
+    - rule_id: IN-LOL-003
+      legacy_id: in_fixed_sum_cap
+      rule_type: operational_risk
+      stability: settled
+      severity: low
+      detection_condition: liability capped at a named fixed sum framed as agreed/liquidated
+      legal_basis:
+      - authority: Indian Contract Act 1872, s.74
+        type: statute
+      non_excludable: []
+      engine_interpretation: 'A fixed-sum cap engages s.74; a court awards reasonable compensation not
+        exceeding the sum, so the cap is a ceiling, not a guarantee.
 
+        '
+      depends_on: []
+      meta:
+        last_verified: 2026-05-29
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.indiacode.nic.in/handle/123456789/2187
   germany:
     legal_system: civil_law
     triggers:
-      - rule_id: DE-LOL-001
-        legacy_id: de_agb_blanket
-        rule_type: mandatory_law
-        stability: settled
-        severity: high
-        detection_condition: standard-form (AGB) AND blanket exclusion with no carve-out for intent / gross negligence
-        legal_basis:
-          - { authority: "BGB §307 (unreasonable disadvantage in standard terms)", type: statute }
-          - { authority: "BGB §309 No. 7 (life/body/health; gross negligence/intent)", type: statute }
-          - { authority: "BGB §276(3) (liability for intent cannot be excluded in advance)", type: statute }
-        non_excludable:
-          - liability for intent / Vorsatz (§276(3))
-          - injury to life, body or health (negligent breach)
-        engine_interpretation: >
-          A blanket exclusion in standard terms with no carve-out for intent or
-          gross negligence is presumptively void under §307.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 24
-          status: verified
-          source_urls:
-            - "https://www.gesetze-im-internet.de/bgb/"
+    - rule_id: DE-LOL-001
+      legacy_id: de_agb_blanket
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: standard-form (AGB) AND blanket exclusion with no carve-out for intent / gross
+        negligence
+      legal_basis:
+      - authority: BGB §307 (unreasonable disadvantage in standard terms)
+        type: statute
+      - authority: BGB §309 No. 7 (life/body/health; gross negligence/intent)
+        type: statute
+      - authority: BGB §276(3) (liability for intent cannot be excluded in advance)
+        type: statute
+      non_excludable:
+      - liability for intent / Vorsatz (§276(3))
+      - injury to life, body or health (negligent breach)
+      engine_interpretation: 'A blanket exclusion in standard terms with no carve-out for intent or gross
+        negligence is presumptively void under §307.
 
-      - rule_id: DE-LOL-002
-        legacy_id: de_negotiation_status
-        rule_type: operational_risk
-        stability: settled
-        severity: info
-        detection_condition: cannot confirm whether terms were individually negotiated
-        legal_basis:
-          - { authority: "BGB §305 (AGB definition)", type: statute }
-        non_excludable: []
-        engine_interpretation: >
-          AGB control turns on whether the term was individually negotiated;
-          confirm negotiation status before relying on the clause.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 24
-          status: verified
-          source_urls:
-            - "https://www.gesetze-im-internet.de/bgb/"
+        '
+      depends_on: []
+      meta:
+        last_verified: null
+        verified_by: null
+        review_cadence_months: 24
+        status: unverified
+        source_urls:
+        - https://www.gesetze-im-internet.de/bgb/
+    - rule_id: DE-LOL-002
+      legacy_id: de_negotiation_status
+      rule_type: operational_risk
+      stability: settled
+      severity: info
+      detection_condition: cannot confirm whether terms were individually negotiated
+      legal_basis:
+      - authority: BGB §305 (AGB definition)
+        type: statute
+      non_excludable: []
+      engine_interpretation: 'AGB control turns on whether the term was individually negotiated; confirm
+        negotiation status before relying on the clause.
 
+        '
+      depends_on: []
+      meta:
+        last_verified: null
+        verified_by: null
+        review_cadence_months: 24
+        status: unverified
+        source_urls:
+        - https://www.gesetze-im-internet.de/bgb/
   france:
     legal_system: civil_law
     triggers:
-      - rule_id: FR-LOL-001
-        legacy_id: fr_essential_obligation
-        rule_type: mandatory_law
-        stability: settled
-        severity: high
-        detection_condition: cap so low it negates the core deliverable / essential obligation
-        legal_basis:
-          - { authority: "Code civil art. 1170 (clause negating essential obligation deemed unwritten; codifies Chronopost)", type: statute }
-        non_excludable:
-          - any clause that empties the essential obligation of its substance (art. 1170)
-        engine_interpretation: >
-          A cap so low it negates the essential obligation is deemed unwritten
-          under art. 1170.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 24
-          status: verified
-          source_urls:
-            - "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006070721/"
+    - rule_id: FR-LOL-001
+      legacy_id: fr_essential_obligation
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: cap so low it negates the core deliverable / essential obligation
+      legal_basis:
+      - authority: Code civil art. 1170 (clause negating essential obligation deemed unwritten; codifies
+          Chronopost)
+        type: statute
+      non_excludable:
+      - any clause that empties the essential obligation of its substance (art. 1170)
+      engine_interpretation: 'A cap so low it negates the essential obligation is deemed unwritten under
+        art. 1170.
 
-      - rule_id: FR-LOL-002
-        legacy_id: fr_adhesion_imbalance
-        rule_type: litigation_risk
-        stability: context_sensitive
-        severity: medium
-        detection_condition: contrat d'adhesion AND non-negotiated term creating significant imbalance
-        excluded_when: term was negotiated, or bears on main subject-matter / price
-        legal_basis:
-          - { authority: "Code civil art. 1171 (significant imbalance in a contrat d'adhesion deemed unwritten)", type: statute }
-        non_excludable: []
-        engine_interpretation: >
-          In an adhesion contract, a non-negotiated term creating a significant
-          imbalance is at risk of being deemed unwritten under art. 1171.
-          Fact-sensitive (turns on adhesion status and negotiation); surface for
-          review rather than asserting the term falls away.
-        depends_on: []
-        meta:
-          last_verified: 2026-05-29
-          verified_by: "source-check (Pactora)"
-          review_cadence_months: 12
-          status: verified
-          source_urls:
-            - "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006070721/"
+        '
+      depends_on: []
+      meta:
+        last_verified: null
+        verified_by: null
+        review_cadence_months: 24
+        status: unverified
+        source_urls:
+        - https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006070721/
+    - rule_id: FR-LOL-002
+      legacy_id: fr_adhesion_imbalance
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: contrat d'adhesion AND non-negotiated term creating significant imbalance
+      excluded_when: term was negotiated, or bears on main subject-matter / price
+      legal_basis:
+      - authority: Code civil art. 1171 (significant imbalance in a contrat d'adhesion deemed unwritten)
+        type: statute
+      non_excludable: []
+      engine_interpretation: 'In an adhesion contract, a non-negotiated term creating a significant imbalance
+        is at risk of being deemed unwritten under art. 1171. Fact-sensitive (turns on adhesion status
+        and negotiation); surface for review rather than asserting the term falls away.
 
+        '
+      depends_on: []
+      meta:
+        last_verified: null
+        verified_by: null
+        review_cadence_months: 12
+        status: unverified
+        source_urls:
+        - https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006070721/
 fallback_ladder:
-  ideal: "Mutual cap at a meaningful multiple of fees (e.g. 12 months), with all mandatory carve-outs expressly stated."
-  acceptable: "Mutual cap with carve-outs for the jurisdiction's non-excludable heads; consequential-loss exclusion permitted."
-  walk_away: "Blanket exclusion of all liability with no carve-outs, or a nominal cap that negates the core obligation."
-
+  ideal: Mutual cap at a meaningful multiple of fees (e.g. 12 months), with all mandatory carve-outs expressly
+    stated.
+  acceptable: Mutual cap with carve-outs for the jurisdiction's non-excludable heads; consequential-loss
+    exclusion permitted.
+  walk_away: Blanket exclusion of all liability with no carve-outs, or a nominal cap that negates the
+    core obligation.
 output_contract:
-  required_fields: [rule_id, clause_id, jurisdiction, severity, rule_type, stability, legal_basis, engine_interpretation, evidence_span]
+  required_fields:
+  - rule_id
+  - clause_id
+  - jurisdiction
+  - severity
+  - rule_type
+  - stability
+  - legal_basis
+  - engine_interpretation
+  - evidence_span
   rules:
-    - "every finding must carry the rule_id it fired from"
-    - "legal_basis is reported verbatim from the rule; the model must not invent authorities"
-    - "engine_interpretation may be tailored to the clause, but must not assert invalidity for litigation_risk / negotiation_risk rules"
-    - "respect excluded_when: do not raise a finding where its excluded_when condition holds"
-    - "evidence_span must quote the contract text that triggered the rule"
-    - "the engine must not serve a rule whose meta.status is not 'verified' or whose verification is past due"
+  - every finding must carry the rule_id it fired from
+  - legal_basis is reported verbatim from the rule; the model must not invent authorities
+  - engine_interpretation may be tailored to the clause, but must not assert invalidity for litigation_risk
+    / negotiation_risk rules
+  - 'respect excluded_when: do not raise a finding where its excluded_when condition holds'
+  - evidence_span must quote the contract text that triggered the rule
+  - the engine must not serve a rule whose meta.status is not 'verified' or whose verification is past
+    due
