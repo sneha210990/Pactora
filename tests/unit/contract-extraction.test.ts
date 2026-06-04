@@ -400,7 +400,7 @@ describe('extractContractText', () => {
         'This is a legacy document with adequate length for testing purposes',
       );
       const result = await extractContractText('contract.bin', buffer, 'application/msword');
-      expect(result.length).toBeGreaterThan(0);
+      expect(result.text.length).toBeGreaterThan(0);
     });
 
     it('is case-insensitive for extension matching', async () => {
@@ -408,7 +408,7 @@ describe('extractContractText', () => {
         'This is a contract document with sufficient length for testing',
       );
       const result = await extractContractText('CONTRACT.DOC', buffer);
-      expect(result.length).toBeGreaterThan(0);
+      expect(result.text.length).toBeGreaterThan(0);
     });
   });
 
@@ -419,7 +419,7 @@ describe('extractContractText', () => {
         'ascii',
       );
       const result = await extractContractText('contract.doc', buffer);
-      expect(result).toContain('Annual fee payable');
+      expect(result.text).toContain('Annual fee payable');
     });
 
     it('strips null bytes from binary content', async () => {
@@ -429,7 +429,7 @@ describe('extractContractText', () => {
         Buffer.from('More readable text here', 'ascii'),
       ]);
       const result = await extractContractText('contract.doc', buffer);
-      expect(result).not.toContain('\x00');
+      expect(result.text).not.toContain('\x00');
     });
 
     it('normalises CRLF line endings to LF', async () => {
@@ -437,7 +437,7 @@ describe('extractContractText', () => {
         'Line one here\r\nLine two here\r\nThird contract line here with more text',
       );
       const result = await extractContractText('contract.doc', buffer);
-      expect(result).not.toContain('\r');
+      expect(result.text).not.toContain('\r');
     });
 
     it('throws when extracted text is shorter than 20 characters', async () => {
@@ -458,7 +458,7 @@ describe('extractContractText', () => {
       const contractText =
         'Annual fee: £48,000. Term: 12 months. Insurance coverage: £1,000,000.';
       const buffer = Buffer.from(contractText, 'ascii');
-      const extracted = await extractContractText('contract.doc', buffer);
+      const { text: extracted } = await extractContractText('contract.doc', buffer);
       const values = detectContractValues(extracted);
       expect(values.acv.value).toBe(48000);
       expect(values.termMonths.value).toBe(12);

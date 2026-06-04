@@ -167,7 +167,19 @@ async function extractFromUploadedFile(request: Request) {
   console.log('[extract] file.size:', uploaded.size, 'bytes');
 
   const buffer = Buffer.from(await uploaded.arrayBuffer());
-  const text = await extractContractText(uploaded.name, buffer, uploaded.type);
+  const { text, visionUsage } = await extractContractText(uploaded.name, buffer, uploaded.type);
+
+  if (visionUsage) {
+    recordApiUsage({
+      operation: 'extraction',
+      model: 'claude-sonnet-4-6',
+      input_tokens: visionUsage.inputTokens,
+      output_tokens: visionUsage.outputTokens,
+      cache_creation_tokens: visionUsage.cacheCreationTokens,
+      cache_read_tokens: visionUsage.cacheReadTokens,
+      cost_usd: visionUsage.costUsd,
+    }).catch(console.error);
+  }
 
   const uploadedAt = new Date().toISOString();
   const payload = await buildExtractionPayload(text, {
@@ -185,7 +197,12 @@ async function extractFromUploadedFile(request: Request) {
       user_id: s?.user.id ?? null,
       action: 'contract_extracted',
       document_id: payload.documentId,
-      metadata: { file_name: uploaded.name, file_type: uploaded.type, source_type: isDocx ? 'docx' : 'pdf' },
+      metadata: {
+        file_name: uploaded.name,
+        file_type: uploaded.type,
+        source_type: isDocx ? 'docx' : 'pdf',
+        vision_used: visionUsage != null,
+      },
     }))
     .catch(console.error);
 
