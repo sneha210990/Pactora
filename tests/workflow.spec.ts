@@ -1426,3 +1426,151 @@ test('Test 69: DOCX download produces .docx when server succeeds', async ({ page
 
   expect(download.suggestedFilename()).toMatch(/\.docx$/);
 });
+
+// ─── AI-10: Jurisdiction selector ─────────────────────────────────────────────
+
+const JURISDICTION_EXTRACT_MOCK = {
+  documentId: 'test-jurisdiction-doc',
+  documentMeta: { fileName: 'dummy-contract.pdf', fileType: 'application/pdf', uploadedAt: '2026-01-01T00:00:00Z' },
+  detectedValues: {
+    acv: { value: null, confidence: null, evidence: null, extractionMethod: null },
+    termMonths: { value: null, confidence: null, evidence: null, extractionMethod: null },
+    insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
+    dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
+  },
+  extractedTerms: {},
+  contractText: 'Contract text for jurisdiction test.',
+  sourceFileType: 'pdf',
+};
+
+test('Test 70: Jurisdiction selector renders with all four options', async ({ page }) => {
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(JURISDICTION_EXTRACT_MOCK) });
+  });
+
+  await uploadContractAndConfirm(page);
+
+  const select = page.locator('#jurisdiction-select');
+  await expect(select).toBeVisible();
+  await expect(page.locator('label[for="jurisdiction-select"]')).toContainText('Your jurisdiction');
+
+  const optionTexts = await select.locator('option').allTextContents();
+  expect(optionTexts).toContain('England & Wales');
+  expect(optionTexts).toContain('India');
+  expect(optionTexts).toContain('Germany');
+  expect(optionTexts).toContain('France');
+  expect(optionTexts[0]).toBe('Select jurisdiction…');
+
+  await expect(select).toBeEnabled();
+});
+
+test('Test 71: Selected jurisdiction is sent in the analyse request', async ({ page }) => {
+  let capturedJurisdiction: string | null = null;
+
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(JURISDICTION_EXTRACT_MOCK) });
+  });
+  await page.route('**/api/contracts/analyze-agents', async (route) => {
+    const body = JSON.parse(route.request().postData() ?? '{}') as { jurisdiction?: string };
+    capturedJurisdiction = body.jurisdiction ?? null;
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"type":"analysis_complete","flags":[]}\n\n',
+    });
+  });
+
+  await uploadContractAndConfirm(page);
+
+  await page.locator('#jurisdiction-select').selectOption('india');
+
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
+
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 10000 });
+  expect(capturedJurisdiction).toBe('india');
+});
+
+test('Test 72: Jurisdiction selector is disabled once analysis is complete', async ({ page }) => {
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(JURISDICTION_EXTRACT_MOCK) });
+  });
+  await page.route('**/api/contracts/analyze-agents', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"type":"analysis_complete","flags":[]}\n\n',
+    });
+  });
+
+  await uploadContractAndConfirm(page);
+
+  const select = page.locator('#jurisdiction-select');
+  await expect(select).toBeEnabled();
+
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
+
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 10000 });
+  await expect(select).toBeDisabled();
+});
+
+// ─── SCANNER-01: Email capture banner ─────────────────────────────────────────
+
+test('Test 73: Email capture banner appears on summary page when clauses are flagged', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High' },
+  ]);
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Save your analysis')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText('Get this analysis in your inbox, plus negotiation tips for each flagged clause.')).toBeVisible();
+  await expect(page.getByPlaceholder('you@company.com')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
+});
+
+test('Test 74: Email capture banner is hidden when there are no flagged clauses', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }); // No clause flags
+  await page.goto('/review/summary');
+
+  // Wait for the page to stabilise, then confirm the banner is absent
+  await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
+  await expect(page.getByText('Save your analysis')).not.toBeVisible();
+});
+
+test('Test 75: Email capture banner can be dismissed and stays hidden on reload', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High' },
+  ]);
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Save your analysis')).toBeVisible({ timeout: 5000 });
+
+  await page.getByRole('button', { name: 'Dismiss' }).click();
+  await expect(page.getByText('Save your analysis')).not.toBeVisible();
+
+  // sessionStorage key persists across reload — banner must remain hidden
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
+  await expect(page.getByText('Save your analysis')).not.toBeVisible();
+});
+
+test('Test 76: Email capture banner form submission shows success state', async ({ page }) => {
+  await seedStore(page, { acv: 50000, termMonths: 12 }, [
+    { type: 'Liability Cap', riskLevel: 'High' },
+  ]);
+  await page.route('/api/capture-email', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+
+  await page.goto('/review/summary');
+
+  await expect(page.getByText('Save your analysis')).toBeVisible({ timeout: 5000 });
+  await page.getByPlaceholder('you@company.com').fill('test@example.com');
+  await page.getByRole('button', { name: 'Send report' }).click();
+
+  await expect(page.getByText('Report sent')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText('Check your inbox — your full analysis is on its way.')).toBeVisible();
+});
