@@ -153,9 +153,40 @@ test('Test 3: New Deal page loads and upload UI works', async ({ page }) => {
 });
 
 test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        documentId: 'test-4-doc',
+        documentMeta: { fileName: 'dummy-contract.pdf', fileType: 'application/pdf', uploadedAt: '2026-01-01T00:00:00Z' },
+        detectedValues: {
+          acv: { value: 25000, confidence: 0.9, evidence: '£25,000', extractionMethod: 'regex' },
+          termMonths: { value: 12, confidence: 0.8, evidence: '12 months', extractionMethod: 'regex' },
+          insuranceCover: { value: 1000000, confidence: 0.7, evidence: '£1,000,000', extractionMethod: 'regex' },
+          dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
+        },
+        extractedTerms: {},
+        contractText: 'Sample contract text for test 4.',
+        sourceFileType: 'pdf',
+      }),
+    });
+  });
+  await page.route('**/api/contracts/analyze-agents', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"type":"analysis_complete","flags":[]}\n\n',
+    });
+  });
+
   await uploadContractAndConfirm(page);
 
-  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 45000 });
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
+
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('£25,000', { exact: true })).toBeVisible();
   await expect(page.getByText('12 months', { exact: true })).toBeVisible();
   await expect(page.getByText('£1,000,000', { exact: true })).toBeVisible();
@@ -320,6 +351,37 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
 });
 
 test('Test 10: DOCX upload parses correctly and populates deal context fields', async ({ page }) => {
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        documentId: 'test-10-doc',
+        documentMeta: {
+          fileName: 'dummy-contract.docx',
+          fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          uploadedAt: '2026-01-01T00:00:00Z',
+        },
+        detectedValues: {
+          acv: { value: 30000, confidence: 0.9, evidence: '£30,000', extractionMethod: 'regex' },
+          termMonths: { value: 24, confidence: 0.8, evidence: '24 months', extractionMethod: 'regex' },
+          insuranceCover: { value: 2000000, confidence: 0.7, evidence: '£2,000,000', extractionMethod: 'regex' },
+          dataType: { value: 'personal', confidence: 0.8, evidence: 'personal data', extractionMethod: 'regex' },
+        },
+        extractedTerms: {},
+        contractText: 'Sample contract text for test 10.',
+        sourceFileType: 'docx',
+      }),
+    });
+  });
+  await page.route('**/api/contracts/analyze-agents', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"type":"analysis_complete","flags":[]}\n\n',
+    });
+  });
+
   await page.goto('/deals/new');
   await expect(page.getByRole('heading', { name: 'Review a contract' })).toBeVisible();
 
@@ -328,7 +390,11 @@ test('Test 10: DOCX upload parses correctly and populates deal context fields', 
   await expect(page.getByText('dummy-contract.docx')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible();
 
-  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 45000 });
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
+
+  await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('£30,000', { exact: true })).toBeVisible();
   await expect(page.getByText('24 months', { exact: true })).toBeVisible();
   await expect(page.getByText('£2,000,000', { exact: true })).toBeVisible();
@@ -970,6 +1036,7 @@ test('Test 56: Uploading a second document clears stale extracted ACV and change
   await expect(page.getByText('£100,000', { exact: true })).toBeVisible();
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
   await page.getByRole('link', { name: 'View contract analysis' }).click();
   await expect(page).toHaveURL(/\/review\/summary/);
   await page.goto('/review/lol');
@@ -985,6 +1052,7 @@ test('Test 56: Uploading a second document clears stale extracted ACV and change
   await expect(page.getByText('Not detected', { exact: true }).first()).toBeVisible();
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
   await page.getByRole('link', { name: 'View contract analysis' }).click();
   await expect(page).toHaveURL(/\/review\/summary/);
   await page.goto('/review/lol');
@@ -1277,7 +1345,7 @@ async function acceptRedlineViaUI(page: Page) {
   });
 
   // The Liability Cap card is auto-expanded (High risk). Get a suggestion and accept it.
-  await page.getByRole('button', { name: 'Suggest alternative language' }).click();
+  await page.getByRole('button', { name: 'Get suggested wording' }).click();
   await expect(page.getByText('Alternative language')).toBeVisible({ timeout: 10000 });
   await page.getByRole('button', { name: 'Accept redline' }).click();
   await expect(page.getByText('Accepted')).toBeVisible();
