@@ -1,3 +1,8 @@
+import { extractTextViaVision } from '@/lib/vision-extraction';
+import type { VisionUsage } from '@/lib/vision-extraction';
+
+export type { VisionUsage };
+
 export type ExtractionMethod = 'regex' | 'llm' | 'hybrid';
 
 export type ExtractedField<T> = {
@@ -287,6 +292,11 @@ const MIN_CONTENT_LENGTH = 20;
 const MAX_DOC_BYTES = 2 * 1024 * 1024; // 2 MB — legacy .doc binary scan limit
 const MAX_DOCX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024; // 50 MB — zip bomb guard
 const PARSER_TIMEOUT_MS = 15_000; // 15 s
+const VISION_TIMEOUT_MS = 60_000; // 60 s — Sonnet + full PDF read takes longer
+
+// If pdf.js returns fewer than this many characters the PDF is likely scanned/image-only.
+// Well above MIN_CONTENT_LENGTH (20) so that very short but valid text PDFs still pass.
+const VISION_FALLBACK_THRESHOLD = 200;
 
 function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
   return Promise.race([
@@ -326,17 +336,23 @@ function extractLegacyDocText(buffer: Buffer): string {
     .trim() ?? '';
 }
 
+export type ExtractionResult = {
+  text: string;
+  visionUsage?: VisionUsage;
+};
+
 export async function extractContractText(
   fileName: string,
   buffer: Buffer,
   mimeType?: string,
-): Promise<string> {
+): Promise<ExtractionResult> {
   console.log('[contract-extraction] fileName:', fileName);
   console.log('[contract-extraction] mimeType:', mimeType ?? '(none)');
   console.log('[contract-extraction] bufferSize:', buffer.length, 'bytes');
 
   const fileKind = detectFileKind(fileName, mimeType);
   let text = '';
+  let visionUsage: VisionUsage | undefined;
 
   if (fileKind === 'pdf') {
     if (buffer.length < 5 || buffer.slice(0, 5).toString('ascii') !== '%PDF-') {
@@ -345,6 +361,31 @@ export async function extractContractText(
     const pdfParse = await getPdfParser();
     const parsed = await withTimeout(pdfParse(buffer), 'PDF parser');
     text = parsed.text ?? '';
+
+    if (text.trim().length < VISION_FALLBACK_THRESHOLD) {
+      console.log(
+        `[contract-extraction] pdf.js returned ${text.trim().length} chars — below threshold; attempting vision fallback`,
+      );
+      try {
+        const result = await Promise.race([
+          extractTextViaVision(buffer),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error(`Vision extraction timed out after ${VISION_TIMEOUT_MS / 1000}s`)),
+              VISION_TIMEOUT_MS,
+            ),
+          ),
+        ]);
+        text = result.text;
+        visionUsage = result.usage;
+        console.log(`[contract-extraction] vision fallback succeeded: ${text.length} chars`);
+      } catch (visionErr) {
+        console.warn(
+          '[contract-extraction] vision fallback failed:',
+          visionErr instanceof Error ? visionErr.message : visionErr,
+        );
+      }
+    }
   } else if (fileKind === 'docx') {
     if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b || buffer[2] !== 0x03 || buffer[3] !== 0x04) {
       throw new Error('Invalid file: not a valid DOCX. Please re-upload the original contract.');
@@ -382,9 +423,12 @@ export async function extractContractText(
 
   if (text.length < MIN_CONTENT_LENGTH) {
     throw new Error(
-      'No readable text was found in this document. If it is scanned or image-only, please upload a text-based PDF or DOCX.',
+      'No readable text was found in this document. ' +
+        (fileKind === 'pdf'
+          ? 'This appears to be a scanned or image-only PDF. Try converting it to a text-based PDF in Acrobat, or export from the original authoring tool.'
+          : 'Please check the file and re-upload.'),
     );
   }
 
-  return text;
+  return { text, visionUsage };
 }
