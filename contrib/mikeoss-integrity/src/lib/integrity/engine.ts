@@ -1,6 +1,3 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type {
   ContractInput,
   IntegrityReport,
@@ -28,7 +25,6 @@ export const DEFAULT_INTEGRITY_VALIDATORS: IntegrityValidator[] = [
 
 function buildDefinitionsByTerm(documents: ParsedContract[]): IntegrityValidationContext['definitionsByTerm'] {
   const definitionsByTerm = new Map<string, ParsedContract['definitions']>();
-
   for (const document of documents) {
     for (const definition of document.definitions) {
       const definitions = definitionsByTerm.get(definition.normalizedTerm) ?? [];
@@ -36,7 +32,6 @@ function buildDefinitionsByTerm(documents: ParsedContract[]): IntegrityValidatio
       definitionsByTerm.set(definition.normalizedTerm, definitions);
     }
   }
-
   return definitionsByTerm;
 }
 
@@ -44,20 +39,17 @@ function emptySeverityCounts(): Record<IntegritySeverity, number> {
   return { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
 }
 
-export function buildIntegrityContext(inputs: ContractInput[]): IntegrityValidationContext {
-  const documents = inputs.map((input, index) => parseContract(input, index));
-  return {
-    documents,
-    definitionsByTerm: buildDefinitionsByTerm(documents),
-    structuralTargets: buildStructuralTargets(documents),
-  };
-}
-
 export function runIntegrityEngine(
   inputs: ContractInput[],
   validators: IntegrityValidator[] = DEFAULT_INTEGRITY_VALIDATORS,
 ): IntegrityReport {
-  const context = buildIntegrityContext(inputs);
+  const documents = inputs.map((input, index) => parseContract(input, index));
+  const context: IntegrityValidationContext = {
+    documents,
+    definitionsByTerm: buildDefinitionsByTerm(documents),
+    structuralTargets: buildStructuralTargets(documents),
+  };
+
   const issues = validators.flatMap((validator) => validator.validate(context));
   const issuesBySeverity = emptySeverityCounts();
   const issuesByType: IntegrityReport['summary']['issuesByType'] = {};
@@ -68,21 +60,21 @@ export function runIntegrityEngine(
   }
 
   return {
-    id: stableId('integrity-report', new Date().toISOString(), context.documents.length, issues.length),
+    id: stableId('integrity-report', new Date().toISOString(), documents.length, issues.length),
     generatedAt: new Date().toISOString(),
     summary: {
-      documentCount: context.documents.length,
+      documentCount: documents.length,
       issueCount: issues.length,
       issuesBySeverity,
       issuesByType,
     },
-    documents: context.documents.map((document) => ({
-      id: document.id,
-      title: document.title,
-      kind: document.kind,
-      sectionCount: document.sections.length,
-      definitionCount: document.definitions.length,
-      referenceCount: document.references.length,
+    documents: documents.map((doc) => ({
+      id: doc.id,
+      title: doc.title,
+      kind: doc.kind,
+      sectionCount: doc.sections.length,
+      definitionCount: doc.definitions.length,
+      referenceCount: doc.references.length,
     })),
     issues,
   };

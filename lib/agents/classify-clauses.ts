@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { PactoraClauseType } from './types';
 import { PACTORA_CLAUSE_AGENTS } from './types';
 import { getAnthropicClient } from './client';

@@ -1,15 +1,12 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { IntegrityIssue, IntegrityValidator } from '../types';
 import { isCommonLegalRoleTerm, locationKey, rankUndefinedTermSeverity } from '../normalization';
 
 export const undefinedTermsValidator: IntegrityValidator = {
   id: 'undefined_defined_term',
-  description: 'Detects capitalized legal terms that are used but not defined in the document set.',
+  description: 'Detects capitalised legal terms that are used but not defined in the document set.',
   validate(context): IntegrityIssue[] {
     const issues: IntegrityIssue[] = [];
-    const usagesByTerm = new Map<string, typeof context.documents[number]['definedTermUsages']>();
+    const usagesByTerm = new Map<string, (typeof context.documents)[number]['definedTermUsages']>();
 
     for (const document of context.documents) {
       for (const usage of document.definedTermUsages) {
@@ -29,7 +26,7 @@ export const undefinedTermsValidator: IntegrityValidator = {
         type: 'undefined_defined_term',
         severity: rankUndefinedTermSeverity(usages.length, isCommonLegalRoleTerm(term)),
         message: `Potential defined term "${term}" is used ${usages.length} time(s) but is not defined in the uploaded document set.`,
-        locations: usages.map((usage) => usage.location).slice(0, 25),
+        locations: usages.map((u) => u.location).slice(0, 25),
         metadata: { term, normalizedTerm: usages[0].normalizedTerm, usageCount: usages.length },
       });
     }

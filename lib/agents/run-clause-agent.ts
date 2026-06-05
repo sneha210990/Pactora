@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import type { ContractChunk } from '@/lib/chunking-strategy';
 import type { PactoraClauseType } from './types';
@@ -77,6 +80,7 @@ export async function runClauseAgent(
   chunk?: ContractChunk,
   contractType?: ContractType,
   jurisdiction?: Jurisdiction | null,
+  contractSide?: 'supplier' | 'buyer' | null,
 ): Promise<ClauseAgentResult> {
   const client = getAnthropicClient();
 
@@ -119,7 +123,7 @@ export async function runClauseAgent(
           content: [
             {
               type: 'text',
-              text: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.${contractType ? `\n\nContract type context: ${CONTRACT_TYPE_CONTEXT[contractType]}` : ''}${jurisdiction ? `\n\n${JURISDICTION_CONTEXT[jurisdiction]}` : ''}`,
+              text: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.${contractType ? `\n\nContract type context: ${CONTRACT_TYPE_CONTEXT[contractType]}` : ''}${jurisdiction ? `\n\n${JURISDICTION_CONTEXT[jurisdiction]}` : ''}${contractSide === 'supplier' ? '\n\nReviewing party: Supplier / Service provider. Flag risks that expose the supplier to uncapped liability, unfair IP assignment, onerous payment obligations, or asymmetric termination rights.' : contractSide === 'buyer' ? '\n\nReviewing party: Client / Buyer. Flag risks that limit the buyer\'s recourse, impose unfair liability on the buyer, restrict termination rights, or provide inadequate IP or data protection.' : ''}`,
             },
           ],
         },

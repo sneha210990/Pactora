@@ -1,6 +1,3 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { ContractInput, ContractSection, ParsedContract } from './types';
 import { extractDefinitions } from './definition-extractor';
 import { extractReferences } from './reference-graph';
@@ -16,7 +13,7 @@ import {
 
 const SECTION_HEADING_REGEX = /^(?:(?:section|clause)\s+)?(\d+(?:\.\d+)*|[A-Z])\.?\s+(.{2,140})$/i;
 const SCHEDULE_HEADING_REGEX = /^(schedule|annex|exhibit|attachment)\s+([A-Z0-9]+)\b(?:\s*[-–—:]\s*(.*))?$/i;
-const CAPITALIZED_TERM_REGEX = /(?:"|“)?\b([A-Z][A-Za-z0-9-]*(?:\s+[A-Z][A-Za-z0-9-]*){0,4})\b(?:"|”)?/g;
+const CAPITALIZED_TERM_REGEX = /(?:"|")?\b([A-Z][A-Za-z0-9-]*(?:\s+[A-Z][A-Za-z0-9-]*){0,4})\b(?:"|")?/g;
 
 function inferDocumentKind(title: string, text: string): ParsedContract['kind'] {
   const haystack = `${title}\n${text.slice(0, 1000)}`.toLowerCase();
@@ -35,11 +32,17 @@ function titleFromText(text: string): string {
     .split('\n')
     .map((line) => line.trim())
     .find((line) => line.length >= 3 && line.length <= 120);
-
   return firstMeaningfulLine ?? 'Untitled Contract';
 }
 
-function createLocation(documentId: string, title: string, rawText: string, index: number, length: number, section?: ContractSection) {
+function createLocation(
+  documentId: string,
+  title: string,
+  rawText: string,
+  index: number,
+  length: number,
+  section?: ContractSection,
+) {
   return {
     documentId,
     documentTitle: title,
@@ -83,7 +86,6 @@ function parseSections(documentId: string, title: string, rawText: string): Cont
       childSections: [],
     });
 
-    // Keep lineStartIndex referenced so future parser adapters can preserve offsets.
     void lineStartIndex;
   });
 
@@ -103,10 +105,8 @@ function parseSections(documentId: string, title: string, rawText: string): Cont
 
   flatSections.forEach((section, index) => {
     const next = flatSections[index + 1];
-    const startLine = section.lineStart;
-    const endLine = next ? next.lineStart - 1 : lines.length;
-    section.lineEnd = endLine;
-    section.rawText = lines.slice(startLine - 1, endLine).join('\n').trim();
+    section.lineEnd = next ? next.lineStart - 1 : lines.length;
+    section.rawText = lines.slice(section.lineStart - 1, section.lineEnd).join('\n').trim();
   });
 
   const roots: ContractSection[] = [];
@@ -122,7 +122,6 @@ function parseSections(documentId: string, title: string, rawText: string): Cont
     } else {
       roots.push(section);
     }
-
     stack.push(section);
   }
 
@@ -134,7 +133,7 @@ function flattenSections(sections: ContractSection[]): ContractSection[] {
 }
 
 function findSectionForLine(sections: ContractSection[], line: number): ContractSection | undefined {
-  return flattenSections(sections).find((section) => section.lineStart <= line && section.lineEnd >= line);
+  return flattenSections(sections).find((s) => s.lineStart <= line && s.lineEnd >= line);
 }
 
 function extractDefinedTermUsages(documentId: string, title: string, rawText: string, sections: ContractSection[]) {
@@ -142,7 +141,6 @@ function extractDefinedTermUsages(documentId: string, title: string, rawText: st
   for (const match of rawText.matchAll(CAPITALIZED_TERM_REGEX)) {
     const term = match[1];
     if (!isLikelyDefinedTerm(term)) continue;
-
     const index = match.index ?? 0;
     const line = lineForIndex(rawText, index);
     usages.push({
@@ -154,21 +152,25 @@ function extractDefinedTermUsages(documentId: string, title: string, rawText: st
   return usages;
 }
 
-function extractLowercaseTermUsages(documentId: string, title: string, rawText: string, sections: ContractSection[], definedTerms: string[]) {
+function extractLowercaseTermUsages(
+  documentId: string,
+  title: string,
+  rawText: string,
+  sections: ContractSection[],
+  definedTerms: string[],
+) {
   const usages = [];
-
   for (const definedTerm of definedTerms) {
     if (!/^[A-Z][a-z]+$/.test(definedTerm)) continue;
     const lower = definedTerm.toLowerCase();
     const regex = new RegExp(`\\b${lower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
-
     for (const match of rawText.matchAll(regex)) {
       const index = match.index ?? 0;
       const before = rawText.slice(Math.max(0, index - 40), index).toLowerCase();
       const after = rawText.slice(index + lower.length, index + lower.length + 40).toLowerCase();
-      const likelyGeneric = /\b(the|a|an|such|any|all|each|its|their)\s+$/.test(before) && !/\bmeans|shall mean|includes\b/.test(after);
+      const likelyGeneric =
+        /\b(the|a|an|such|any|all|each|its|their)\s+$/.test(before) && !/\bmeans|shall mean|includes\b/.test(after);
       if (!likelyGeneric) continue;
-
       const line = lineForIndex(rawText, index);
       usages.push({
         term: lower,
@@ -178,7 +180,6 @@ function extractLowercaseTermUsages(documentId: string, title: string, rawText: 
       });
     }
   }
-
   return usages;
 }
 
@@ -194,11 +195,9 @@ function collectStructuralTargets(sections: ContractSection[], title: string, ki
       }
     }
   }
-
   const titleMatch = title.match(/\b(schedule|annex|exhibit|attachment)\s+([A-Z0-9]+)\b/i);
   if (titleMatch) targets.add(normalizeStructuralTarget(titleMatch[1], titleMatch[2]));
   if (kind !== 'unknown') targets.add(normalizeStructuralTarget('document', kind));
-
   return targets;
 }
 
@@ -216,9 +215,8 @@ export function parseContract(input: ContractInput, fallbackIndex = 0): ParsedCo
     title,
     rawText,
     sections,
-    definitions.map((definition) => definition.term),
+    definitions.map((d) => d.term),
   );
-
   return {
     id,
     title,

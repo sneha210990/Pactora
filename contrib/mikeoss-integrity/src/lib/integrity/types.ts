@@ -1,7 +1,12 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
-export type ContractDocumentKind = 'msa' | 'sow' | 'dpa' | 'order_form' | 'schedule' | 'annex' | 'exhibit' | 'unknown';
+export type ContractDocumentKind =
+  | 'msa'
+  | 'sow'
+  | 'dpa'
+  | 'order_form'
+  | 'schedule'
+  | 'annex'
+  | 'exhibit'
+  | 'unknown';
 
 export type IntegritySeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -33,12 +38,7 @@ export type ContractSection = {
   childSections: ContractSection[];
 };
 
-export type DefinitionPattern =
-  | 'means'
-  | 'shall_mean'
-  | 'includes'
-  | 'has_the_meaning'
-  | 'definition_list';
+export type DefinitionPattern = 'means' | 'shall_mean' | 'includes' | 'has_the_meaning' | 'definition_list';
 
 export type ContractDefinition = {
   id: string;

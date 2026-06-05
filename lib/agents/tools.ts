@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type Anthropic from '@anthropic-ai/sdk';
 
 // Typed tool schemas for Claude clause analysis.

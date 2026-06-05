@@ -1,6 +1,3 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { IntegrityIssue, IntegrityValidator } from '../types';
 
 export const brokenReferencesValidator: IntegrityValidator = {
@@ -12,7 +9,6 @@ export const brokenReferencesValidator: IntegrityValidator = {
     for (const document of context.documents) {
       for (const reference of document.references) {
         if (context.structuralTargets.has(reference.normalizedTarget)) continue;
-
         issues.push({
           type: reference.targetType === 'document' ? 'missing_related_document' : 'broken_cross_reference',
           severity: reference.targetType === 'section' ? 'high' : 'medium',

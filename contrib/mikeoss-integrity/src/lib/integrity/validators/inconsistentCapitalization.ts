@@ -1,6 +1,3 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { IntegrityIssue, IntegrityValidator } from '../types';
 
 export const inconsistentCapitalizationValidator: IntegrityValidator = {
@@ -24,7 +21,7 @@ export const inconsistentCapitalizationValidator: IntegrityValidator = {
           type: 'inconsistent_capitalization',
           severity: usages.length >= 3 ? 'medium' : 'low',
           message: `"${first.definedTerm}" is a defined term, but lowercase "${first.term}" appears in drafting contexts that may intend the defined term.`,
-          locations: usages.map((usage) => usage.location).slice(0, 25),
+          locations: usages.map((u) => u.location).slice(0, 25),
           metadata: {
             definedTerm: first.definedTerm,
             lowercaseUsage: first.term,

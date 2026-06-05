@@ -1,6 +1,3 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { IntegrityLocation, IntegritySeverity } from './types';
 
 const STOP_WORDS = new Set([
@@ -42,8 +39,8 @@ export function normalizeWhitespace(value: string): string {
 
 export function normalizeTerm(term: string): string {
   return normalizeWhitespace(term)
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
     .replace(/^['"]|['"]$/g, '')
     .replace(/[.,;:]$/g, '')
     .toLowerCase();
@@ -66,7 +63,9 @@ export function stableId(...parts: Array<string | number | undefined>): string {
 export function excerptAt(text: string, index: number, length: number): string {
   const start = Math.max(0, index - 80);
   const end = Math.min(text.length, index + length + 80);
-  return normalizeWhitespace(`${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`);
+  return normalizeWhitespace(
+    `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`,
+  );
 }
 
 export function lineForIndex(text: string, index: number): number {
@@ -74,7 +73,7 @@ export function lineForIndex(text: string, index: number): number {
 }
 
 export function isLikelyDefinedTerm(candidate: string): boolean {
-  const term = normalizeWhitespace(candidate).replace(/^['"“”]+|['"“”]+$/g, '');
+  const term = normalizeWhitespace(candidate).replace(/^['"""]+|['"""]+$/g, '');
   if (term.length < 3 || term.length > 80) return false;
   if (STOP_WORDS.has(term)) return false;
   if (/^(This|That|These|Those|Each|Any|All|No|The|A|An)\b/.test(term)) return false;

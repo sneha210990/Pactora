@@ -1,29 +1,33 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { ContractDefinition, ContractSection, DefinitionPattern } from './types';
-import { excerptAt, isLikelyDefinedTerm, lineForIndex, normalizeTerm, normalizeWhitespace, stableId } from './normalization';
+import {
+  excerptAt,
+  isLikelyDefinedTerm,
+  lineForIndex,
+  normalizeTerm,
+  normalizeWhitespace,
+  stableId,
+} from './normalization';
 
 const DEFINITION_PATTERNS: Array<{ pattern: DefinitionPattern; regex: RegExp }> = [
   {
     pattern: 'shall_mean',
-    regex: /["“]([^"”]{2,80})["”]\s+shall\s+mean\s+([^.;\n]+(?:\.[^\n]*)?)/gi,
+    regex: /[""]([^""]{2,80})[""]\s+shall\s+mean\s+([^.;\n]+(?:\.[^\n]*)?)/gi,
   },
   {
     pattern: 'means',
-    regex: /["“]([^"”]{2,80})["”]\s+means\s+([^.;\n]+(?:\.[^\n]*)?)/gi,
+    regex: /[""]([^""]{2,80})[""]\s+means\s+([^.;\n]+(?:\.[^\n]*)?)/gi,
   },
   {
     pattern: 'includes',
-    regex: /["“]([^"”]{2,80})["”]\s+includes\s+([^.;\n]+(?:\.[^\n]*)?)/gi,
+    regex: /[""]([^""]{2,80})[""]\s+includes\s+([^.;\n]+(?:\.[^\n]*)?)/gi,
   },
   {
     pattern: 'has_the_meaning',
-    regex: /["“]([^"”]{2,80})["”]\s+has\s+the\s+meaning\s+(?:given|set\s+forth|ascribed)\s+(?:to\s+it\s+)?(?:in|under)\s+([^.;\n]+)/gi,
+    regex: /[""]([^""]{2,80})[""]\s+has\s+the\s+meaning\s+(?:given|set\s+forth|ascribed)\s+(?:to\s+it\s+)?(?:in|under)\s+([^.;\n]+)/gi,
   },
   {
     pattern: 'definition_list',
-    regex: /^\s*(?:\(([a-z])\)|([A-Z][A-Za-z0-9 -]{1,79}))\s*[–—:-]\s+["“]?([A-Z][A-Za-z0-9 -]{1,79})["”]?\s+(?:means|shall mean|includes)\s+([^.;\n]+(?:\.[^\n]*)?)/gim,
+    regex: /^\s*(?:\(([a-z])\)|([A-Z][A-Za-z0-9 -]{1,79}))\s*[–—:-]\s+[""]?([A-Z][A-Za-z0-9 -]{1,79})[""]?\s+(?:means|shall mean|includes)\s+([^.;\n]+(?:\.[^\n]*)?)/gim,
   },
 ];
 
@@ -32,7 +36,7 @@ function flattenSections(sections: ContractSection[]): ContractSection[] {
 }
 
 function findSectionForLine(sections: ContractSection[], line: number): ContractSection | undefined {
-  return flattenSections(sections).find((section) => section.lineStart <= line && section.lineEnd >= line);
+  return flattenSections(sections).find((s) => s.lineStart <= line && s.lineEnd >= line);
 }
 
 export function extractDefinitions(

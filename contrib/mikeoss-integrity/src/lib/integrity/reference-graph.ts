@@ -1,6 +1,3 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { ContractReference, ContractSection, ReferenceTargetType } from './types';
 import { excerptAt, lineForIndex, normalizeStructuralTarget, normalizeWhitespace, stableId } from './normalization';
 
@@ -10,7 +7,10 @@ const REFERENCE_PATTERNS: Array<{ targetType: ReferenceTargetType; regex: RegExp
   { targetType: 'annex', regex: /\bAnnex(?:es)?\s+([A-Z0-9]+)\b/g },
   { targetType: 'exhibit', regex: /\bExhibits?\s+([A-Z0-9]+)\b/g },
   { targetType: 'attachment', regex: /\bAttachments?\s+([A-Z0-9]+)\b/g },
-  { targetType: 'document', regex: /\b(MSA|Master Services Agreement|SOW|Statement of Work|DPA|Data Processing Agreement|Order Form)\b/g },
+  {
+    targetType: 'document',
+    regex: /\b(MSA|Master Services Agreement|SOW|Statement of Work|DPA|Data Processing Agreement|Order Form)\b/g,
+  },
 ];
 
 const DOCUMENT_LABEL_TO_KIND: Record<string, string> = {
@@ -28,11 +28,12 @@ function flattenSections(sections: ContractSection[]): ContractSection[] {
 }
 
 function findSectionForLine(sections: ContractSection[], line: number): ContractSection | undefined {
-  return flattenSections(sections).find((section) => section.lineStart <= line && section.lineEnd >= line);
+  return flattenSections(sections).find((s) => s.lineStart <= line && s.lineEnd >= line);
 }
 
 function targetFor(type: ReferenceTargetType, label: string): string {
-  if (type === 'document') return normalizeStructuralTarget('document', DOCUMENT_LABEL_TO_KIND[label.toLowerCase()] ?? label);
+  if (type === 'document')
+    return normalizeStructuralTarget('document', DOCUMENT_LABEL_TO_KIND[label.toLowerCase()] ?? label);
   return normalizeStructuralTarget(type, label);
 }
 

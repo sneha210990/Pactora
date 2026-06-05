@@ -124,6 +124,7 @@ export default function NewDealPage() {
     setAnalysisRunning(false);
   }
 
+  const [contractSide, setContractSide] = useState<'supplier' | 'buyer' | null>(null);
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
   const [agentProgress, setAgentProgress] = useState<AgentProgressMap>({});
@@ -173,7 +174,7 @@ export default function NewDealPage() {
       const res = await apiFetch('/api/contracts/analyze-agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, jurisdiction: analysis.commercialContext.jurisdiction }),
+        body: JSON.stringify({ text, jurisdiction: analysis.commercialContext.jurisdiction, contractSide }),
       });
 
       if (!res.ok) {
@@ -443,6 +444,41 @@ export default function NewDealPage() {
             </div>
           </div>
         )}
+
+        <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+          <h2 className="text-lg font-medium text-white">Which side of this contract are you on?</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            Founders, freelancers and small companies can be on either side — this calibrates what risks to flag.
+          </p>
+          <div className="mt-4 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setContractSide('supplier')}
+              disabled={analysisRunning || analysis.uploadStatus === 'complete'}
+              className={`flex flex-1 flex-col items-start rounded-lg border px-4 py-3 text-left transition disabled:cursor-not-allowed ${
+                contractSide === 'supplier'
+                  ? 'border-white bg-white text-black'
+                  : 'border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/50'
+              }`}
+            >
+              <span className="text-sm font-semibold">Supplier / Service provider</span>
+              <span className={`mt-0.5 text-xs ${contractSide === 'supplier' ? 'text-zinc-600' : 'text-zinc-500'}`}>Selling services or products</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setContractSide('buyer')}
+              disabled={analysisRunning || analysis.uploadStatus === 'complete'}
+              className={`flex flex-1 flex-col items-start rounded-lg border px-4 py-3 text-left transition disabled:cursor-not-allowed ${
+                contractSide === 'buyer'
+                  ? 'border-white bg-white text-black'
+                  : 'border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/50'
+              }`}
+            >
+              <span className="text-sm font-semibold">Client / Buyer</span>
+              <span className={`mt-0.5 text-xs ${contractSide === 'buyer' ? 'text-zinc-600' : 'text-zinc-500'}`}>Buying services or products</span>
+            </button>
+          </div>
+        </section>
 
         <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
           <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1 of 3</p>

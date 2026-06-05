@@ -5,7 +5,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { buildAnalysisEmail, type EmailFlag } from '@/lib/email/analysis-email';
 
 export async function POST(request: Request) {
-  const { allowed, retryAfter } = checkRateLimit(getClientIp(request), 10);
+  const { allowed, retryAfter } = await checkRateLimit(getClientIp(request), 10);
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },

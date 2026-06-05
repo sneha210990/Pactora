@@ -1,6 +1,3 @@
-// Copyright (C) 2024-2026 Sneha Sindhu
-// SPDX-License-Identifier: AGPL-3.0-only
-
 import type { IntegrityIssue, IntegrityValidator } from '../types';
 
 export const deadDefinitionsValidator: IntegrityValidator = {
@@ -15,9 +12,7 @@ export const deadDefinitionsValidator: IntegrityValidator = {
         document.definedTermUsages.filter((usage) => {
           if (usage.normalizedTerm !== normalizedTerm) return false;
           const sameDefinitionLine = definitions.some(
-            (definition) =>
-              definition.location.documentId === usage.location.documentId &&
-              definition.location.line === usage.location.line,
+            (d) => d.location.documentId === usage.location.documentId && d.location.line === usage.location.line,
           );
           return !sameDefinitionLine;
         }),
