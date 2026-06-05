@@ -528,9 +528,12 @@ function LolReviewContent() {
             </div>
 
             <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
-              <Tooltip content="Exceptions to the liability cap — these claim types remain uncapped and can expose you to unlimited liability." position="bottom">
-                <h3 className="text-base font-semibold cursor-help">Carve-outs to watch</h3>
-              </Tooltip>
+              <h3
+                title="Exceptions to the liability cap — these claim types remain uncapped and can expose you to unlimited liability."
+                className="cursor-help text-base font-semibold"
+              >
+                Carve-outs to watch
+              </h3>
               {parsedResult.carveoutsFound.length > 0 ? (
                 <ul className="mt-3 space-y-3 text-sm">
                   {parsedResult.carveoutsFound.map((x) => (

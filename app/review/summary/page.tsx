@@ -810,9 +810,12 @@ function SummaryContent() {
         {crossClauseRisks.length > 0 && (
           <section className="mt-8">
             <div className="mb-1 flex items-center gap-3">
-              <Tooltip content="Where two or more clauses interact to create combined exposure not obvious when reviewing each clause in isolation." position="bottom">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
-              </Tooltip>
+              <h2
+                title="Where two or more clauses interact to create combined exposure not obvious when reviewing each clause in isolation."
+                className="cursor-help text-sm font-semibold uppercase tracking-wide text-zinc-400"
+              >
+                Cross-Clause Risks
+              </h2>
               <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2.5 py-0.5 text-xs text-orange-300">
                 {crossClauseRisks.length} interaction{crossClauseRisks.length !== 1 ? 's' : ''} detected
               </span>
