@@ -32,11 +32,11 @@ type ExtractionResponse = {
 };
 
 const processingStages: Array<{ key: keyof DocumentAnalysisState['processingSteps']; label: string }> = [
-  { key: 'upload', label: 'Capturing contract input…' },
-  { key: 'extraction', label: 'Extracting supported values…' },
-  { key: 'clauseDetection', label: 'Identifying clauses…' },
+  { key: 'upload', label: 'Reading your contract…' },
+  { key: 'extraction', label: 'Identifying key terms…' },
+  { key: 'clauseDetection', label: 'Detecting clauses…' },
   { key: 'riskAnalysis', label: 'Analysing risks…' },
-  { key: 'recommendations', label: 'Generating recommendations…' },
+  { key: 'recommendations', label: 'Preparing recommendations…' },
 ];
 
 function formatOptionalMoneyValue(value: number | null) {
@@ -86,7 +86,7 @@ function ProcessingPipeline({ analysis, agentProgress }: { analysis: DocumentAna
         ))}
         <li className="flex items-center gap-3 text-zinc-300">
           <span className={`h-2.5 w-2.5 rounded-full ${analysis.uploadStatus === 'complete' ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-          <span>Finalizing workspace</span>
+          <span>Analysis ready</span>
         </li>
       </ol>
     </div>
@@ -97,6 +97,7 @@ export default function NewDealPage() {
   const analysis = useDocumentAnalysis();
   const actions = useDocumentAnalysisActions();
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showSignupWall, setShowSignupWall] = useState(false);
   const [manualClauseText, setManualClauseText] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     // Restore pasted text if the page reloaded mid-analysis.
@@ -119,26 +120,52 @@ export default function NewDealPage() {
     actions.reset();
     setManualClauseText('');
     setShowStaleBanner(false);
+    setPendingText(null);
+    setAnalysisRunning(false);
   }
 
   const [hasAcceptedLegalNotice, setHasAcceptedLegalNotice] = useState<boolean>(false);
   const [hasConfirmedDataCaution, setHasConfirmedDataCaution] = useState<boolean>(false);
   const [agentProgress, setAgentProgress] = useState<AgentProgressMap>({});
   const [isDragging, setIsDragging] = useState(false);
+  const [pendingText, setPendingText] = useState<string | null>(null);
+  const [analysisRunning, setAnalysisRunning] = useState(false);
 
-  // Save completed analyses to the deals history. Keyed by documentId so a stale
-  // localStorage state loaded on arrival doesn't get re-saved.
+  // Auto-scroll to Step 2 when extraction finishes and pendingText is first set.
+  const step2Ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (pendingText !== null) {
+      setTimeout(() => step2Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, [pendingText]);
+
+  // Save completed analyses to deals history (localStorage + server for signed-in users).
+  // Keyed by documentId so a stale localStorage state loaded on arrival doesn't get re-saved.
   const savedDealId = useRef('');
   useEffect(() => {
     if (analysis.uploadStatus === 'complete' && analysis.documentId !== savedDealId.current) {
       savedDealId.current = analysis.documentId;
       saveDeal(analysis);
+      // Server save for signed-in users. Stores the returned deal ID in
+      // sessionStorage so the email capture banner can link back to it.
+      fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ snapshot: analysis }),
+      })
+        .then((r) => r.ok ? r.json() as Promise<{ deal?: { id: string } }> : null)
+        .then((data) => {
+          if (data?.deal?.id) {
+            sessionStorage.setItem('pactora.last_server_deal_id', data.deal.id);
+          }
+        })
+        .catch(() => {/* non-fatal */});
     }
   }, [analysis.uploadStatus, analysis.documentId, analysis]);
 
   const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';
-  const canContinue = analysis.uploadStatus === 'complete' && hasAcceptedLegalNotice && hasConfirmedDataCaution;
+  const canContinue = pendingText !== null && !analysisRunning && hasAcceptedLegalNotice && hasConfirmedDataCaution;
   const runClauseAnalysis = async (text: string) => {
     setAgentProgress({});
     actions.analysisStarted();
@@ -230,9 +257,19 @@ export default function NewDealPage() {
     }
 
     if (payload.contractText) {
-      void runClauseAnalysis(payload.contractText);
+      setPendingText(payload.contractText);
     } else {
       actions.analysisFailed('Analysis incomplete: no raw text returned by parser.');
+    }
+  };
+
+  const confirmAndAnalyse = async () => {
+    if (!pendingText) return;
+    setAnalysisRunning(true);
+    try {
+      await runClauseAnalysis(pendingText);
+    } finally {
+      setAnalysisRunning(false);
     }
   };
 
@@ -244,6 +281,7 @@ export default function NewDealPage() {
     }
 
     setUploadError(null);
+    setPendingText(null);
     actions.uploadStarted(file);
     trackEvent('contract_upload_started', '/deals/new');
 
@@ -258,6 +296,10 @@ export default function NewDealPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (response.status === 402 && payload?.error === 'free_limit_reached') {
+          setShowSignupWall(true);
+          return;
+        }
         throw new Error(payload?.error ?? 'Could not extract contract values.');
       }
 
@@ -271,6 +313,7 @@ export default function NewDealPage() {
   };
 
   const handleContractUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
     void handleFile(event.target.files?.[0]);
   };
 
@@ -291,6 +334,9 @@ export default function NewDealPage() {
     event.preventDefault();
     const text = manualClauseText.trim();
 
+    // If a file is already selected, manual submit is a no-op — the file takes precedence.
+    if (selectedFileName) return;
+
     if (text.length < 20) {
       const message = 'Please paste at least 20 characters of contract clauses.';
       setUploadError(message);
@@ -299,6 +345,7 @@ export default function NewDealPage() {
     }
 
     setUploadError(null);
+    setPendingText(null);
     actions.uploadStarted({ name: 'Pasted contract clauses', type: 'text/plain' });
     trackEvent('manual_clause_entry_started', '/deals/new');
 
@@ -311,6 +358,10 @@ export default function NewDealPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (response.status === 402 && payload?.error === 'free_limit_reached') {
+          setShowSignupWall(true);
+          return;
+        }
         throw new Error(payload?.error ?? 'Could not read pasted clauses.');
       }
 
@@ -331,6 +382,36 @@ export default function NewDealPage() {
     }
     return items;
   }, [analysis.diagnostics?.missingFields, analysis.errors, analysis.uploadStatus]);
+
+  if (showSignupWall) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-black px-6 text-white">
+        <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
+            <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold tracking-tight">You've used your free review</h2>
+          <p className="mt-3 text-sm text-zinc-400">
+            Create a free account to review unlimited contracts — and your analyses will be saved across all your devices.
+          </p>
+          <a
+            href="/login"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-zinc-200"
+          >
+            Create free account
+          </a>
+          <a
+            href="/deals"
+            className="mt-3 inline-block text-xs text-zinc-500 hover:text-zinc-300"
+          >
+            Back to your deals
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -433,7 +514,7 @@ export default function NewDealPage() {
                 <p className="text-xs text-zinc-500">Manual mode accepts pasted text when a file is unavailable or you only need to review selected clauses.</p>
                 <button
                   type="submit"
-                  disabled={analysis.uploadStatus === 'uploading' || analysis.uploadStatus === 'processing'}
+                  disabled={!!selectedFileName || analysis.uploadStatus === 'uploading' || analysis.uploadStatus === 'processing'}
                   className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
                 >
                   Analyse clauses
@@ -447,21 +528,23 @@ export default function NewDealPage() {
                 <p className="mt-1 text-xs text-red-400">Please select a text-based PDF, DOCX, or DOC under 20 MB, or paste at least 20 characters of clause text.</p>
               </div>
             ) : null}
-            <ProcessingPipeline analysis={analysis} agentProgress={agentProgress} />
+            {analysis.uploadStatus === 'uploading' && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-zinc-400">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+                Reading your contract…
+              </div>
+            )}
+            {pendingText !== null && analysis.uploadStatus !== 'complete' && (
+              <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                <span className="shrink-0 text-emerald-400">✓</span>
+                Contract read — review the extracted details below, tick both boxes, then click <strong>Confirm and analyse</strong>.
+              </div>
+            )}
           </div>
         </section>
 
-        {analysis.uploadStatus === 'complete' && (
+        {pendingText !== null && (
           <>
-            {warnings.length > 0 ? (
-              <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-                <h2 className="font-semibold">Partial analysis warning</h2>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {warnings.map((warning) => <li key={warning}>{warning}</li>)}
-                </ul>
-              </section>
-            ) : null}
-
             {analysis.extractionWarnings.length > 0 ? (
               <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
                 <h2 className="font-semibold text-zinc-100">Extraction diagnostics</h2>
@@ -473,7 +556,16 @@ export default function NewDealPage() {
               </section>
             ) : null}
 
-            <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+            {analysis.uploadStatus === 'complete' && warnings.length > 0 ? (
+              <section className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+                <h2 className="font-semibold">Partial analysis warning</h2>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                </ul>
+              </section>
+            ) : null}
+
+            <section ref={step2Ref} className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
               <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
               <h2 className="mt-1 text-lg font-medium text-white">Extracted commercial context</h2>
               <p className="mt-2 text-sm text-zinc-400">
@@ -499,6 +591,7 @@ export default function NewDealPage() {
                   value={commercialContext.jurisdiction ?? ''}
                   onChange={(e) => actions.setJurisdiction((e.target.value as Jurisdiction) || null)}
                   className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus:border-blue-500 focus:outline-none"
+                  disabled={analysisRunning || analysis.uploadStatus === 'complete'}
                 >
                   <option value="">Select jurisdiction…</option>
                   {(Object.keys(JURISDICTION_LABELS) as Jurisdiction[]).map((j) => (
@@ -531,17 +624,17 @@ export default function NewDealPage() {
 
               <div className="mt-4 space-y-3">
                 <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-                  <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+                  <input type="checkbox" required checked={hasAcceptedLegalNotice} onChange={(event) => setHasAcceptedLegalNotice(event.target.checked)} disabled={analysisRunning || analysis.uploadStatus === 'complete'} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
                   <span>I confirm that I am authorised to upload or paste this material and understand Pactora outputs may be incomplete or inaccurate.</span>
                 </label>
                 <label className="flex items-start gap-3 rounded-lg border border-zinc-700 bg-zinc-900/70 p-4 text-sm text-zinc-200">
-                  <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
+                  <input type="checkbox" required checked={hasConfirmedDataCaution} onChange={(event) => setHasConfirmedDataCaution(event.target.checked)} disabled={analysisRunning || analysis.uploadStatus === 'complete'} className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-950 text-white" />
                   <span>I understand extracted values are parser outputs and should be checked before legal or commercial decisions.</span>
                 </label>
               </div>
             </section>
 
-            {!canContinue && (
+            {!canContinue && !analysisRunning && analysis.uploadStatus !== 'complete' && (
               <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">
                 <p className="font-medium text-zinc-100">Before you can continue:</p>
                 <ul className="mt-2 space-y-1">
@@ -554,17 +647,26 @@ export default function NewDealPage() {
                 </ul>
               </div>
             )}
+
             <div className="flex justify-end">
-              {canContinue ? (
+              {analysis.uploadStatus === 'complete' ? (
                 <Link href="/review/summary" className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400">
-                  View contract analysis
+                  View contract analysis →
                 </Link>
               ) : (
-                <button disabled className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-500">
-                  View contract analysis
+                <button
+                  onClick={() => void confirmAndAnalyse()}
+                  disabled={!canContinue}
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+                >
+                  {analysisRunning ? 'Analysing…' : 'Confirm and analyse'}
                 </button>
               )}
             </div>
+
+            {(analysisRunning || analysis.uploadStatus === 'complete') && (
+              <ProcessingPipeline analysis={analysis} agentProgress={agentProgress} />
+            )}
           </>
         )}
       </div>

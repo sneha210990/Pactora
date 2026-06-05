@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { detectContractValues, extractContractText } from '@/lib/contract-extraction';
 import { extractContractValuesWithAI } from '@/lib/ai-extraction';
-import { recordApiUsage } from '@/lib/beta-store';
+import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
+import { getCurrentSessionUser } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 const MIN_MANUAL_TEXT_LENGTH = 20;
+const ANON_FREE_USES = 1;
+const ANON_COOKIE = 'pactora_anon_uses';
 
 function extractTerm(pattern: RegExp, text: string) {
   return text.match(pattern)?.[1]?.trim();
@@ -131,11 +135,19 @@ async function extractFromManualText(request: Request) {
 
   console.log('[extract] manualText.length:', text.length);
 
-  return NextResponse.json(await buildExtractionPayload(text, {
-    fileName: sourceName,
-    fileType: 'text/plain',
-    uploadedAt: new Date().toISOString(),
-  }));
+  const documentMeta = { fileName: sourceName, fileType: 'text/plain', uploadedAt: new Date().toISOString() };
+  const payload = await buildExtractionPayload(text, documentMeta);
+
+  getCurrentSessionUser()
+    .then((s) => recordAuditEvent({
+      user_id: s?.user.id ?? null,
+      action: 'contract_extracted',
+      document_id: payload.documentId,
+      metadata: { file_name: documentMeta.fileName, file_type: documentMeta.fileType },
+    }))
+    .catch(console.error);
+
+  return NextResponse.json(payload);
 }
 
 async function extractFromUploadedFile(request: Request) {
@@ -158,17 +170,44 @@ async function extractFromUploadedFile(request: Request) {
   console.log('[extract] file.size:', uploaded.size, 'bytes');
 
   const buffer = Buffer.from(await uploaded.arrayBuffer());
-  const text = await extractContractText(uploaded.name, buffer, uploaded.type);
+  const { text, visionUsage } = await extractContractText(uploaded.name, buffer, uploaded.type);
 
+  if (visionUsage) {
+    recordApiUsage({
+      operation: 'extraction',
+      model: 'claude-sonnet-4-6',
+      input_tokens: visionUsage.inputTokens,
+      output_tokens: visionUsage.outputTokens,
+      cache_creation_tokens: visionUsage.cacheCreationTokens,
+      cache_read_tokens: visionUsage.cacheReadTokens,
+      cost_usd: visionUsage.costUsd,
+    }).catch(console.error);
+  }
+
+  const uploadedAt = new Date().toISOString();
   const payload = await buildExtractionPayload(text, {
     fileName: uploaded.name,
     fileType: uploaded.type,
-    uploadedAt: new Date().toISOString(),
+    uploadedAt,
   });
 
   const isDocx =
     uploaded.name.toLowerCase().endsWith('.docx') ||
     uploaded.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  getCurrentSessionUser()
+    .then((s) => recordAuditEvent({
+      user_id: s?.user.id ?? null,
+      action: 'contract_extracted',
+      document_id: payload.documentId,
+      metadata: {
+        file_name: uploaded.name,
+        file_type: uploaded.type,
+        source_type: isDocx ? 'docx' : 'pdf',
+        vision_used: visionUsage != null,
+      },
+    }))
+    .catch(console.error);
 
   return NextResponse.json({
     ...payload,
@@ -179,13 +218,34 @@ async function extractFromUploadedFile(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
+    // Usage gate: unauthenticated users get ANON_FREE_USES free analyses.
+    const session = await getCurrentSessionUser();
+    const cookieStore = await cookies();
 
-    if (contentType.includes('application/json')) {
-      return await extractFromManualText(request);
+    if (!session) {
+      const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
+      if (used >= ANON_FREE_USES) {
+        return NextResponse.json({ error: 'free_limit_reached' }, { status: 402 });
+      }
     }
 
-    return await extractFromUploadedFile(request);
+    const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
+    const response = contentType.includes('application/json')
+      ? await extractFromManualText(request)
+      : await extractFromUploadedFile(request);
+
+    // Increment the anon counter on successful extraction.
+    if (!session && response.status < 400) {
+      const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
+      cookieStore.set(ANON_COOKIE, String(used + 1), {
+        maxAge: 60 * 60 * 24 * 30,
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('[extract] error:', error);
     return NextResponse.json({ error: 'Unable to extract contract values.' }, { status: 400 });

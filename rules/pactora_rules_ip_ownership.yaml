@@ -240,10 +240,10 @@ jurisdictions:
         of exploitation rights or the clause is ineffective.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: &id003
         - https://www.gesetze-im-internet.de/
       overriding_mandatory: true
@@ -261,10 +261,10 @@ jurisdictions:
         be read down.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id003
   france:
     legal_system: civil_law
@@ -300,10 +300,10 @@ jurisdictions:
         works taking effect on creation.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: &id004
         - https://www.legifrance.gouv.fr/
       overriding_mandatory: true
@@ -321,10 +321,10 @@ jurisdictions:
       engine_interpretation: Assignment fails L131-3 specificity; unspecified rights are not validly transferred.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id004
     - rule_id: FR-IPO-003
       legacy_id: fr_moral_rights_waiver
@@ -339,10 +339,10 @@ jurisdictions:
       engine_interpretation: Moral-rights waiver is ineffective under French law; the droit moral is inalienable.
       depends_on: []
       meta:
-        last_verified: '2026-05-29'
-        verified_by: source-check (Pactora)
+        last_verified: null
+        verified_by: null
         review_cadence_months: 24
-        status: verified
+        status: unverified
         source_urls: *id004
       overriding_mandatory: true
 fallback_ladder:

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apiFetch } from '@/lib/api-fetch';
+import { Tooltip } from '@/components/tooltip';
 
 type AcceptedRedline = { clauseText: string; proposedText: string; explanation: string };
 
@@ -101,6 +102,7 @@ export function DownloadRedlineButton({ acceptedRedlines, sourceFileType, fileNa
 
   return (
     <div className="flex flex-col items-end gap-1">
+      <Tooltip content="Download a Word document with your accepted redlines shown as tracked changes." position="bottom">
       <button
         type="button"
         onClick={handleDownload}
@@ -125,6 +127,7 @@ export function DownloadRedlineButton({ acceptedRedlines, sourceFileType, fileNa
           </>
         )}
       </button>
+      </Tooltip>
       {error && <p className="text-[11px] text-red-400">{error}</p>}
     </div>
   );

@@ -39,7 +39,10 @@ import { PACTORA_CLAUSE_AGENTS } from '@/lib/agents/types';
 import type { AgentEvent, PactoraClauseType } from '@/lib/agents/types';
 import type { Jurisdiction } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
-import { recordApiUsage } from '@/lib/beta-store';
+import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
+import { getCurrentSessionUser } from '@/lib/auth';
+import { isSupabaseDbConfigured, dbInsertClausePattern } from '@/lib/supabase-db';
+import { anonymiseClauseText } from '@/lib/anonymise-clause';
 
 export const runtime = 'nodejs';
 // 5 parallel agents each with up to 60 s → 120 s ceiling gives headroom
@@ -69,6 +72,15 @@ export async function POST(request: Request) {
       ? (body.jurisdiction as Jurisdiction)
       : null;
 
+  getCurrentSessionUser()
+    .then((s) => recordAuditEvent({
+      user_id: s?.user.id ?? null,
+      action: 'clause_analysed',
+      document_id: null,
+      metadata: { text_length: contractText.length, jurisdiction: jurisdiction ?? null },
+    }))
+    .catch(console.error);
+
   const chunks = createOverlappingChunks(contractText);
   console.log(`[CHUNKING] Contract (${contractText.length} chars) split into ${chunks.length} chunk(s)`);
 
@@ -96,6 +108,9 @@ export async function POST(request: Request) {
         emit({ type: 'agent_result', clauseType, flag: null });
       }
 
+      const allUsages: ClauseAgentUsage[] = [];
+      let finalFlags: ClauseFlag[] = [];
+
       if (chunks.length === 1) {
         // Single-chunk path: preserve existing streaming behaviour — emit events as each agent resolves.
         const collectedFlags: ClauseFlag[] = [];
@@ -105,12 +120,14 @@ export async function POST(request: Request) {
           if (result.ok) {
             emit({ type: 'agent_result', clauseType, flag: result.flag });
             if (result.flag) collectedFlags.push(result.flag);
+            allUsages.push(result.usage);
           } else {
             emit({ type: 'agent_error', clauseType, message: result.error });
           }
         });
         await Promise.allSettled(agentPromises);
 
+        finalFlags = collectedFlags;
         const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
         emit({ type: 'analysis_complete', flags: collectedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
       } else {
@@ -122,6 +139,7 @@ export async function POST(request: Request) {
           console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
           const chunkPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
             const result = await runClauseAgent(clauseType, contractText, chunk, undefined, jurisdiction);
+            if (result.ok) allUsages.push(result.usage);
             return {
               chunkIndex: chunk.chunkIndex,
               clauseType,
@@ -136,6 +154,7 @@ export async function POST(request: Request) {
         }
 
         const mergedFlags = mergeChunkResults(rawResults);
+        finalFlags = mergedFlags;
         console.log(`[ANALYSIS] Found ${mergedFlags.length} unique flag(s) across ${chunks.length} chunk(s)`);
 
         // Emit one agent_result per active clause type so clients receive the standard event shape.
@@ -146,6 +165,41 @@ export async function POST(request: Request) {
 
         const crossClauseRisks = detectCrossClauseRisks(mergedFlags);
         emit({ type: 'analysis_complete', flags: mergedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
+      }
+
+      if (allUsages.length > 0) {
+        const agg = allUsages.reduce((acc, u) => ({
+          inputTokens: acc.inputTokens + u.inputTokens,
+          outputTokens: acc.outputTokens + u.outputTokens,
+          cacheCreationTokens: acc.cacheCreationTokens + u.cacheCreationTokens,
+          cacheReadTokens: acc.cacheReadTokens + u.cacheReadTokens,
+          costUsd: acc.costUsd + u.costUsd,
+        }));
+        recordApiUsage({
+          operation: 'clause_analysis',
+          model: 'mixed',
+          input_tokens: agg.inputTokens,
+          output_tokens: agg.outputTokens,
+          cache_creation_tokens: agg.cacheCreationTokens,
+          cache_read_tokens: agg.cacheReadTokens,
+          cost_usd: agg.costUsd,
+        }).catch(console.error);
+      }
+
+      // PRODUCT-01: Store anonymised clause patterns for internal benchmarking.
+      // Fire-and-forget — never blocks the stream or affects the user response.
+      if (isSupabaseDbConfigured()) {
+        for (const flag of finalFlags) {
+          const rawText = flag.clauseText ?? flag.problematicLanguage ?? '';
+          if (rawText.length < 20) continue;
+          dbInsertClausePattern({
+            clause_type: flag.clauseType,
+            risk_level: flag.riskLevel.toLowerCase(),
+            contract_type: contractType ?? null,
+            jurisdiction: jurisdiction ?? null,
+            clause_text: anonymiseClauseText(rawText),
+          }).catch(() => {/* non-fatal */});
+        }
       }
 
       controller.close();

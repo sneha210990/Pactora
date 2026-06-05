@@ -97,7 +97,7 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
     <div className={`rounded-xl border border-zinc-800 bg-black/30 p-4 ${className ?? ''}`.trim()}>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-semibold">Suggest redline</h3>
+          <h3 className="text-base font-semibold">Proposed wording</h3>
           <p className="mt-0.5 text-xs text-zinc-400">
             Generate buyer-protective alternative language for this clause.
           </p>
@@ -123,7 +123,7 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
                 </svg>
-                {status === 'done' ? 'Regenerate' : 'Suggest redline'}
+                {status === 'done' ? 'Regenerate' : 'Get suggested wording'}
               </>
             )}
           </button>
@@ -131,11 +131,14 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
       </div>
 
       {parsed && (
-        <ClauseDiff
-          original={clauseText}
-          proposed={parsed.clause}
-          explanation={parsed.explanation}
-        />
+        <>
+          <ClauseDiff
+            original={clauseText}
+            proposed={parsed.clause}
+            explanation={parsed.explanation}
+          />
+          <p className="mt-3 text-xs text-zinc-500">Use this as your opening position — adjust the specific figures and carve-outs to match your deal before sending.</p>
+        </>
       )}
 
       {status === 'error' && (
