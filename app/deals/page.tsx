@@ -28,12 +28,20 @@ export default function DealsPage() {
             <h1 className="text-3xl font-semibold tracking-tight">Your deals</h1>
             <p className="mt-2 text-sm text-zinc-400">Your past contract reviews.</p>
           </div>
-          <Link
-            href="/deals/new"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
-          >
-            + New review
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/account/audit-log"
+              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
+            >
+              Audit log
+            </Link>
+            <Link
+              href="/deals/new"
+              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-zinc-200"
+            >
+              + New review
+            </Link>
+          </div>
         </div>
 
         {deals.length === 0 ? (

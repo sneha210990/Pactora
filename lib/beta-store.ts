@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { isSupabaseDbConfigured, dbInsertAuditEvent, dbQueryAuditEvents } from './supabase-db';
 
 export type BetaUser = {
   id: string;
@@ -428,6 +429,11 @@ export async function recordAuditEvent(params: {
   document_id?: string | null;
   metadata?: Record<string, unknown>;
 }): Promise<void> {
+  // Write to Supabase when configured; always mirror to file store as fallback.
+  if (isSupabaseDbConfigured()) {
+    await dbInsertAuditEvent(params).catch(() => {/* non-fatal */});
+  }
+
   const now = new Date().toISOString();
   const store = await readStore();
   const event: AuditEvent = {
@@ -438,14 +444,27 @@ export async function recordAuditEvent(params: {
     metadata: params.metadata ?? {},
     created_at: now,
   };
-  // Keep the 500 most recent events to bound file growth.
   store.auditEvents = [event, ...(store.auditEvents ?? [])].slice(0, 500);
   await writeStore(store);
 }
 
 export async function getAuditEvents(limit = 100): Promise<AuditEvent[]> {
+  if (isSupabaseDbConfigured()) {
+    const rows = await dbQueryAuditEvents({ limit });
+    if (rows !== null) return rows;
+  }
   const store = await readStore();
   return (store.auditEvents ?? []).slice(0, limit);
+}
+
+export async function getAuditEventsForUser(userId: string, limit = 100): Promise<AuditEvent[]> {
+  if (isSupabaseDbConfigured()) {
+    const rows = await dbQueryAuditEvents({ userId, limit });
+    if (rows !== null) return rows;
+  }
+  // File-based fallback: filter in memory.
+  const store = await readStore();
+  return (store.auditEvents ?? []).filter((e) => e.user_id === userId).slice(0, limit);
 }
 
 export async function getOperatorSummary() {
