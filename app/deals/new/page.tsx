@@ -97,6 +97,7 @@ export default function NewDealPage() {
   const analysis = useDocumentAnalysis();
   const actions = useDocumentAnalysisActions();
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showSignupWall, setShowSignupWall] = useState(false);
   const [manualClauseText, setManualClauseText] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
     // Restore pasted text if the page reloaded mid-analysis.
@@ -295,6 +296,10 @@ export default function NewDealPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (response.status === 402 && payload?.error === 'free_limit_reached') {
+          setShowSignupWall(true);
+          return;
+        }
         throw new Error(payload?.error ?? 'Could not extract contract values.');
       }
 
@@ -353,6 +358,10 @@ export default function NewDealPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (response.status === 402 && payload?.error === 'free_limit_reached') {
+          setShowSignupWall(true);
+          return;
+        }
         throw new Error(payload?.error ?? 'Could not read pasted clauses.');
       }
 
@@ -373,6 +382,36 @@ export default function NewDealPage() {
     }
     return items;
   }, [analysis.diagnostics?.missingFields, analysis.errors, analysis.uploadStatus]);
+
+  if (showSignupWall) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-black px-6 text-white">
+        <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
+            <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold tracking-tight">You've used your free review</h2>
+          <p className="mt-3 text-sm text-zinc-400">
+            Create a free account to review unlimited contracts — and your analyses will be saved across all your devices.
+          </p>
+          <a
+            href="/login"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-zinc-200"
+          >
+            Create free account
+          </a>
+          <a
+            href="/deals"
+            className="mt-3 inline-block text-xs text-zinc-500 hover:text-zinc-300"
+          >
+            Back to your deals
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
