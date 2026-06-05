@@ -1,9 +1,9 @@
-import { getOperatorSummary, getApiUsageSummary } from '@/lib/beta-store';
+import { getOperatorSummary, getApiUsageSummary, getAuditEvents } from '@/lib/beta-store';
 
 // Authorisation is enforced in middleware.ts via the pactora_operator cookie.
 // This component assumes a valid operator session has already been verified.
 export default async function OperatorBetaPage() {
-  const [summary, apiUsage] = await Promise.all([getOperatorSummary(), getApiUsageSummary()]);
+  const [summary, apiUsage, auditEvents] = await Promise.all([getOperatorSummary(), getApiUsageSummary(), getAuditEvents(100)]);
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -83,6 +83,49 @@ export default async function OperatorBetaPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Audit trail */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+          <h2 className="mb-1 text-lg font-semibold">Audit trail</h2>
+          <p className="mb-4 text-xs text-zinc-500">Most recent 100 events. Unauthenticated calls show user as anonymous.</p>
+          {auditEvents.length === 0 ? (
+            <p className="text-sm text-zinc-500">No events recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b border-zinc-800 text-zinc-400">
+                  <tr>
+                    <th className="px-4 py-3">Timestamp</th>
+                    <th className="px-4 py-3">Action</th>
+                    <th className="px-4 py-3">User</th>
+                    <th className="px-4 py-3">Document</th>
+                    <th className="px-4 py-3">Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditEvents.map((event) => {
+                    const user = event.user_id
+                      ? summary.users.find((u) => u.id === event.user_id)
+                      : null;
+                    const details = Object.entries(event.metadata)
+                      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                      .map(([k, v]) => `${k}: ${String(v)}`)
+                      .join(' · ');
+                    return (
+                      <tr key={event.id} className="border-b border-zinc-900/60">
+                        <td className="px-4 py-3 text-zinc-400">{new Date(event.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 font-medium">{event.action}</td>
+                        <td className="px-4 py-3">{user ? user.email : event.user_id ? event.user_id : <span className="text-zinc-500">anonymous</span>}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-400">{event.document_id ?? '—'}</td>
+                        <td className="px-4 py-3 text-zinc-400">{details || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </main>

@@ -76,7 +76,7 @@ async function inputsFromMultipart(request: Request): Promise<ContractInput[]> {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const text = await extractContractText(file.name, buffer, file.type);
+    const { text } = await extractContractText(file.name, buffer, file.type);
     const explicitKind = formData.get(`kind_${index}`);
     inputs.push({
       id: `upload-${index + 1}`,

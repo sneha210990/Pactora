@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { isSupabaseDbConfigured, dbInsertAuditEvent, dbQueryAuditEvents } from './supabase-db';
 
 export type BetaUser = {
   id: string;
@@ -74,12 +75,24 @@ export type ApiUsageRecord = {
   cost_usd: number;
 };
 
+export type AuditAction = 'contract_extracted' | 'clause_analysed' | 'redline_generated';
+
+export type AuditEvent = {
+  id: string;
+  user_id: string | null;
+  action: AuditAction;
+  document_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
 type BetaStore = {
   users: BetaUser[];
   sessions: BetaSession[];
   feedback: FeedbackEntry[];
   events: BetaEvent[];
   apiUsage: ApiUsageRecord[];
+  auditEvents: AuditEvent[];
 };
 
 // Vercel's project root is read-only; /tmp is the only writable path in serverless.
@@ -94,6 +107,7 @@ const defaultStore: BetaStore = {
   feedback: [],
   events: [],
   apiUsage: [],
+  auditEvents: [],
 };
 
 async function ensureDataFile() {
@@ -119,6 +133,7 @@ async function readStore(): Promise<BetaStore> {
       feedback: parsed.feedback ?? [],
       events: parsed.events ?? [],
       apiUsage: parsed.apiUsage ?? [],
+      auditEvents: parsed.auditEvents ?? [],
     };
   } catch {
     return defaultStore;
@@ -406,6 +421,50 @@ export async function getApiUsageSummary() {
     last30DaysCostUsd,
     recordCount: records.length,
   };
+}
+
+export async function recordAuditEvent(params: {
+  user_id: string | null;
+  action: AuditAction;
+  document_id?: string | null;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  // Write to Supabase when configured; always mirror to file store as fallback.
+  if (isSupabaseDbConfigured()) {
+    await dbInsertAuditEvent(params).catch(() => {/* non-fatal */});
+  }
+
+  const now = new Date().toISOString();
+  const store = await readStore();
+  const event: AuditEvent = {
+    id: id('aud'),
+    user_id: params.user_id,
+    action: params.action,
+    document_id: params.document_id ?? null,
+    metadata: params.metadata ?? {},
+    created_at: now,
+  };
+  store.auditEvents = [event, ...(store.auditEvents ?? [])].slice(0, 500);
+  await writeStore(store);
+}
+
+export async function getAuditEvents(limit = 100): Promise<AuditEvent[]> {
+  if (isSupabaseDbConfigured()) {
+    const rows = await dbQueryAuditEvents({ limit });
+    if (rows !== null) return rows;
+  }
+  const store = await readStore();
+  return (store.auditEvents ?? []).slice(0, limit);
+}
+
+export async function getAuditEventsForUser(userId: string, limit = 100): Promise<AuditEvent[]> {
+  if (isSupabaseDbConfigured()) {
+    const rows = await dbQueryAuditEvents({ userId, limit });
+    if (rows !== null) return rows;
+  }
+  // File-based fallback: filter in memory.
+  const store = await readStore();
+  return (store.auditEvents ?? []).filter((e) => e.user_id === userId).slice(0, limit);
 }
 
 export async function getOperatorSummary() {

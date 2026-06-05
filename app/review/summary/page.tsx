@@ -17,6 +17,7 @@ import { ReviewProgress } from '../components/review-progress';
 import { ExportPdfButton } from '@/components/export-pdf-button';
 import { ClauseDiff } from '../components/clause-diff';
 import { DownloadRedlineButton } from '@/components/download-redline-button';
+import { Tooltip } from '@/components/tooltip';
 import { ChatPanel } from '../components/chat-panel';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
@@ -233,9 +234,11 @@ function ClauseFlagCard({
             {flag.riskLevel}
           </span>
           {flag.confidence === 'Uncertain' && (
-            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
-              Uncertain
-            </span>
+            <Tooltip content="AI confidence in this flag is low — verify manually before relying on it." position="bottom">
+              <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                Uncertain
+              </span>
+            </Tooltip>
           )}
           <svg
             className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-150 ${isExpanded ? 'rotate-180' : ''}`}
@@ -459,6 +462,8 @@ function SummaryContent() {
   const [emailError, setEmailError] = useState('');
   const [emailCopied, setEmailCopied] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchError, setBatchError] = useState('');
 
   useEffect(() => {
     trackEvent('analysis_completed', '/review/summary');
@@ -486,6 +491,10 @@ function SummaryContent() {
 
   const effectiveFlags: ClauseFlag[] = clauseFlags.length > 0 ? clauseFlags : (analysis.manualFlags ?? []);
   const uncertainFlagCount = effectiveFlags.filter((f) => f.confidence === 'Uncertain').length;
+
+  const playbookFlags = effectiveFlags.filter(
+    (f) => PLAYBOOK_CLAUSE_TYPES.has(f.clauseType) && !!(f.clauseText || f.problematicLanguage),
+  );
 
   const rankedSections = useMemo(() => {
     return reviewSections
@@ -543,6 +552,52 @@ function SummaryContent() {
     await navigator.clipboard.writeText(emailContent);
     setEmailCopied(true);
     setTimeout(() => setEmailCopied(false), 2000);
+  }
+
+  async function generateAllRedlines() {
+    if (playbookFlags.length === 0 || batchGenerating) return;
+    setBatchGenerating(true);
+    setBatchError('');
+    try {
+      const results = await Promise.allSettled(
+        playbookFlags.map((flag) =>
+          apiFetch('/api/contracts/redline', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clauseText: flag.clauseText ?? flag.problematicLanguage ?? '',
+              clauseType: flag.clauseType,
+              acv: acvAmount ?? null,
+              liabilityCap: lolCap ?? null,
+            }),
+          }).then((res) => res.json() as Promise<{ alternative?: string; error?: string }>),
+        ),
+      );
+      let successCount = 0;
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const flag = playbookFlags[i];
+        if (result.status === 'fulfilled' && result.value.alternative) {
+          const alt = result.value.alternative;
+          const proposedText = alt.replace(/\nWhy this works:[\s\S]*/i, '').trim();
+          const explanation = alt.match(/\nWhy this works:([\s\S]*)/i)?.[0]?.replace(/^\n/, '').trim() ?? '';
+          actions.acceptRedline(
+            flag.clauseType,
+            flag.clauseText ?? flag.problematicLanguage ?? '',
+            proposedText,
+            explanation,
+          );
+          successCount++;
+        }
+      }
+      if (successCount === 0) {
+        setBatchError('Could not generate redlines. Please try again.');
+      }
+    } catch {
+      setBatchError('Network error. Please try again.');
+    } finally {
+      setBatchGenerating(false);
+    }
   }
 
   if (!analysis.activeDocument) {
@@ -613,7 +668,9 @@ function SummaryContent() {
             </div>
             {clauseFlags.length > 0 && (
               <div className="shrink-0 text-right">
-                <span className={`text-7xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
+                <Tooltip content="Weighted risk score across all flagged clauses — 0 = no risk, 100 = maximum risk." position="bottom">
+                  <span className={`text-7xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
+                </Tooltip>
                 <p className="mt-1 text-[11px] uppercase tracking-wide text-zinc-500">/ 100</p>
               </div>
             )}
@@ -637,7 +694,9 @@ function SummaryContent() {
         <div className="mt-6">
           <div className="flex flex-wrap gap-2">
             {extractedValue(commercialContext.acv) !== null && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Deal value: {formatOptionalMoneyField(commercialContext.acv)}</span>
+              <Tooltip content="Annual Contract Value — the total revenue from this contract in one year.">
+                <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Deal value: {formatOptionalMoneyField(commercialContext.acv)}</span>
+              </Tooltip>
             )}
             {extractedValue(commercialContext.termMonths) !== null && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
@@ -751,7 +810,9 @@ function SummaryContent() {
         {crossClauseRisks.length > 0 && (
           <section className="mt-8">
             <div className="mb-1 flex items-center gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
+              <Tooltip content="Where two or more clauses interact to create combined exposure not obvious when reviewing each clause in isolation." position="bottom">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
+              </Tooltip>
               <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2.5 py-0.5 text-xs text-orange-300">
                 {crossClauseRisks.length} interaction{crossClauseRisks.length !== 1 ? 's' : ''} detected
               </span>
@@ -767,13 +828,40 @@ function SummaryContent() {
 
         {effectiveFlags.length > 0 ? (
           <section className="mt-8">
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
-                {clauseFlags.length > 0 ? 'AI Clause Analysis' : 'Manual Review Findings'}
+                {clauseFlags.length > 0 ? 'Clause Analysis' : 'Manual Review Findings'}
               </h2>
               <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
                 {effectiveFlags.length} {effectiveFlags.length === 1 ? 'flag' : 'flags'}
               </span>
+              {sourceFileType === 'docx' && playbookFlags.length > 0 && (
+                <div className="ml-auto flex flex-col items-end gap-1">
+                  <Tooltip content="Drafts proposed replacement language for all flagged clauses simultaneously and accepts them. Then click Download redline to export the full Word document." position="bottom">
+                  <button
+                    type="button"
+                    onClick={generateAllRedlines}
+                    disabled={batchGenerating}
+                    className="flex items-center gap-1.5 rounded border border-emerald-700/60 bg-emerald-950/40 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:border-emerald-500 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {batchGenerating ? (
+                      <>
+                        <div className="h-3 w-3 animate-spin rounded-full border border-emerald-700 border-t-emerald-300" />
+                        Generating redlines…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                        Generate all redlines
+                      </>
+                    )}
+                  </button>
+                  </Tooltip>
+                  {batchError && <p className="text-[11px] text-red-400">{batchError}</p>}
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-6">
               {uncertainFlagCount >= 2 && (

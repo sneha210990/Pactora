@@ -66,6 +66,7 @@ export function ReviewProgress({
                   {stepRisk && (
                     <span
                       aria-label={`${stepRisk} risk`}
+                      title={`${stepRisk} risk`}
                       className={[
                         'shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold leading-none',
                         stepRisk === 'High'
