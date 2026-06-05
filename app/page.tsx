@@ -80,6 +80,22 @@ export default function Home() {
               />
             </a>
           </div>
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+              Winner
+            </span>
+            <a
+              href="https://vibecode.law"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100"
+            >
+              <span className="text-base leading-none">🏆</span>
+              <span className="text-sm font-semibold tracking-tight text-white">
+                Simplify Legal Challenge
+              </span>
+            </a>
+          </div>
         </div>
       </section>
     </main>
