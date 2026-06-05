@@ -1,5 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { OPERATOR_COOKIE_NAME, verifyOperatorSessionCookie } from '@/lib/operator-auth';
+import {
+  SESSION_COOKIE_NAME,
+  authCookieOptions,
+  buildSessionPayload,
+  parseSession,
+  serializeSession,
+} from '@/lib/supabase-auth';
 
 // Routes within /operator/* and /api/operator/* that must remain reachable
 // without an operator session (so login is possible at all).
@@ -18,6 +25,41 @@ function unauthenticated(req: NextRequest, kind: 'api' | 'page', redirectTo: str
   }
   const url = new URL(redirectTo, req.url);
   return NextResponse.redirect(url);
+}
+
+async function refreshUserSessionIfNeeded(req: NextRequest, res: NextResponse): Promise<void> {
+  const raw = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (!raw) return;
+
+  const session = await parseSession(raw);
+  if (!session) return;
+
+  // Refresh if token expires within 60 seconds
+  if (session.expires_at - Date.now() > 60_000) return;
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !anonKey) return;
+
+    const refreshRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: session.refresh_token }),
+    });
+    if (!refreshRes.ok) return;
+
+    const refreshed = (await refreshRes.json()) as {
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    };
+    const newSession = buildSessionPayload(refreshed);
+    const serialized = await serializeSession(newSession);
+    res.cookies.set(SESSION_COOKIE_NAME, serialized, authCookieOptions());
+  } catch {
+    // Non-fatal — let the request proceed with the stale session
+  }
 }
 
 export async function middleware(req: NextRequest) {
@@ -53,11 +95,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  return NextResponse.next();
+  const res = NextResponse.next();
+  await refreshUserSessionIfNeeded(req, res);
+  return res;
 }
 
 export const config = {
-  // Matchers are evaluated as a union — anything outside these paths skips
-  // middleware entirely and remains public.
-  matcher: ['/operator/:path*', '/api/:path*'],
+  matcher: ['/operator/:path*', '/api/:path*', '/((?!_next/static|_next/image|favicon.ico).*)'],
 };

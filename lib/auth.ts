@@ -1,12 +1,10 @@
 import { cookies } from 'next/headers';
 import {
-  authCookieOptions,
   buildSessionPayload,
   getUserFromAccessToken,
   parseSession,
   refreshSession,
   SESSION_COOKIE_NAME,
-  serializeSession,
 } from './supabase-auth';
 import { createOrUpdateUserByIdentity } from './beta-store';
 
@@ -35,7 +33,7 @@ export async function getCurrentSessionUser() {
     };
 
     session = buildSessionPayload(refreshed);
-    cookieStore.set(SESSION_COOKIE_NAME, await serializeSession(session), authCookieOptions());
+    // Cookie update is handled by middleware — cannot set cookies during render.
     userResponse = await getUserFromAccessToken(session.access_token);
   }
 
