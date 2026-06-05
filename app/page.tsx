@@ -22,8 +22,8 @@ export default function Home() {
           Review a contract free
         </Link>
 
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-10">
-          <div className="flex flex-col items-center gap-2">
+        <div className="mt-12 flex flex-wrap items-start justify-center gap-14">
+          <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Featured in
             </span>
@@ -44,25 +44,7 @@ export default function Home() {
               </span>
             </a>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
-              Trusted by
-            </span>
-            <a
-              href="https://www.librabit.co.uk/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center opacity-50 transition-opacity hover:opacity-100"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/librabit-logo.svg"
-                alt="Librabit"
-                className="h-10 w-10 rounded-md"
-              />
-            </a>
-          </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Member of
             </span>
@@ -80,7 +62,7 @@ export default function Home() {
               />
             </a>
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Winner
             </span>
@@ -97,6 +79,27 @@ export default function Home() {
                 </span>
                 <span className="text-xs text-zinc-500">vibecode.law</span>
               </span>
+            </a>
+          </div>
+        </div>
+
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+            Trusted by
+          </span>
+          <div className="flex items-center gap-12">
+            <a
+              href="https://www.librabit.co.uk/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center opacity-50 transition-opacity hover:opacity-100"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/librabit-logo.svg"
+                alt="Librabit"
+                className="h-10 w-10 rounded-md"
+              />
             </a>
           </div>
         </div>
