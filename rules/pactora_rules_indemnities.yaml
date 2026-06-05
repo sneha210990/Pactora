@@ -412,6 +412,84 @@ jurisdictions:
         review_cadence_months: 24
         status: unverified
         source_urls: *id004
+  scotland:
+    legal_system: common_law
+    primary_authority:
+    - Indemnities are creatures of contract; construed strictly under Scots law
+    - Canada Steamship Lines Ltd v The King [1952] AC 192 (clear words needed to indemnify against own
+      negligence; applied in Scotland)
+    - Unfair Contract Terms Act 1977, ss.15-25 (Scotland) engaged only where an indemnity in substance
+      excludes or restricts liability
+    enforceability_threshold: 'In B2B, Scots courts enforce indemnities as drafted. Clear express words
+      are required to indemnify a party against its own negligence. A party cannot be indemnified against
+      its own fraud (public policy). Where an indemnity in substance excludes or restricts liability, UCTA
+      1977 (Scotland) ss.15-25 may apply.
+
+      '
+    non_excludable:
+    - indemnity against a party's own fraud (unenforceable)
+    triggers:
+    - rule_id: SC-IND-001
+      legacy_id: sc_uncapped_outside_cap
+      rule_type: negotiation_risk
+      stability: settled
+      severity: high
+      detection_condition: indemnity is uncapped AND carved out of / sits outside the liability cap
+      legal_basis:
+      - authority: construction
+        type: construction
+      non_excludable: []
+      engine_interpretation: Indemnity sits outside the liability cap and is uncapped, creating unlimited
+        exposure that defeats the negotiated cap.
+      depends_on:
+      - clause:LOL
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/
+    - rule_id: SC-IND-002
+      legacy_id: sc_own_negligence_unclear
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: indemnity appears to cover the indemnified party's own negligence without clear
+        express words
+      legal_basis:
+      - authority: Canada Steamship Lines v The King [1952] AC 192
+        type: case
+      non_excludable: []
+      engine_interpretation: Indemnity may cover the indemnitee's own negligence but lacks clear words;
+        likely read down on a Canada Steamship basis by Scots courts.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/
+    - rule_id: SC-IND-003
+      legacy_id: sc_fraud_indemnity
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: purports to indemnify a party against the consequences of its own fraud
+      legal_basis:
+      - authority: public policy
+        type: construction
+      non_excludable: []
+      engine_interpretation: Indemnity against a party's own fraud is unenforceable under Scots law.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/
 fallback_ladder:
   ideal: Mutual, capped indemnities limited to defined third-party claim categories (IP infringement,
     data breach, death/personal injury), indemnitor controls the defence, cap expressly applies.

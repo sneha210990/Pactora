@@ -29,6 +29,7 @@ const JURISDICTION_CONTEXT: Record<Jurisdiction, string> = {
   india: 'Jurisdiction: India. Apply Indian law — Indian Contract Act 1872 (penalty clause limits under s.74, restraint-of-trade under s.27), and standard Indian commercial law risk thresholds.',
   germany: 'Jurisdiction: Germany. Apply German law — BGB §§ 305-310 AGB-Recht standard terms controls, § 309 prohibited clauses, and civil-law risk thresholds.',
   france: 'Jurisdiction: France. Apply French law — Code civil significant imbalance rules (art. 1171), lois de police mandatory provisions, and civil-law risk thresholds.',
+  scotland: 'Jurisdiction: Scotland. Apply Scots law — UCTA 1977 ss.15-25 (Scotland) controls on exclusion clauses, doctrine of mutuality (Wade v Waldon 1909 SC 571), Cavendish Square penalty test (UKSC, binding in Scotland), and Insolvency Act 1986 s.233B (UK-wide ipso facto ban).',
 };
 
 const CONTRACT_TYPE_CONTEXT: Record<ContractType, string> = {
