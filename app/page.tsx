@@ -91,8 +91,11 @@ export default function Home() {
               className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100"
             >
               <span className="text-base leading-none">🏆</span>
-              <span className="text-sm font-semibold tracking-tight text-white">
-                Simplify Legal Challenge
+              <span className="flex flex-col">
+                <span className="text-sm font-semibold tracking-tight text-white">
+                  Simplify Legal Challenge
+                </span>
+                <span className="text-xs text-zinc-500">vibecode.law</span>
               </span>
             </a>
           </div>
