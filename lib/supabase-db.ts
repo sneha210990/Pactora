@@ -70,3 +70,18 @@ export async function dbQueryAuditEvents(options: {
   if (!res || !res.ok) return null;
   return res.json() as Promise<AuditEvent[]>;
 }
+
+export async function dbInsertClausePattern(params: {
+  clause_type: string;
+  risk_level: string;
+  contract_type: string | null;
+  jurisdiction: string | null;
+  clause_text: string;
+}): Promise<boolean> {
+  const res = await dbFetch('/clause_patterns', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify(params),
+  });
+  return res !== null && res.ok;
+}

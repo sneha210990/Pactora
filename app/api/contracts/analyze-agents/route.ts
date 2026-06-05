@@ -41,6 +41,8 @@ import type { Jurisdiction } from '@/lib/document-analysis-store';
 import type { ClauseFlag } from '@/lib/clause-analysis';
 import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
 import { getCurrentSessionUser } from '@/lib/auth';
+import { isSupabaseDbConfigured, dbInsertClausePattern } from '@/lib/supabase-db';
+import { anonymiseClauseText } from '@/lib/anonymise-clause';
 
 export const runtime = 'nodejs';
 // 5 parallel agents each with up to 60 s → 120 s ceiling gives headroom
@@ -107,6 +109,7 @@ export async function POST(request: Request) {
       }
 
       const allUsages: ClauseAgentUsage[] = [];
+      let finalFlags: ClauseFlag[] = [];
 
       if (chunks.length === 1) {
         // Single-chunk path: preserve existing streaming behaviour — emit events as each agent resolves.
@@ -124,6 +127,7 @@ export async function POST(request: Request) {
         });
         await Promise.allSettled(agentPromises);
 
+        finalFlags = collectedFlags;
         const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
         emit({ type: 'analysis_complete', flags: collectedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
       } else {
@@ -150,6 +154,7 @@ export async function POST(request: Request) {
         }
 
         const mergedFlags = mergeChunkResults(rawResults);
+        finalFlags = mergedFlags;
         console.log(`[ANALYSIS] Found ${mergedFlags.length} unique flag(s) across ${chunks.length} chunk(s)`);
 
         // Emit one agent_result per active clause type so clients receive the standard event shape.
@@ -179,6 +184,22 @@ export async function POST(request: Request) {
           cache_read_tokens: agg.cacheReadTokens,
           cost_usd: agg.costUsd,
         }).catch(console.error);
+      }
+
+      // PRODUCT-01: Store anonymised clause patterns for internal benchmarking.
+      // Fire-and-forget — never blocks the stream or affects the user response.
+      if (isSupabaseDbConfigured()) {
+        for (const flag of finalFlags) {
+          const rawText = flag.clauseText ?? flag.problematicLanguage ?? '';
+          if (rawText.length < 20) continue;
+          dbInsertClausePattern({
+            clause_type: flag.clauseType,
+            risk_level: flag.riskLevel.toLowerCase(),
+            contract_type: contractType ?? null,
+            jurisdiction: jurisdiction ?? null,
+            clause_text: anonymiseClauseText(rawText),
+          }).catch(() => {/* non-fatal */});
+        }
       }
 
       controller.close();
