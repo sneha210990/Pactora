@@ -10,6 +10,7 @@ import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
+import { Tooltip } from '@/components/tooltip';
 
 type Directionality = 'Mutual' | 'One-sided' | 'Unknown';
 type TriggerScope = 'IP' | 'Data' | 'Third-party claims' | 'Broad breach' | 'Unknown';
@@ -245,7 +246,9 @@ function IndemnitiesReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <Tooltip content="Annual Contract Value — the total revenue from this contract in one year.">
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            </Tooltip>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
@@ -317,15 +320,21 @@ function IndemnitiesReviewContent() {
               <h3 className="text-base font-semibold">Detected from your clause</h3>
               <div className="mt-3 space-y-3 text-sm">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Directionality</span>
+                  <Tooltip content="Whether the indemnity obligation falls on one party only (one-sided) or both parties equally (mutual).">
+                    <span className="text-zinc-400 cursor-help underline decoration-dotted">Directionality</span>
+                  </Tooltip>
                   <span className="font-medium">{result.directionality}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Trigger scope</span>
+                  <Tooltip content="What events activate the indemnity — narrow (IP / data breach) is lower risk than broad (any breach / all losses).">
+                    <span className="text-zinc-400 cursor-help underline decoration-dotted">Trigger scope</span>
+                  </Tooltip>
                   <span className="font-medium">{result.triggerScope}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Cap interaction</span>
+                  <Tooltip content="Whether the indemnity sits within the liability cap or overrides it. Outside-cap indemnities mean unlimited exposure.">
+                    <span className="text-zinc-400 cursor-help underline decoration-dotted">Cap interaction</span>
+                  </Tooltip>
                   <span className="font-medium">{result.capInteraction}</span>
                 </div>
                 <div>

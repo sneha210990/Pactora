@@ -10,6 +10,7 @@ import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
+import { Tooltip } from '@/components/tooltip';
 
 type OwnershipStructure = 'Vendor owns' | 'Customer owns' | 'Shared/retained ownership' | 'Unknown';
 type LicenceModel = 'Limited licence' | 'Perpetual/Broad licence' | 'Broad licence' | 'Unknown';
@@ -234,7 +235,9 @@ function IpOwnershipReviewContent() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <Tooltip content="Annual Contract Value — the total revenue from this contract in one year.">
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            </Tooltip>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Insurance: {formatOptionalMoneyField(commercialContext.insuranceCover)}</span>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
