@@ -60,3 +60,7 @@ benchmark/cuad/results.json
 
 # pactora rules engine — generated artifacts
 counsel.json
+
+# python bytecode
+__pycache__/
+*.pyc
