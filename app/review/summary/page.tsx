@@ -17,6 +17,7 @@ import { ReviewProgress } from '../components/review-progress';
 import { ExportPdfButton } from '@/components/export-pdf-button';
 import { ClauseDiff } from '../components/clause-diff';
 import { DownloadRedlineButton } from '@/components/download-redline-button';
+import { Tooltip } from '@/components/tooltip';
 import { ChatPanel } from '../components/chat-panel';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
@@ -233,9 +234,11 @@ function ClauseFlagCard({
             {flag.riskLevel}
           </span>
           {flag.confidence === 'Uncertain' && (
-            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
-              Uncertain
-            </span>
+            <Tooltip content="AI confidence in this flag is low — verify manually before relying on it." position="bottom">
+              <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                Uncertain
+              </span>
+            </Tooltip>
           )}
           <svg
             className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-150 ${isExpanded ? 'rotate-180' : ''}`}
@@ -665,7 +668,9 @@ function SummaryContent() {
             </div>
             {clauseFlags.length > 0 && (
               <div className="shrink-0 text-right">
-                <span className={`text-7xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
+                <Tooltip content="Weighted risk score across all flagged clauses — 0 = no risk, 100 = maximum risk." position="bottom">
+                  <span className={`text-7xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
+                </Tooltip>
                 <p className="mt-1 text-[11px] uppercase tracking-wide text-zinc-500">/ 100</p>
               </div>
             )}
@@ -689,7 +694,9 @@ function SummaryContent() {
         <div className="mt-6">
           <div className="flex flex-wrap gap-2">
             {extractedValue(commercialContext.acv) !== null && (
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Deal value: {formatOptionalMoneyField(commercialContext.acv)}</span>
+              <Tooltip content="Annual Contract Value — the total revenue from this contract in one year.">
+                <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Deal value: {formatOptionalMoneyField(commercialContext.acv)}</span>
+              </Tooltip>
             )}
             {extractedValue(commercialContext.termMonths) !== null && (
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Term: {formatOptionalMonthsField(commercialContext.termMonths)}</span>
@@ -803,7 +810,9 @@ function SummaryContent() {
         {crossClauseRisks.length > 0 && (
           <section className="mt-8">
             <div className="mb-1 flex items-center gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
+              <Tooltip content="Where two or more clauses interact to create combined exposure not obvious when reviewing each clause in isolation." position="bottom">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
+              </Tooltip>
               <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2.5 py-0.5 text-xs text-orange-300">
                 {crossClauseRisks.length} interaction{crossClauseRisks.length !== 1 ? 's' : ''} detected
               </span>
@@ -828,6 +837,7 @@ function SummaryContent() {
               </span>
               {sourceFileType === 'docx' && playbookFlags.length > 0 && (
                 <div className="ml-auto flex flex-col items-end gap-1">
+                  <Tooltip content="Drafts proposed replacement language for all flagged clauses simultaneously and accepts them. Then click Download redline to export the full Word document." position="bottom">
                   <button
                     type="button"
                     onClick={generateAllRedlines}
@@ -848,6 +858,7 @@ function SummaryContent() {
                       </>
                     )}
                   </button>
+                  </Tooltip>
                   {batchError && <p className="text-[11px] text-red-400">{batchError}</p>}
                 </div>
               )}

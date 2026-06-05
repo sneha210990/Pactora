@@ -10,6 +10,7 @@ import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
 import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { Tooltip } from '@/components/tooltip';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 
 type CapType =
@@ -426,7 +427,9 @@ function LolReviewContent() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            <Tooltip content="Annual Contract Value — the total revenue from this contract in one year.">
+              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">ACV: {formatOptionalMoneyField(commercialContext.acv)}</span>
+            </Tooltip>
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
               Term: {formatOptionalMonthsField(commercialContext.termMonths)}
             </span>
@@ -496,7 +499,9 @@ function LolReviewContent() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Cap multiple vs ACV</span>
+                  <Tooltip content="How many times the annual contract value the liability cap equals. 1× means the cap equals one year's fees.">
+                    <span className="text-zinc-400 cursor-help underline decoration-dotted">Cap multiple vs ACV</span>
+                  </Tooltip>
                   <span className="font-medium">
                     {derived.capMultipleVsACV !== null ? `${derived.capMultipleVsACV.toFixed(2)}×` : 'N/A'}
                   </span>
@@ -506,7 +511,9 @@ function LolReviewContent() {
                   <span className="font-medium">{parsedResult.capScope ?? 'unknown'}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Asymmetric</span>
+                  <Tooltip content="Whether the cap applies to only one party. An asymmetric cap (e.g. only binding the vendor) is a red flag.">
+                    <span className="text-zinc-400 cursor-help underline decoration-dotted">Asymmetric</span>
+                  </Tooltip>
                   <span className="font-medium">{parsedResult.asymmetric ? 'Yes' : 'No'}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -521,7 +528,9 @@ function LolReviewContent() {
             </div>
 
             <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
-              <h3 className="text-base font-semibold">Carve-outs to watch</h3>
+              <Tooltip content="Exceptions to the liability cap — these claim types remain uncapped and can expose you to unlimited liability." position="bottom">
+                <h3 className="text-base font-semibold cursor-help">Carve-outs to watch</h3>
+              </Tooltip>
               {parsedResult.carveoutsFound.length > 0 ? (
                 <ul className="mt-3 space-y-3 text-sm">
                   {parsedResult.carveoutsFound.map((x) => (
