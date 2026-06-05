@@ -5,19 +5,74 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { listDeals, type DealHistoryEntry } from '@/lib/deals-history';
 import { useDocumentAnalysisActions } from '@/lib/document-analysis-store';
+import type { DbDeal } from '@/lib/supabase-db';
+
+type DisplayDeal = {
+  id: string;
+  fileName: string;
+  analyzedAt: string;
+  clauseCount: number;
+  riskCounts: { high: number; medium: number; low: number };
+  // Server deals are opened via permalink; local deals restore context directly.
+  source: 'server' | 'local';
+  snapshot?: DealHistoryEntry['snapshot'];
+};
+
+function toDisplayDeal(deal: DbDeal): DisplayDeal {
+  return {
+    id: deal.id,
+    fileName: deal.file_name,
+    analyzedAt: deal.analyzed_at,
+    clauseCount: deal.clause_count,
+    riskCounts: deal.risk_counts,
+    source: 'server',
+  };
+}
 
 export default function DealsPage() {
-  const [deals, setDeals] = useState<DealHistoryEntry[]>([]);
+  const [deals, setDeals] = useState<DisplayDeal[]>([]);
+  const [loading, setLoading] = useState(true);
   const actions = useDocumentAnalysisActions();
   const router = useRouter();
 
   useEffect(() => {
-    setDeals(listDeals());
+    fetch('/api/me')
+      .then((r) => r.json() as Promise<{ user: { email: string } | null }>)
+      .then(async ({ user }) => {
+        if (user) {
+          // Signed-in: load from server, fall back to localStorage if server returns nothing.
+          const res = await fetch('/api/deals').catch(() => null);
+          if (res?.ok) {
+            const data = await res.json() as { deals: DbDeal[] };
+            if (data.deals.length > 0) {
+              setDeals(data.deals.map(toDisplayDeal));
+              return;
+            }
+          }
+        }
+        // Guest or server returned empty: use localStorage.
+        setDeals(
+          listDeals().map((d) => ({
+            id: d.id,
+            fileName: d.fileName,
+            analyzedAt: d.analyzedAt,
+            clauseCount: d.clauseCount,
+            riskCounts: d.riskCounts,
+            source: 'local' as const,
+            snapshot: d.snapshot,
+          })),
+        );
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  function openDeal(deal: DealHistoryEntry) {
-    actions.restoreState(deal.snapshot);
-    router.push('/review/summary');
+  function openDeal(deal: DisplayDeal) {
+    if (deal.source === 'server') {
+      router.push(`/deals/${deal.id}`);
+    } else if (deal.snapshot) {
+      actions.restoreState(deal.snapshot);
+      router.push('/review/summary');
+    }
   }
 
   return (
@@ -44,7 +99,13 @@ export default function DealsPage() {
           </div>
         </div>
 
-        {deals.length === 0 ? (
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 animate-pulse rounded-xl border border-zinc-800 bg-zinc-950" />
+            ))}
+          </div>
+        ) : deals.length === 0 ? (
           <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-8 py-16 text-center">
             <p className="text-sm font-medium text-zinc-300">No reviews yet</p>
             <p className="mt-2 text-sm text-zinc-500">Upload a contract to get started.</p>

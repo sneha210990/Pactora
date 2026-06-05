@@ -4,6 +4,18 @@
 // and callers fall back to the file-based beta-store.
 
 import type { AuditAction, AuditEvent } from './beta-store';
+import type { DocumentAnalysisState } from './document-analysis-store';
+
+export type DbDeal = {
+  id: string;
+  user_id: string;
+  file_name: string;
+  analyzed_at: string;
+  risk_counts: { high: number; medium: number; low: number };
+  clause_count: number;
+  snapshot: DocumentAnalysisState;
+  created_at: string;
+};
 
 function serviceKey(): string | null {
   return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
@@ -69,6 +81,43 @@ export async function dbQueryAuditEvents(options: {
   );
   if (!res || !res.ok) return null;
   return res.json() as Promise<AuditEvent[]>;
+}
+
+export async function dbInsertDeal(params: {
+  user_id: string;
+  file_name: string;
+  analyzed_at: string;
+  risk_counts: { high: number; medium: number; low: number };
+  clause_count: number;
+  snapshot: DocumentAnalysisState;
+}): Promise<DbDeal | null> {
+  const res = await dbFetch('/deals', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(params),
+  });
+  if (!res || !res.ok) return null;
+  const rows = await res.json() as DbDeal[];
+  return rows[0] ?? null;
+}
+
+export async function dbListDeals(userId: string, limit = 50): Promise<DbDeal[] | null> {
+  const res = await dbFetch(
+    `/deals?user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc&limit=${limit}`,
+    { headers: { Prefer: 'return=representation' } },
+  );
+  if (!res || !res.ok) return null;
+  return res.json() as Promise<DbDeal[]>;
+}
+
+export async function dbGetDeal(id: string, userId: string): Promise<DbDeal | null> {
+  const res = await dbFetch(
+    `/deals?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(userId)}&limit=1`,
+    { headers: { Prefer: 'return=representation' } },
+  );
+  if (!res || !res.ok) return null;
+  const rows = await res.json() as DbDeal[];
+  return rows[0] ?? null;
 }
 
 export async function dbInsertClausePattern(params: {

@@ -138,13 +138,27 @@ export default function NewDealPage() {
     }
   }, [pendingText]);
 
-  // Save completed analyses to the deals history. Keyed by documentId so a stale
-  // localStorage state loaded on arrival doesn't get re-saved.
+  // Save completed analyses to deals history (localStorage + server for signed-in users).
+  // Keyed by documentId so a stale localStorage state loaded on arrival doesn't get re-saved.
   const savedDealId = useRef('');
   useEffect(() => {
     if (analysis.uploadStatus === 'complete' && analysis.documentId !== savedDealId.current) {
       savedDealId.current = analysis.documentId;
       saveDeal(analysis);
+      // Server save for signed-in users. Stores the returned deal ID in
+      // sessionStorage so the email capture banner can link back to it.
+      fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ snapshot: analysis }),
+      })
+        .then((r) => r.ok ? r.json() as Promise<{ deal?: { id: string } }> : null)
+        .then((data) => {
+          if (data?.deal?.id) {
+            sessionStorage.setItem('pactora.last_server_deal_id', data.deal.id);
+          }
+        })
+        .catch(() => {/* non-fatal */});
     }
   }, [analysis.uploadStatus, analysis.documentId, analysis]);
 

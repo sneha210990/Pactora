@@ -22,11 +22,13 @@ export function EmailCaptureBanner({ analysisPayload }: { analysisPayload?: Anal
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [dealId, setDealId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sessionStorage.getItem(DISMISSED_KEY)) {
       setVisible(true);
     }
+    setDealId(sessionStorage.getItem('pactora.last_server_deal_id'));
   }, []);
 
   function dismiss() {
@@ -43,7 +45,7 @@ export function EmailCaptureBanner({ analysisPayload }: { analysisPayload?: Anal
       const res = await apiFetch('/api/capture-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, ...analysisPayload }),
+        body: JSON.stringify({ email, ...analysisPayload, ...(dealId ? { dealId } : {}) }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
