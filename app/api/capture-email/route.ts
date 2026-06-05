@@ -47,7 +47,8 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_APP_URL ||
       (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) ||
       'http://localhost:3000';
-    const summaryUrl = `${appUrl}/review/summary`;
+    const dealId = typeof b.dealId === 'string' ? b.dealId : null;
+    const summaryUrl = dealId ? `${appUrl}/deals/${dealId}` : `${appUrl}/review/summary`;
 
     const html = buildAnalysisEmail({ riskScore, verdict, verdictDetail, flags, summaryUrl });
 
