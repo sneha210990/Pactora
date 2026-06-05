@@ -55,9 +55,9 @@ function sseEvent(data: AgentEvent): string {
 const VALID_JURISDICTIONS = new Set<string>(['england_wales', 'india', 'germany', 'france']);
 
 export async function POST(request: Request) {
-  let body: { text?: unknown; jurisdiction?: unknown };
+  let body: { text?: unknown; jurisdiction?: unknown; contractSide?: unknown };
   try {
-    body = (await request.json()) as { text?: unknown; jurisdiction?: unknown };
+    body = (await request.json()) as { text?: unknown; jurisdiction?: unknown; contractSide?: unknown };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
@@ -70,6 +70,11 @@ export async function POST(request: Request) {
   const jurisdiction: Jurisdiction | null =
     typeof body.jurisdiction === 'string' && VALID_JURISDICTIONS.has(body.jurisdiction)
       ? (body.jurisdiction as Jurisdiction)
+      : null;
+
+  const contractSide: 'supplier' | 'buyer' | null =
+    body.contractSide === 'supplier' || body.contractSide === 'buyer'
+      ? body.contractSide
       : null;
 
   getCurrentSessionUser()
@@ -116,7 +121,7 @@ export async function POST(request: Request) {
         const collectedFlags: ClauseFlag[] = [];
         const agentPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
           emit({ type: 'agent_start', clauseType });
-          const result = await runClauseAgent(clauseType, contractText, chunks[0], contractType, jurisdiction);
+          const result = await runClauseAgent(clauseType, contractText, chunks[0], contractType, jurisdiction, contractSide);
           if (result.ok) {
             emit({ type: 'agent_result', clauseType, flag: result.flag });
             if (result.flag) collectedFlags.push(result.flag);
@@ -138,7 +143,7 @@ export async function POST(request: Request) {
         for (const chunk of chunks) {
           console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
           const chunkPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
-            const result = await runClauseAgent(clauseType, contractText, chunk, undefined, jurisdiction);
+            const result = await runClauseAgent(clauseType, contractText, chunk, undefined, jurisdiction, contractSide);
             if (result.ok) allUsages.push(result.usage);
             return {
               chunkIndex: chunk.chunkIndex,
