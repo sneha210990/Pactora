@@ -267,6 +267,8 @@ export default function NewDealPage() {
   const confirmAndAnalyse = async () => {
     if (!pendingText) return;
     setAnalysisRunning(true);
+    // Persist contractSide to the store so the summary page can read it.
+    actions.setContractSide(contractSide);
     try {
       await runClauseAnalysis(pendingText);
     } finally {

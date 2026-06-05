@@ -164,11 +164,12 @@ function clauseFlagRiskClass(risk: ClauseFlag['riskLevel']) {
 const PLAYBOOK_CLAUSE_TYPES = new Set(['Liability Cap', 'Indemnities', 'IP Ownership', 'Data Protection', 'Termination']);
 
 function ClauseFlagCard({
-  flag, acv, liabilityCap, onAccept, isAccepted, onDismiss,
+  flag, acv, liabilityCap, contractSide, onAccept, isAccepted, onDismiss,
 }: {
   flag: ClauseFlag;
   acv?: number | null;
   liabilityCap?: number | null;
+  contractSide?: 'supplier' | 'buyer' | null;
   onAccept?: (clauseText: string, proposedText: string, explanation: string) => void;
   isAccepted?: boolean;
   onDismiss?: () => void;
@@ -191,6 +192,7 @@ function ClauseFlagCard({
           clauseType: flag.clauseType,
           acv: acv ?? null,
           liabilityCap: liabilityCap ?? null,
+          contractSide: contractSide ?? null,
         }),
       });
       const data = (await res.json()) as { alternative?: string; error?: string };
@@ -455,6 +457,7 @@ function SummaryContent() {
 
   const acceptedRedlines = analysis.acceptedRedlines ?? {};
   const sourceFileType = analysis.sourceFileType ?? null;
+  const contractSide = analysis.contractSide ?? null;
 
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [emailContent, setEmailContent] = useState('');
@@ -569,6 +572,7 @@ function SummaryContent() {
               clauseType: flag.clauseType,
               acv: acvAmount ?? null,
               liabilityCap: lolCap ?? null,
+              contractSide: contractSide ?? null,
             }),
           }).then((res) => res.json() as Promise<{ alternative?: string; error?: string }>),
         ),
@@ -655,7 +659,18 @@ function SummaryContent() {
           </div>
         </div>
 
-        <section className={`mt-6 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
+        {contractSide && (
+          <div className="mt-4 flex items-center gap-2">
+            <span className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-zinc-400">
+              Reviewing as:{' '}
+              <span className="font-semibold text-zinc-200">
+                {contractSide === 'supplier' ? 'Supplier / Service provider' : 'Client / Buyer'}
+              </span>
+            </span>
+          </div>
+        )}
+
+        <section className={`mt-4 rounded-2xl border p-6 ${clauseFlags.length > 0 ? scoreBorderClass(riskScore100) : 'border-zinc-800 bg-zinc-950/50'}`}>
           <div className="flex items-start justify-between gap-6">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Should I sign?</p>
@@ -888,6 +903,7 @@ function SummaryContent() {
                         flag={flag}
                         acv={acvAmount}
                         liabilityCap={lolCap}
+                        contractSide={contractSide}
                         onAccept={(clauseText, proposedText, explanation) =>
                           actions.acceptRedline(flag.clauseType, clauseText, proposedText, explanation)
                         }
