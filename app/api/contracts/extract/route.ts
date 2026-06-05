@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { detectContractValues, extractContractText } from '@/lib/contract-extraction';
 import { extractContractValuesWithAI } from '@/lib/ai-extraction';
 import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
@@ -8,6 +9,8 @@ export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 const MIN_MANUAL_TEXT_LENGTH = 20;
+const ANON_FREE_USES = 1;
+const ANON_COOKIE = 'pactora_anon_uses';
 
 function extractTerm(pattern: RegExp, text: string) {
   return text.match(pattern)?.[1]?.trim();
@@ -215,13 +218,34 @@ async function extractFromUploadedFile(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
+    // Usage gate: unauthenticated users get ANON_FREE_USES free analyses.
+    const session = await getCurrentSessionUser();
+    const cookieStore = await cookies();
 
-    if (contentType.includes('application/json')) {
-      return await extractFromManualText(request);
+    if (!session) {
+      const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
+      if (used >= ANON_FREE_USES) {
+        return NextResponse.json({ error: 'free_limit_reached' }, { status: 402 });
+      }
     }
 
-    return await extractFromUploadedFile(request);
+    const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
+    const response = contentType.includes('application/json')
+      ? await extractFromManualText(request)
+      : await extractFromUploadedFile(request);
+
+    // Increment the anon counter on successful extraction.
+    if (!session && response.status < 400) {
+      const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
+      cookieStore.set(ANON_COOKIE, String(used + 1), {
+        maxAge: 60 * 60 * 24 * 30,
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('[extract] error:', error);
     return NextResponse.json({ error: 'Unable to extract contract values.' }, { status: 400 });
