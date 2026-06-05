@@ -345,6 +345,93 @@ jurisdictions:
         status: unverified
         source_urls: *id004
       overriding_mandatory: true
+  scotland:
+    legal_system: common_law
+    primary_authority:
+    - CDPA 1988 s.11(2) (employer owns employee works made in the course of employment; contractors are
+      NOT caught; applies UK-wide including Scotland)
+    - CDPA 1988 s.90(3) (assignment of copyright must be in writing signed by or on behalf of the assignor;
+      UK-wide)
+    - CDPA 1988 s.91 (future copyright assignable by present assignment; vests automatically on creation;
+      UK-wide)
+    - CDPA 1988 ss.77-87, s.94 (moral rights; waivable in writing s.87; not assignable s.94; UK-wide)
+    - Patents Act 1977 s.30(6) (assignment in writing signed by or on behalf of the parties; UK-wide);
+      s.39 (employee inventions)
+    enforceability_threshold: 'CDPA 1988 and Patents Act 1977 are reserved matters applying across the
+      UK including Scotland. The contractor-ownership default, writing requirements for assignment, and
+      moral rights regime are identical to England and Wales. Absent an express written assignment, a contractor
+      keeps ownership of what they create.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: SC-IPO-001
+      legacy_id: sc_contractor_no_assignment
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: deliverables created by a contractor / consultant AND no express written assignment
+        of IP
+      excluded_when: creator is an employee acting in the course of employment
+      legal_basis:
+      - authority: CDPA 1988 s.11(2)
+        type: statute
+      - authority: CDPA 1988 s.90(3)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Contractor-created IP stays with the contractor without an express written
+        assignment; the client gets a bare licence at best. CDPA 1988 applies UK-wide including Scotland.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1988/48/section/11
+    - rule_id: SC-IPO-002
+      legacy_id: sc_future_ip_agreement_only
+      rule_type: drafting_risk
+      stability: settled
+      severity: medium
+      detection_condition: clause is an agreement to assign future IP rather than a present assignment
+        ("will assign" not "hereby assigns")
+      legal_basis:
+      - authority: CDPA 1988 s.91
+        type: statute
+      non_excludable: []
+      engine_interpretation: Future IP is only captured by a present assignment; 'will assign' leaves
+        an equitable interest requiring a further deed. CDPA 1988 applies UK-wide including Scotland.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1988/48/section/91
+    - rule_id: SC-IPO-003
+      legacy_id: sc_no_writing
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: assignment of copyright or patents not in writing / not signed by the assignor
+      legal_basis:
+      - authority: CDPA 1988 s.90(3)
+        type: statute
+      - authority: Patents Act 1977 s.30(6)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Assignment is void without writing signed by the assignor; UK-wide requirement
+        applies in Scotland.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1988/48/section/90
 fallback_ladder:
   ideal: Present assignment of foreground IP (recast as exclusive licence for DE/FR), in writing and signed,
     with background IP retained and a licence-back to the assignor; moral rights waived where the jurisdiction

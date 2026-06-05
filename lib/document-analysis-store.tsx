@@ -60,13 +60,14 @@ export type ActiveDocument = {
   uploadedAt: string;
 };
 
-export type Jurisdiction = 'england_wales' | 'india' | 'germany' | 'france';
+export type Jurisdiction = 'england_wales' | 'india' | 'germany' | 'france' | 'scotland';
 
 export const JURISDICTION_LABELS: Record<Jurisdiction, string> = {
   england_wales: 'England & Wales',
   india: 'India',
   germany: 'Germany',
   france: 'France',
+  scotland: 'Scotland',
 };
 
 export type CommercialContext = {

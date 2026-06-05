@@ -286,6 +286,88 @@ jurisdictions:
         status: unverified
         source_urls:
         - https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006070721/
+  scotland:
+    legal_system: common_law
+    triggers:
+    - rule_id: SC-LOL-001
+      legacy_id: sc_blanket_no_carveout
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: blanket exclusion or cap present AND no carve-out for death/personal injury
+        (breach of duty) or fraud
+      signals:
+      - in no event shall
+      - under no circumstances
+      - to the maximum extent permitted by law
+      legal_basis:
+      - authority: Unfair Contract Terms Act 1977, s.16(1)(a) (Scotland)
+        type: statute
+      non_excludable:
+      - death or personal injury caused by breach of duty (s.16(1)(a))
+      - fraud and fraudulent misrepresentation
+      engine_interpretation: 'Cap/exclusion lacks mandatory carve-outs under Scots UCTA. Section 16 applies
+        instead of s.2 (England) and is materially equivalent: liability for death or personal injury from
+        breach of duty cannot be excluded or restricted. Recommend adding express carve-outs.
+
+        '
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1977/50/section/16
+    - rule_id: SC-LOL-002
+      legacy_id: sc_standard_terms_reasonableness
+      rule_type: litigation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: contract on standard terms (not individually negotiated) AND exclusion or restriction
+        of liability for breach of a contractual duty
+      legal_basis:
+      - authority: Unfair Contract Terms Act 1977, s.17 (Scotland)
+        type: statute
+      - authority: Unfair Contract Terms Act 1977, s.24 (Scotland) (fair and reasonable test criteria)
+        type: statute
+      non_excludable: []
+      engine_interpretation: 'Under s.17 (Scotland), an exclusion or restriction in standard terms must pass
+        the fair and reasonable test (s.24). Materially equivalent to the English s.3 reasonableness requirement.
+        Fact-sensitive: surface for review rather than asserting invalidity.
+
+        '
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1977/50/section/17
+    - rule_id: SC-LOL-003
+      legacy_id: sc_one_sided_cap
+      rule_type: negotiation_risk
+      stability: context_sensitive
+      severity: medium
+      detection_condition: only one party's liability is capped
+      legal_basis:
+      - authority: Unfair Contract Terms Act 1977, s.24 (Scotland) (relative bargaining position is a fairness
+          factor)
+        type: statute
+      non_excludable: []
+      engine_interpretation: 'A one-sided cap is a relevant factor when assessing fairness under s.24. Recommend
+        a mutual cap as market practice — this is a negotiation point, not an enforceability finding.
+
+        '
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 12
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1977/50/section/24
 fallback_ladder:
   ideal: Mutual cap at a meaningful multiple of fees (e.g. 12 months), with all mandatory carve-outs expressly
     stated.

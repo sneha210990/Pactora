@@ -402,6 +402,110 @@ jurisdictions:
         review_cadence_months: 24
         status: unverified
         source_urls: *id004
+  scotland:
+    legal_system: common_law
+    primary_authority:
+    - 'Insolvency Act 1986 s.233B (UK-wide, inserted by CIGA 2020): a supplier cannot terminate a goods/services
+      contract because the customer enters a relevant insolvency procedure'
+    - 'Doctrine of mutuality (Scots law): a party in material breach cannot enforce counterparty obligations
+      - Wade v Waldon 1909 SC 571'
+    - 'Cavendish Square Holding BV v Makdessi [2015] UKSC 67 (penalty test; binding throughout UK)'
+    - 'Scots common law: termination notices construed strictly; defective notice may itself amount to repudiation'
+    enforceability_threshold: 'Contractual termination rights are construed strictly in Scots law. The doctrine
+      of mutuality means a party in material breach loses the right to enforce counterparty obligations.
+      Insolvency-triggered termination is unenforceable once the customer enters a relevant insolvency procedure
+      (s.233B, UK-wide). Termination payments that are disproportionate to a legitimate interest are unenforceable
+      as penalties under the Cavendish Square test, binding on Scottish courts via the UKSC.
+
+      '
+    non_excludable: []
+    triggers:
+    - rule_id: SC-TERM-001
+      legacy_id: sc_ipso_facto_insolvency
+      rule_type: mandatory_law
+      stability: settled
+      severity: high
+      detection_condition: a supplier's right to terminate is triggered by the customer's insolvency
+      excluded_when: contract is within a Sch.4ZZA exclusion (e.g. financial services)
+      legal_basis:
+      - authority: Insolvency Act 1986 s.233B (CIGA 2020)
+        type: statute
+      non_excludable: []
+      engine_interpretation: Insolvency-triggered termination is unenforceable once the customer enters
+        a relevant insolvency procedure; the supplier must keep performing. UK-wide provision applies in
+        Scotland.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/ukpga/1986/45/section/233B
+      overriding_mandatory: true
+    - rule_id: SC-TERM-002
+      legacy_id: sc_mutuality_breach
+      rule_type: litigation_risk
+      stability: settled
+      severity: high
+      detection_condition: a party in material breach purports to exercise a contractual right or enforce
+        the counterparty's obligations
+      legal_basis:
+      - authority: Wade v Waldon 1909 SC 571
+        type: case
+      non_excludable: []
+      engine_interpretation: Under the Scots doctrine of mutuality, a party in material breach cannot enforce
+        counterparty obligations or exercise contractual termination rights. Surface for review if the terminating
+        party may itself be in breach; this is a litigation risk, not a finding of invalidity.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/
+    - rule_id: SC-TERM-003
+      legacy_id: sc_termination_penalty
+      rule_type: litigation_risk
+      stability: settled
+      severity: medium
+      detection_condition: termination triggers a payment that may exceed a genuine protection of legitimate
+        interest
+      legal_basis:
+      - authority: Cavendish Square v Makdessi [2015] UKSC 67
+        type: case
+      non_excludable: []
+      engine_interpretation: Termination payment may be an unenforceable penalty if out of all proportion
+        to a legitimate interest; Cavendish Square is binding on Scottish courts via the UKSC.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.supremecourt.uk/cases/uksc-2013-0076.html
+    - rule_id: SC-TERM-004
+      legacy_id: sc_defective_notice_risk
+      rule_type: drafting_risk
+      stability: settled
+      severity: low
+      detection_condition: notice mechanics (method, recipient, timing) are not clearly specified
+      legal_basis:
+      - authority: construction (notice provisions read strictly in Scots law)
+        type: construction
+      non_excludable: []
+      engine_interpretation: Termination notices are read strictly in Scots law; defective service can
+        render the termination wrongful and may itself amount to repudiation.
+      depends_on: []
+      meta:
+        last_verified: '2026-06-05'
+        verified_by: source-check (Pactora)
+        review_cadence_months: 24
+        status: verified
+        source_urls:
+        - https://www.legislation.gov.uk/
 fallback_ladder:
   ideal: 'Mutual rights: termination for cause with a defined cure period, termination for convenience
     on reasonable notice, a clear survival clause, no reliance on an insolvency-only trigger, plus transition
