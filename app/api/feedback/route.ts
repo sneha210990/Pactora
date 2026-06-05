@@ -6,7 +6,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 const categories = new Set<FeedbackCategory>(['bug', 'confusing', 'missing_feature', 'general_feedback']);
 
 export async function POST(request: Request) {
-  const { allowed, retryAfter } = checkRateLimit(getClientIp(request), 10);
+  const { allowed, retryAfter } = await checkRateLimit(getClientIp(request), 10);
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
