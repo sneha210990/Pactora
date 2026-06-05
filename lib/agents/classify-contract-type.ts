@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { getAnthropicClient } from './client';
 
 export const CONTRACT_TYPES = ['SaaS', 'NDA', 'Employment', 'SupplyChain', 'ProfessionalServices', 'Other'] as const;

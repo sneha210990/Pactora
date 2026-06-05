@@ -1,3 +1,6 @@
+// Copyright (C) 2024-2026 Sneha Sindhu
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { IntegrityLocation, IntegritySeverity } from './types';
 
 const STOP_WORDS = new Set([
