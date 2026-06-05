@@ -11,11 +11,12 @@ type RequestBody = {
   clauseType?: string;
   acv?: number | null;
   liabilityCap?: number | null;
+  contractSide?: 'supplier' | 'buyer' | null;
 };
 
 const THINKING_CLAUSE_TYPES = new Set(['IP Ownership', 'Indemnities']);
 
-const SYSTEM_PROMPT = `You are a commercial contracts lawyer advising a SaaS buyer. You will be given a contract clause that has been flagged as risky, the clause type, and optionally the annual contract value (ACV) and current liability cap.
+const BUYER_SYSTEM_PROMPT = `You are a commercial contracts lawyer advising a SaaS buyer. You will be given a contract clause that has been flagged as risky, the clause type, and optionally the annual contract value (ACV) and current liability cap.
 
 Your task: propose concise alternative clause language the buyer should put forward in negotiation.
 
@@ -34,6 +35,29 @@ After the proposed language, add one short line starting "Why this works:" expla
 
 Return only the proposed language and the "Why this works:" line. No JSON. No markdown. No preamble.`;
 
+const SUPPLIER_SYSTEM_PROMPT = `You are a commercial contracts lawyer advising a SaaS supplier / service provider. You will be given a contract clause that has been flagged as risky to the supplier, the clause type, and optionally the annual contract value (ACV) and current liability cap.
+
+Your task: propose concise alternative clause language the supplier should put forward in negotiation to protect their position.
+
+Rules:
+1. Write actual contract language — not a description of what to change, but the replacement text itself.
+2. Keep it to 2–4 sentences. Match the register of the original clause.
+3. Make it a realistic ask — supplier-protective but not so aggressive the customer walks away.
+4. Where ACV or a liability cap figure is provided, use the specific amounts.
+5. For a Liability Cap clause: ensure a mutual liability cap exists protecting the supplier. If there is no cap, propose one at 1× ACV for both parties. Narrow any carve-outs to the minimum standard set: death/personal injury, fraud, wilful misconduct. Resist carve-outs for "any confidentiality breach" or "any data breach" that would swallow the cap.
+6. For an Indemnity clause: remove or narrow any "notwithstanding any other provision" language that bypasses the liability cap. Narrow the trigger to the supplier's direct breach, fraud, or proven IP infringement only. Add a reciprocal buyer indemnity for buyer's data, content, and instructions. Ensure the supplier retains co-control of any defence.
+7. For an IP Ownership clause: carve out the supplier's background IP, pre-existing tools, methodologies, and platform from any assignment. Where custom deliverables are assigned to the customer, add a licence-back to the supplier to use the underlying tools and know-how in future engagements. Limit work-for-hire to specifically commissioned bespoke deliverables only.
+8. For a Data Protection clause: confirm the supplier is designated as Processor (not Controller); set the breach notification window at 72 hours to align with GDPR; add a reasonable sub-processor liability cap (limited to losses directly caused by the supplier's failure to vet the sub-processor); ensure data protection liability is subject to the main liability cap or a defined sublimit.
+9. For a Termination clause: require at least 90 days written notice for buyer termination for convenience; include an obligation for the buyer to pay all fees accrued, work in progress, and a reasonable kill-fee on early termination; give the supplier the right to suspend and terminate for non-payment after 14 days' notice; ensure transition assistance is compensated at standard day rates.
+
+After the proposed language, add one short line starting "Why this works:" explaining in plain English what the change achieves for the supplier.
+
+Return only the proposed language and the "Why this works:" line. No JSON. No markdown. No preamble.`;
+
+function getSystemPrompt(contractSide?: 'supplier' | 'buyer' | null): string {
+  return contractSide === 'supplier' ? SUPPLIER_SYSTEM_PROMPT : BUYER_SYSTEM_PROMPT;
+}
+
 export async function POST(request: Request) {
   let body: RequestBody;
   try {
@@ -45,6 +69,9 @@ export async function POST(request: Request) {
   if (!body.clauseText && !body.clauseType) {
     return NextResponse.json({ error: 'clauseText or clauseType is required.' }, { status: 400 });
   }
+
+  const contractSide: 'supplier' | 'buyer' | null =
+    body.contractSide === 'supplier' || body.contractSide === 'buyer' ? body.contractSide : null;
 
   const parts: string[] = [];
   if (body.clauseType) parts.push(`Clause type: ${body.clauseType}`);
@@ -67,7 +94,7 @@ export async function POST(request: Request) {
       system: [
         {
           type: 'text',
-          text: SYSTEM_PROMPT,
+          text: getSystemPrompt(contractSide),
           cache_control: { type: 'ephemeral' },
         },
       ],

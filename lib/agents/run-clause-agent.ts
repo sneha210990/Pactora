@@ -7,7 +7,7 @@ import type { PactoraClauseType } from './types';
 import type { ContractType } from './classify-contract-type';
 import type { Jurisdiction } from '@/lib/document-analysis-store';
 import { getAnthropicClient } from './client';
-import { CLAUSE_SYSTEM_PROMPTS } from './clause-prompts';
+import { getClauseSystemPrompt } from './clause-prompts';
 import { CLAUSE_AGENT_TOOLS } from './tools';
 import { flagWithVerification } from './hallucination-check';
 import { extractPDFMetadata, enrichFlagWithPageNumber } from '@/lib/pdf-utils';
@@ -114,7 +114,7 @@ export async function runClauseAgent(
         {
           // Clause-specific instructions — unique per agent, not worth caching.
           type: 'text',
-          text: CLAUSE_SYSTEM_PROMPTS[clauseType],
+          text: getClauseSystemPrompt(clauseType, contractSide),
         },
       ],
       messages: [

@@ -220,9 +220,9 @@ export async function POST(request: Request) {
   try {
     // Usage gate: unauthenticated users get ANON_FREE_USES free analyses.
     const session = await getCurrentSessionUser();
-    const cookieStore = await cookies();
 
     if (!session) {
+      const cookieStore = await cookies();
       const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
       if (used >= ANON_FREE_USES) {
         return NextResponse.json({ error: 'free_limit_reached' }, { status: 402 });
@@ -230,22 +230,11 @@ export async function POST(request: Request) {
     }
 
     const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
-    const response = contentType.includes('application/json')
-      ? await extractFromManualText(request)
-      : await extractFromUploadedFile(request);
-
-    // Increment the anon counter on successful extraction.
-    if (!session && response.status < 400) {
-      const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
-      cookieStore.set(ANON_COOKIE, String(used + 1), {
-        maxAge: 60 * 60 * 24 * 30,
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-      });
-    }
-
-    return response;
+    // The counter is incremented by analyze-agents (the expensive step), not here.
+    // Extract only checks so that the first session's extract + analyze pair both succeed.
+    return contentType.includes('application/json')
+      ? extractFromManualText(request)
+      : extractFromUploadedFile(request);
   } catch (error) {
     console.error('[extract] error:', error);
     return NextResponse.json({ error: 'Unable to extract contract values.' }, { status: 400 });

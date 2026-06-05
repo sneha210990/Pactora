@@ -124,6 +124,7 @@ export type DocumentAnalysisState = {
   crossClauseRisks?: CrossClauseRisk[];
   sourceFileType: 'docx' | 'pdf' | null;
   contractType?: ContractType;
+  contractSide?: 'supplier' | 'buyer' | null;
   acceptedRedlines: Record<string, { clauseText: string; proposedText: string; explanation: string }>;
   diagnostics?: {
     missingFields: string[];
@@ -149,7 +150,8 @@ type Action =
   | { type: 'setSourceFileType'; fileType: 'docx' | 'pdf' | null }
   | { type: 'acceptRedline'; clauseType: string; clauseText: string; proposedText: string; explanation: string }
   | { type: 'dismissRedline'; clauseType: string }
-  | { type: 'setContractType'; contractType: ContractType };
+  | { type: 'setContractType'; contractType: ContractType }
+  | { type: 'setContractSide'; contractSide: 'supplier' | 'buyer' | null };
 
 type ExtractionPayload = {
   documentId?: string;
@@ -538,6 +540,9 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
     case 'setContractType':
       next = { ...state, contractType: action.contractType };
       break;
+    case 'setContractSide':
+      next = { ...state, contractSide: action.contractSide };
+      break;
   }
 
   next = {
@@ -612,6 +617,7 @@ type StoreValue = {
     acceptRedline: (clauseType: string, clauseText: string, proposedText: string, explanation: string) => void;
     dismissRedline: (clauseType: string) => void;
     setContractType: (contractType: ContractType) => void;
+    setContractSide: (contractSide: 'supplier' | 'buyer' | null) => void;
   };
 };
 
@@ -648,6 +654,7 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
       dispatch({ type: 'acceptRedline', clauseType, clauseText, proposedText, explanation }),
     dismissRedline: (clauseType) => dispatch({ type: 'dismissRedline', clauseType }),
     setContractType: (contractType) => dispatch({ type: 'setContractType', contractType }),
+    setContractSide: (contractSide) => dispatch({ type: 'setContractSide', contractSide }),
   }), []);
 
   const value = useMemo(() => ({ state, actions }), [actions, state]);

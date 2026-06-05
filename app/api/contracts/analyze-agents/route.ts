@@ -29,6 +29,7 @@
 //     }
 
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { runClauseAgent } from '@/lib/agents/run-clause-agent';
 import type { ClauseAgentUsage } from '@/lib/agents/run-clause-agent';
 import { classifyPresentClauses } from '@/lib/agents/classify-clauses';
@@ -53,6 +54,8 @@ function sseEvent(data: AgentEvent): string {
 }
 
 const VALID_JURISDICTIONS = new Set<string>(['england_wales', 'india', 'germany', 'france']);
+const ANON_COOKIE = 'pactora_anon_uses';
+const ANON_FREE_USES = 1;
 
 export async function POST(request: Request) {
   let body: { text?: unknown; jurisdiction?: unknown; contractSide?: unknown };
@@ -77,14 +80,28 @@ export async function POST(request: Request) {
       ? body.contractSide
       : null;
 
-  getCurrentSessionUser()
-    .then((s) => recordAuditEvent({
-      user_id: s?.user.id ?? null,
-      action: 'clause_analysed',
-      document_id: null,
-      metadata: { text_length: contractText.length, jurisdiction: jurisdiction ?? null },
-    }))
-    .catch(console.error);
+  // Usage gate: unauthenticated users get ANON_FREE_USES free analyses.
+  // The counter is set here (not in extract) so the extract+analyze pair both
+  // succeed on the first free session. Extract only checks; this route increments.
+  const session = await getCurrentSessionUser();
+  let anonSetCookieHeader: string | null = null;
+
+  if (!session) {
+    const cookieStore = await cookies();
+    const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
+    if (used >= ANON_FREE_USES) {
+      return NextResponse.json({ error: 'free_limit_reached' }, { status: 402 });
+    }
+    const maxAge = 30 * 24 * 60 * 60;
+    anonSetCookieHeader = `${ANON_COOKIE}=${used + 1}; Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=Lax`;
+  }
+
+  recordAuditEvent({
+    user_id: session?.user.id ?? null,
+    action: 'clause_analysed',
+    document_id: null,
+    metadata: { text_length: contractText.length, jurisdiction: jurisdiction ?? null },
+  }).catch(console.error);
 
   const chunks = createOverlappingChunks(contractText);
   console.log(`[CHUNKING] Contract (${contractText.length} chars) split into ${chunks.length} chunk(s)`);
@@ -216,6 +233,7 @@ export async function POST(request: Request) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
+      ...(anonSetCookieHeader ? { 'Set-Cookie': anonSetCookieHeader } : {}),
     },
   });
 }
