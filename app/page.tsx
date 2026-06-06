@@ -22,7 +22,7 @@ export default function Home() {
           Review a contract free
         </Link>
 
-        <div className="mt-12 flex flex-wrap items-start justify-center gap-14">
+        <div className="mt-20 flex flex-wrap items-start justify-center gap-14">
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Featured in
@@ -81,32 +81,31 @@ export default function Home() {
               </span>
             </a>
           </div>
-        </div>
-
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
-            Trusted by
-          </span>
-          <div className="flex items-center gap-12">
-            <a
-              href="https://www.librabit.co.uk/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center opacity-50 transition-opacity hover:opacity-100"
-            >
+          <div className="flex flex-col items-center gap-3">
+            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+              Trusted by
+            </span>
+            <div className="flex items-center gap-6">
+              <a
+                href="https://www.librabit.co.uk/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center opacity-50 transition-opacity hover:opacity-100"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/librabit-logo.svg"
+                  alt="Librabit"
+                  className="h-10 w-10 rounded-md"
+                />
+              </a>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/librabit-logo.svg"
-                alt="Librabit"
-                className="h-10 w-10 rounded-md"
+                src="/ganda-pr-logo.svg"
+                alt="G&A PR Ltd"
+                className="h-10 w-10 rounded-full opacity-50"
               />
-            </a>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/ganda-pr-logo.svg"
-              alt="G&A PR Ltd"
-              className="h-10 w-10 rounded-full opacity-50"
-            />
+            </div>
           </div>
         </div>
       </section>
