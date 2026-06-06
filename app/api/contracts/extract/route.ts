@@ -59,11 +59,18 @@ async function mergeExtractionValues(text: string) {
 
   const ai = aiResult?.values ?? null;
 
+  function aiField<T>(aiValue: T | null | undefined, regexField: { value: T | null; confidence: number | null; evidence: string | null; extractionMethod: string | null }) {
+    if (aiValue != null) {
+      return { value: aiValue, confidence: 0.9, evidence: null, extractionMethod: 'llm' as const };
+    }
+    return regexField;
+  }
+
   const detectedValues = {
     // Numeric fields: AI wins on any non-null value; regex serves as fallback.
-    acv: ai?.acv ?? regexValues.acv,
-    termMonths: ai?.termMonths ?? regexValues.termMonths,
-    insuranceCover: ai?.insuranceCover ?? regexValues.insuranceCover,
+    acv: aiField(ai?.acv, regexValues.acv),
+    termMonths: aiField(ai?.termMonths, regexValues.termMonths),
+    insuranceCover: aiField(ai?.insuranceCover, regexValues.insuranceCover),
     // dataType: AI wins — it understands GDPR context better than keyword matching.
     dataType: ai?.dataType ?? regexValues.dataType,
     // liabilityCap: AI-only field; regex has no equivalent.
