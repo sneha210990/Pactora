@@ -101,6 +101,12 @@ export default function Home() {
                 className="h-10 w-10 rounded-md"
               />
             </a>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/ganda-pr-logo.svg"
+              alt="G&A PR Ltd"
+              className="h-10 w-10 rounded-full opacity-50"
+            />
           </div>
         </div>
       </section>
