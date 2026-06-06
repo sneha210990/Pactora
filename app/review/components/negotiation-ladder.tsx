@@ -2,12 +2,22 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+const LABEL_DISPLAY: Record<string, string> = {
+  Ask: 'Best case',
+  Fallback: 'Acceptable',
+  Narrowing: 'Last resort',
+  'Position 1': 'Best case',
+  'Position 2': 'Acceptable',
+  'Position 3': 'Last resort',
+  'Position 4': 'Walk-away point',
+};
+
 const LABEL_DESCRIPTIONS: Record<string, string> = {
   Ask: 'Your opening position. State this first — if the counterparty accepts, you win the point outright without giving anything away.',
   Fallback:
-    'Your secondary position. Move here if your Ask is rejected. It signals flexibility without revealing the floor you would accept.',
+    'Your secondary position. Move here if your opening is rejected. It signals flexibility without revealing the floor you would accept.',
   Narrowing:
-    'A carve-out rather than a number move. Instead of changing the headline figure, you restrict what the clause actually covers.',
+    'A scope move rather than a number move. Instead of changing the headline figure, you restrict what the clause actually covers.',
   'Position 1': 'Your strongest opening position. State this first.',
   'Position 2': 'A moderate fallback if Position 1 is rejected.',
   'Position 3': 'A further fallback — still acceptable but less favourable.',
@@ -43,7 +53,7 @@ function LabelBadge({ label }: { label: string }) {
   return (
     <div ref={ref} className="relative inline-flex items-center gap-1">
       <span className="inline-block rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">
-        {label}
+        {LABEL_DISPLAY[label] ?? label}
       </span>
       {description && (
         <>
@@ -62,7 +72,7 @@ function LabelBadge({ label }: { label: string }) {
               role="tooltip"
               className="absolute left-1/2 top-full z-20 mt-1.5 w-60 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-xs text-zinc-300 shadow-xl"
             >
-              <p className="font-semibold text-zinc-100">{label}</p>
+              <p className="font-semibold text-zinc-100">{LABEL_DISPLAY[label] ?? label}</p>
               <p className="mt-1 leading-relaxed">{description}</p>
             </div>
           )}

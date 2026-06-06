@@ -203,7 +203,7 @@ function riskClass(risk: RiskRating) {
 function ReviewCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-zinc-800 bg-black/30 p-4">
-      <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
+      <div className="text-xs text-zinc-500">{label}</div>
       <div className="mt-2 text-base font-semibold text-zinc-100">{value}</div>
     </div>
   );
@@ -270,8 +270,8 @@ function DataProtectionReviewContent() {
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black text-white">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-sm text-zinc-300 hover:text-white">
-            Pactora
+          <Link href="/review/summary" className="text-sm text-zinc-300 hover:text-white">
+            ← Summary
           </Link>
           <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
@@ -343,7 +343,7 @@ function DataProtectionReviewContent() {
               <ReviewCard label="Notification window" value={result.notificationWindow} />
               <ReviewCard label="Sub-processor risk" value={result.subProcessorRisk} />
               <div className={`rounded-xl border p-4 ${riskClass(result.riskRating)}`}>
-                <div className="text-xs uppercase tracking-wide">Risk rating</div>
+                <div className="text-xs">Risk rating</div>
                 <div className="mt-2 text-base font-semibold">{result.riskRating}</div>
               </div>
             </div>

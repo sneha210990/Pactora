@@ -404,8 +404,8 @@ function LolReviewContent() {
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black text-white">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-sm text-zinc-300 hover:text-white">
-            Pactora
+          <Link href="/review/summary" className="text-sm text-zinc-300 hover:text-white">
+            ← Summary
           </Link>
           <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
         </div>
@@ -602,7 +602,7 @@ function LolReviewContent() {
               href="/"
               className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
             >
-              Back to Product
+              Back to home
             </Link>
           </div>
         </div>
