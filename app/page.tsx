@@ -55,20 +55,6 @@ export default function Home() {
           See how it works →
         </Link>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-          {[
-            "8 key clauses reviewed",
-            "Plain English explanations",
-            "Negotiation scripts included",
-            "PDF & DOCX supported",
-          ].map((feature) => (
-            <span key={feature} className="flex items-center gap-2 text-sm text-zinc-500">
-              <span className="h-1 w-1 rounded-full bg-zinc-600" />
-              {feature}
-            </span>
-          ))}
-        </div>
-
         <div className="mt-16 flex flex-wrap items-center justify-center gap-10">
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
