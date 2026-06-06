@@ -3,9 +3,35 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
-      <section className="flex flex-col items-center justify-center px-4 py-20 text-center md:py-36">
+      <div className="ticker-wrapper overflow-hidden border-b border-zinc-800 bg-zinc-950 py-2.5 text-sm text-zinc-300">
+        <div className="animate-ticker flex w-max">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex items-center gap-8 px-8">
+              <span>📍</span>
+              <span>
+                Live demo at&nbsp;
+                <a
+                  href="https://www.legaltech-talk.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-white underline underline-offset-2 hover:text-zinc-300"
+                >
+                  Legal Tech Talk London
+                </a>
+              </span>
+              <span className="text-zinc-600">·</span>
+              <span>Vibeathon</span>
+              <span className="text-zinc-600">·</span>
+              <span>17 June · 14:00–15:00</span>
+              <span className="text-zinc-700">✦</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <section className="flex flex-col items-center justify-center px-4 py-14 text-center md:py-24">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
-          For founders, freelancers and anyone signing a contract
+          For founders and freelancers
         </p>
         <h1 className="mb-6 max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
           Understand what&apos;s in your contract and how to negotiate it.
@@ -15,14 +41,35 @@ export default function Home() {
           negotiation ladder with clear positions and scripts. Know exactly
           what to push back on before the contract reaches legal.
         </p>
+
         <Link
           href="/deals/new"
           className="inline-block rounded-lg bg-white px-7 py-3.5 font-semibold text-black transition hover:bg-zinc-200"
         >
-          Review a contract free
+          Analyse my contract for free
+        </Link>
+        <Link
+          href="/how-it-works"
+          className="mt-4 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+        >
+          See how it works →
         </Link>
 
-        <div className="mt-20 flex flex-wrap items-start justify-center gap-14">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+          {[
+            "8 key clauses reviewed",
+            "Plain English explanations",
+            "Negotiation scripts included",
+            "PDF & DOCX supported",
+          ].map((feature) => (
+            <span key={feature} className="flex items-center gap-2 text-sm text-zinc-500">
+              <span className="h-1 w-1 rounded-full bg-zinc-600" />
+              {feature}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-16 flex flex-wrap items-center justify-center gap-10">
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Featured in
@@ -44,6 +91,7 @@ export default function Home() {
               </span>
             </a>
           </div>
+
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Member of
@@ -52,7 +100,7 @@ export default function Home() {
               href="https://www.techscaler.co.uk/"
               target="_blank"
               rel="noopener noreferrer"
-              className="opacity-50 transition-opacity hover:opacity-100"
+              className="flex flex-col items-center gap-1.5 opacity-50 transition-opacity hover:opacity-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -60,8 +108,10 @@ export default function Home() {
                 alt="Techscaler by CodeBase"
                 className="h-5 w-auto"
               />
+              <span className="text-xs text-zinc-400">Techscaler by CodeBase</span>
             </a>
           </div>
+
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Winner
@@ -73,7 +123,7 @@ export default function Home() {
               className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100"
             >
               <span className="text-base leading-none">🏆</span>
-              <span className="flex flex-col">
+              <span className="flex flex-col text-left">
                 <span className="text-sm font-semibold tracking-tight text-white">
                   Simplify Legal Challenge
                 </span>
@@ -81,29 +131,30 @@ export default function Home() {
               </span>
             </a>
           </div>
+
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Trusted by
             </span>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-5">
               <a
                 href="https://www.librabit.co.uk/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center opacity-50 transition-opacity hover:opacity-100"
+                className="opacity-50 transition-opacity hover:opacity-100"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/librabit-logo.svg"
                   alt="Librabit"
-                  className="h-10 w-10 rounded-md"
+                  className="h-7 w-7 rounded-sm"
                 />
               </a>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/ganda-pr-logo.svg"
                 alt="G&A PR Ltd"
-                className="h-10 w-10 rounded-full opacity-50"
+                className="h-7 w-7 rounded-full opacity-50"
               />
             </div>
           </div>
