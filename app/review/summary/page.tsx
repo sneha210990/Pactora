@@ -261,7 +261,7 @@ function ClauseFlagCard({
 
           {flag.clauseText && (
             <div className="mb-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Extracted clause</p>
+              <p className="mb-1 text-[10px] font-semibold text-zinc-500">Extracted clause</p>
               <p className="whitespace-pre-wrap font-mono text-xs text-zinc-300">{flag.clauseText}</p>
             </div>
           )}
@@ -278,7 +278,7 @@ function ClauseFlagCard({
             <NegotiationLadder title="Negotiation positions" items={ladderItems} className="mt-4" />
           ) : (
             <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Negotiation point</p>
+              <p className="mb-1 text-[10px] font-semibold text-zinc-500">Negotiation point</p>
               <p className="text-xs text-zinc-300">{flag.negotiationPoint}</p>
             </div>
           )}
@@ -288,7 +288,7 @@ function ClauseFlagCard({
               {alternative ? (
                 <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400">Alternative language</p>
+                    <p className="text-[10px] font-semibold text-emerald-400">Alternative language</p>
                     <div className="flex items-center gap-2">
                       {isAccepted ? (
                         <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
@@ -433,7 +433,7 @@ function FeedbackToggle({ user }: { user: { email: string } | null }) {
         <section className="rounded-2xl border border-zinc-900 bg-black/20 p-4 opacity-90">
           <div className="mb-3 flex items-center justify-between border-b border-zinc-900 pb-3">
             <div>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Beta feedback</h2>
+              <h2 className="text-sm font-semibold text-zinc-400">Beta feedback</h2>
               <p className="mt-1 text-xs text-zinc-500">Optional — share what would make this summary more useful.</p>
             </div>
             <button
@@ -728,7 +728,7 @@ function SummaryContent() {
           </div>
 
           <nav className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-3" aria-label="Review sections">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Review sections</div>
+            <div className="mb-2 text-xs font-semibold tracking-wide text-zinc-500">Review sections</div>
             <div className="flex flex-wrap gap-2">
               {reviewSections.map((section) => (
                 <Link
@@ -743,42 +743,11 @@ function SummaryContent() {
           </nav>
         </div>
 
-        <section className="mt-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Overall risk</h2>
-            <div className="mt-3 flex items-center gap-3">
-              <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${riskClass(overallRisk)}`}>{overallRisk}</span>
-              <span className="text-xs text-zinc-500">{knownRisks.length}/5 sections rated</span>
-            </div>
-            <p className="mt-3 text-sm text-zinc-300">{describeOverall(overallRisk, knownRisks.length, capRatio)}</p>
-          </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Key negotiation priorities</h2>
-            <ul className="mt-3 space-y-2 text-sm">
-              {rankedSections.map((section, index) => (
-                <li key={section.key}>
-                  <Link href={section.hrefWithParams} className="block rounded-lg border border-zinc-800 bg-black/25 px-3 py-2 hover:border-zinc-600">
-                    <span className="flex items-center justify-between gap-3">
-                      <span className="text-zinc-200">{index < 3 && section.risk ? `${index + 1}. ` : ''}{section.label}</span>
-                      {section.risk ? (
-                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${riskClass(section.risk)}`}>{section.risk}</span>
-                      ) : (
-                        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-400">Review now →</span>
-                      )}
-                    </span>
-                    <span className="mt-1 block text-xs text-zinc-500">{section.description}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
         <section className="mt-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
           {emailContent ? (
             <>
               <div className="mb-3 flex items-center justify-between gap-4">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-blue-200">Negotiation email</h2>
+                <h2 className="text-sm font-semibold text-blue-200">Negotiation email</h2>
                 <div className="flex gap-2">
                   <button onClick={copyEmail} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800">
                     {emailCopied ? 'Copied!' : 'Copy to clipboard'}
@@ -802,7 +771,7 @@ function SummaryContent() {
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-blue-200">Prepare for negotiation</h2>
+                <h2 className="text-sm font-semibold text-blue-200">Prepare for negotiation</h2>
                 <p className="mt-1 text-sm text-zinc-300">Generate a ready-to-send email covering all flagged issues, prioritised by risk.</p>
               </div>
               <div className="shrink-0">
@@ -822,11 +791,42 @@ function SummaryContent() {
           )}
         </section>
 
+        <section className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
+            <h2 className="text-sm font-semibold text-zinc-400">Overall risk</h2>
+            <div className="mt-3 flex items-center gap-3">
+              <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${riskClass(overallRisk)}`}>{overallRisk}</span>
+              <span className="text-xs text-zinc-500">{knownRisks.length}/5 sections rated</span>
+            </div>
+            <p className="mt-3 text-sm text-zinc-300">{describeOverall(overallRisk, knownRisks.length, capRatio)}</p>
+          </div>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
+            <h2 className="text-sm font-semibold text-zinc-400">Key negotiation priorities</h2>
+            <ul className="mt-3 space-y-2 text-sm">
+              {rankedSections.map((section, index) => (
+                <li key={section.key}>
+                  <Link href={section.hrefWithParams} className="block rounded-lg border border-zinc-800 bg-black/25 px-3 py-2 hover:border-zinc-600">
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="text-zinc-200">{index < 3 && section.risk ? `${index + 1}. ` : ''}{section.label}</span>
+                      {section.risk ? (
+                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${riskClass(section.risk)}`}>{section.risk}</span>
+                      ) : (
+                        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-400">Review now →</span>
+                      )}
+                    </span>
+                    <span className="mt-1 block text-xs text-zinc-500">{section.description}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         {crossClauseRisks.length > 0 && (
           <section className="mt-8">
             <div className="mb-1 flex items-center gap-3">
               <Tooltip content="Where two or more clauses interact to create combined exposure not obvious when reviewing each clause in isolation." position="bottom">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Cross-Clause Risks</h2>
+                <h2 className="text-sm font-semibold text-zinc-400">Cross-clause risks</h2>
               </Tooltip>
               <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-2.5 py-0.5 text-xs text-orange-300">
                 {crossClauseRisks.length} interaction{crossClauseRisks.length !== 1 ? 's' : ''} detected
@@ -844,8 +844,8 @@ function SummaryContent() {
         {effectiveFlags.length > 0 ? (
           <section className="mt-8">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
-                {clauseFlags.length > 0 ? 'Clause Analysis' : 'Manual Review Findings'}
+              <h2 className="text-sm font-semibold text-zinc-400">
+                {clauseFlags.length > 0 ? 'Clause analysis' : 'Manual review findings'}
               </h2>
               <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-xs text-zinc-300">
                 {effectiveFlags.length} {effectiveFlags.length === 1 ? 'flag' : 'flags'}

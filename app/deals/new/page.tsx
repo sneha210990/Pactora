@@ -50,7 +50,7 @@ function ProcessingPipeline({ analysis, agentProgress }: { analysis: DocumentAna
   return (
     <div className="mt-5 rounded-xl border border-zinc-800 bg-black/30 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Processing pipeline</p>
+        <p className="text-xs font-semibold text-zinc-400">Processing pipeline</p>
         <span aria-live="polite" className="rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-300">
           {analysis.uploadStatus === 'complete' ? 'Analysis complete' : analysis.uploadStatus}
         </span>
@@ -89,6 +89,52 @@ function ProcessingPipeline({ analysis, agentProgress }: { analysis: DocumentAna
           <span>Analysis ready</span>
         </li>
       </ol>
+    </div>
+  );
+}
+
+const CLAUSE_CHECKS = [
+  { name: 'Liability cap', description: 'Is the cap proportionate to your deal value? Is it mutual?' },
+  { name: 'Indemnities', description: 'Who indemnifies whom, and for what? Does it sit inside the liability cap?' },
+  { name: 'IP ownership', description: 'Who owns what you build or license? Are there broad or perpetual rights?' },
+  { name: 'Data protection', description: 'GDPR obligations, breach notification windows, sub-processor risks.' },
+  { name: 'Termination', description: 'Who can exit and how quickly? Are cure rights present?' },
+  { name: 'Governing law', description: 'Which country\'s law applies and which courts have jurisdiction?' },
+  { name: 'Force majeure', description: 'What excuses performance, and for how long?' },
+  { name: 'Confidentiality', description: 'What\'s protected, for how long, and what happens on breach?' },
+];
+
+function WhatWillPactoraCheck() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        aria-expanded={open}
+      >
+        <span className="text-sm font-medium text-zinc-200">What will Pactora check?</span>
+        <svg
+          className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          viewBox="0 0 16 16" fill="none" aria-hidden="true"
+        >
+          <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="border-t border-zinc-800 px-4 pb-4 pt-3">
+          <p className="mb-3 text-xs text-zinc-400">Eight key clauses are checked by specialist AI agents. You will also get a risk score, negotiation scripts, and optional redline suggestions.</p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {CLAUSE_CHECKS.map((item) => (
+              <li key={item.name} className="rounded-lg border border-zinc-800 bg-black/30 px-3 py-2.5">
+                <p className="text-xs font-semibold text-zinc-200">{item.name}</p>
+                <p className="mt-0.5 text-xs text-zinc-400">{item.description}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
@@ -419,12 +465,14 @@ export default function NewDealPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8 space-y-3">
+        <header className="mb-6 space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight">Review a contract</h1>
           <p className="max-w-2xl text-sm text-zinc-400">
             Upload your draft contract or paste key clauses manually, confirm the extracted commercial context, then view your contract analysis.
           </p>
         </header>
+
+        <WhatWillPactoraCheck />
 
         {showStaleBanner && (
           <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
