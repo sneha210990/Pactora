@@ -6,7 +6,14 @@ export default function Home() {
       <div className="border-b border-zinc-800 bg-zinc-950 px-4 py-2.5 text-center text-sm text-zinc-300">
         <span className="mr-2">📍</span>
         <span>Live demo at </span>
-        <span className="font-semibold text-white">Legal Tech Talk London</span>
+        <a
+          href="https://www.legaltech-talk.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-white underline underline-offset-2 hover:text-zinc-300"
+        >
+          Legal Tech Talk London
+        </a>
         <span className="mx-2 text-zinc-600">·</span>
         <span>17 June · 14:00–15:00</span>
       </div>
