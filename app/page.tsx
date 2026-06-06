@@ -3,6 +3,13 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
+      <div className="border-b border-zinc-800 bg-zinc-950 px-4 py-2.5 text-center text-sm text-zinc-300">
+        <span className="mr-2">📍</span>
+        <span>Live demo at </span>
+        <span className="font-semibold text-white">Legal Tech Talk London</span>
+        <span className="mx-2 text-zinc-600">·</span>
+        <span>17 June · 14:00–15:00</span>
+      </div>
       <section className="flex flex-col items-center justify-center px-4 py-20 text-center md:py-36">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
           For founders, freelancers and anyone signing a contract
