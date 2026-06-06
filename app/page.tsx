@@ -14,7 +14,9 @@ export default function Home() {
         >
           Legal Tech Talk London
         </a>
-        <span className="mx-2 text-zinc-600">·</span>
+        <span className="mx-1 text-zinc-600">·</span>
+        <span>Vibeathon</span>
+        <span className="mx-1 text-zinc-600">·</span>
         <span>17 June · 14:00–15:00</span>
       </div>
       <section className="flex flex-col items-center justify-center px-4 py-20 text-center md:py-36">
