@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
-      <div className="ticker-wrapper overflow-hidden border-b border-amber-500 bg-amber-400 py-2.5 text-sm text-zinc-900">
+      <div className="ticker-wrapper overflow-hidden border-b border-indigo-700 bg-indigo-600 py-2.5 text-sm text-white">
         <div className="animate-ticker flex w-max">
           {[0, 1].map((i) => (
             <div key={i} className="flex items-center gap-8 px-8">
@@ -14,16 +14,16 @@ export default function Home() {
                   href="https://www.legaltech-talk.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-zinc-900 underline underline-offset-2 hover:text-zinc-700"
+                  className="font-semibold text-white underline underline-offset-2 hover:text-indigo-200"
                 >
                   Legal Tech Talk London
                 </a>
               </span>
-              <span className="text-amber-700">·</span>
+              <span className="text-indigo-300">·</span>
               <span>Vibeathon</span>
-              <span className="text-amber-700">·</span>
+              <span className="text-indigo-300">·</span>
               <span>17 June · 14:00–15:00</span>
-              <span className="text-amber-600">✦</span>
+              <span className="text-indigo-300">✦</span>
             </div>
           ))}
         </div>
