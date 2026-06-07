@@ -9,7 +9,7 @@ export default function Home() {
             <div key={i} className="flex items-center gap-8 px-8">
               <span>📍</span>
               <span>
-                Live at the&nbsp;
+                Live Demo at&nbsp;
                 <a
                   href="https://www.legaltech-talk.com"
                   target="_blank"
