@@ -6,6 +6,7 @@ import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { APP_VERSION } from '@/lib/version';
 import { Analytics } from '@vercel/analytics/next';
+import { PostHogProvider } from '@/components/posthog-provider';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <PostHogProvider>
         <DocumentAnalysisProvider>
         <div className="flex min-h-screen flex-col bg-black text-white">
           <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/70 backdrop-blur">
@@ -94,6 +96,7 @@ export default function RootLayout({
           </footer>
         </div>
         </DocumentAnalysisProvider>
+        </PostHogProvider>
         <Analytics />
       </body>
     </html>
