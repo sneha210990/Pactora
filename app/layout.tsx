@@ -5,6 +5,7 @@ import { BetaNav } from '@/components/beta-nav';
 import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { APP_VERSION } from '@/lib/version';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -93,6 +94,7 @@ export default function RootLayout({
           </footer>
         </div>
         </DocumentAnalysisProvider>
+        <Analytics />
       </body>
     </html>
   );
