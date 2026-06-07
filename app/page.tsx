@@ -9,18 +9,17 @@ export default function Home() {
             <div key={i} className="flex items-center gap-8 px-8">
               <span>📍</span>
               <span>
-                Live demo at&nbsp;
+                Live at the&nbsp;
                 <a
                   href="https://www.legaltech-talk.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-white underline underline-offset-2 hover:text-indigo-200"
                 >
-                  Legal Tech Talk London
+                  Legal Tech Talk
                 </a>
+                &nbsp;Vibeathon
               </span>
-              <span className="text-indigo-300">·</span>
-              <span>Vibeathon</span>
               <span className="text-indigo-300">·</span>
               <span>17 June · 14:00–15:00</span>
               <span className="text-indigo-300">✦</span>
