@@ -31,7 +31,7 @@ export default async function AuditLogPage() {
   const session = await getCurrentSessionUser();
   if (!session) redirect('/login');
 
-  const events = await getAuditEventsForUser(session.user.id, 200);
+  const events = await getAuditEventsForUser(session.user.auth_user_id ?? session.user.id, 200);
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
