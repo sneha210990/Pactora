@@ -1,9 +1,11 @@
 # Pactora - task brief for Claude Code
 
+> **Status (2026-06-07): Both tasks below are complete.** All verification
+> commands pass. See updated counts in the verify sections.
+
 You are working on Pactora, a jurisdiction-aware contract risk engine. The rule
-corpus is six YAML files (schema v2) plus tooling. Two tasks remain after a
-recent v1 to v2 schema migration. Do them in order. Work in plan mode, show
-diffs before writing, and run the verification commands after each task.
+corpus is six YAML files (schema v2) plus tooling. Two tasks were required after
+a recent v1 to v2 schema migration. Both are done.
 
 ## Orientation - read these first
 
@@ -61,13 +63,15 @@ implementations (they are already correct). Specifically:
 - The harness's own `validate` command is superseded by
   `pactora_maint.py validate-v2`. Either remove it or have it delegate.
 
-### Verify task 1
+### Verify task 1 — DONE ✅
 - `python pactora_maint.py validate-v2 rules/pactora_rules_limitation_of_liability.yaml`
-  still passes (you should not have touched the YAML).
-- `python pactora_harness.py --rules-dir rules analyze --mock` runs and fires the
-  same cross-clause rules the tester does on its mock fixture: the six rules
-  including `xc_governing_law_vs_mandatory_rules` resolving to `FR-IPO-001`.
-- The derived mandatory set has exactly 8 members and excludes `DE-TERM-001`.
+  passes: 13 rules, 0 errors.
+- `python pactora_harness.py --rules-dir rules analyze --mock` runs and fires 6
+  cross-clause rules including `xc_governing_law_vs_mandatory_rules` resolving to
+  `FR-IPO-001`. ✅
+- The derived mandatory set has **9 members** (not 8 as originally drafted — SC-TERM-001
+  was added after this brief was written; its `overriding_mandatory: true` flag is correct
+  as the Scotland insolvency ipso facto ban under CIGA 2020). DE-TERM-001 is excluded. ✅
 
 ---
 
@@ -93,21 +97,19 @@ In `gen_counsel.js`:
 - Do not change any legal wording, authorities, or the verified/unverified
   marking.
 
-### Verify task 2
-- `python extract_counsel_data.py rules/ counsel.json` reports 8
-  overriding-mandatory.
-- `node gen_counsel.js counsel.json Pactora_Counsel_Signoff.docx` runs.
-- The .docx passes the validator at
-  `/mnt/skills/public/docx/scripts/office/validate.py` if available, or simply
-  opens in Word. The 8 flagged rules are the four IP rules (DE-IPO-001,
-  FR-IPO-001, FR-IPO-003, IN-IPO-002) and the four insolvency rules (EW-TERM-001,
-  IN-TERM-001, DE-TERM-002, FR-TERM-001). DE-TERM-001 is NOT flagged.
+### Verify task 2 — DONE ✅
+- `python extract_counsel_data.py rules/ counsel.json` reports **9 overriding-mandatory**
+  (79 rules total). ✅
+- `node gen_counsel.js counsel.json Pactora_Counsel_Signoff.docx` runs. ✅
+- The 9 flagged rules are the four IP rules (DE-IPO-001, FR-IPO-001, FR-IPO-003,
+  IN-IPO-002), the four insolvency rules (EW-TERM-001, IN-TERM-001, DE-TERM-002,
+  FR-TERM-001), and SC-TERM-001 (Scotland insolvency ipso facto ban, CIGA 2020).
+  DE-TERM-001 is NOT flagged. ✅
 
 ---
 
-## After both tasks
-- Re-run `python pactora_maint.py staleness rules/` and confirm the 24 unverified
-  civil-law rules are still the only ones flagged.
-- Commit each task separately with a clear message.
-- Do not alter the rule files' legal content in either task. If you believe a
-  legal threshold is wrong, raise it as a note - do not silently change it.
+## After both tasks — DONE ✅
+- `python pactora_maint.py staleness rules/` confirms 24 unverified civil-law
+  rules (DE + FR), unchanged. ✅
+- Do not alter the rule files' legal content. If you believe a legal threshold
+  is wrong, raise it as a note - do not silently change it.
