@@ -108,7 +108,7 @@ export async function POST(request: Request) {
 
     getCurrentSessionUser()
       .then((s) => recordAuditEvent({
-        user_id: s?.user.id ?? null,
+        user_id: s?.user.auth_user_id ?? s?.user.id ?? null,
         action: 'redline_generated',
         document_id: null,
         metadata: { clause_type: body.clauseType ?? null },

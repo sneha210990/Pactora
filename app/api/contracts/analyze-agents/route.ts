@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   }
 
   recordAuditEvent({
-    user_id: session?.user.id ?? null,
+    user_id: session?.user.auth_user_id ?? session?.user.id ?? null,
     action: 'clause_analysed',
     document_id: null,
     metadata: { text_length: contractText.length, jurisdiction: jurisdiction ?? null },
