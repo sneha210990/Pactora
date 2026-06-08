@@ -5,7 +5,7 @@ import path from 'path';
 const dummyContractPath = path.join(__dirname, 'fixtures/dummy-contract.pdf');
 const dummyDocxPath = path.join(__dirname, 'fixtures/dummy-contract.docx');
 
-const STORAGE_KEY = 'pactora.documentAnalysis.v1';
+const STORAGE_KEY = 'pactora.documentAnalysis.v2';
 
 type AppIssueTracker = {
   consoleErrors: string[];
@@ -85,10 +85,11 @@ async function seedStore(page: Page, commercialContext: StoreCommercialContext, 
     text: `Negotiate ${c.type}`,
     priority: c.riskLevel,
   }));
-  const storeData = {
+  const state = {
     documentId: 'playwright-test',
     uploadStatus: 'complete',
-    documentMeta: { fileName: 'test-contract.pdf' },
+    activeDocument: { id: 'playwright-test', fileName: 'test-contract.pdf', uploadedAt: '2026-01-01T00:00:00.000Z' },
+    documentMeta: { fileName: 'test-contract.pdf', fileType: 'application/pdf', uploadedAt: '2026-01-01T00:00:00.000Z' },
     extractedParties: {},
     extractedTerms: {},
     clauses,
@@ -98,11 +99,15 @@ async function seedStore(page: Page, commercialContext: StoreCommercialContext, 
     processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
     errors: [],
     commercialContext,
+    extractionWarnings: [],
+    manualFlags: [],
+    acceptedRedlines: {},
     diagnostics: { missingFields: [], hydrationWarnings: [] },
   };
+  const envelope = { version: 2, activeDocumentId: 'playwright-test', state };
   await page.addInitScript((args: { key: string; value: string }) => {
     window.localStorage.setItem(args.key, args.value);
-  }, { key: STORAGE_KEY, value: JSON.stringify(storeData) });
+  }, { key: STORAGE_KEY, value: JSON.stringify(envelope) });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -116,10 +121,10 @@ test.afterEach(async ({ page }) => {
 test('Test 1: Homepage loads and primary CTA works', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Understand SaaS contract risk before legal review', level: 1 })).toBeVisible();
-  await expect(page.getByText('Pactora helps SaaS teams spot liability', { exact: false })).toBeVisible();
+  await expect(page.getByRole('heading', { name: "Understand what's in your contract and how to negotiate it.", level: 1 })).toBeVisible();
+  await expect(page.getByText('Pactora analyses eight key clauses', { exact: false })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Start contract review' }).click();
+  await page.getByRole('link', { name: 'Review a contract free' }).click();
   await expect(page).toHaveURL(/\/deals\/new$/);
 });
 
@@ -179,7 +184,7 @@ test('Test 5: Commercial context carries through to LoL review', async ({ page }
   await page.getByRole('link', { name: 'View contract analysis' }).click();
 
   await expect(page).toHaveURL(/\/review\/summary/);
-  await expect(page.getByText('ACV: £12,345')).toBeVisible();
+  await expect(page.getByText('Deal value: £12,345')).toBeVisible();
   await expect(page.getByText('Term: 24 months')).toBeVisible();
 });
 
@@ -190,7 +195,8 @@ test('Test 6: LoL review page loads and clause parser runs', async ({ page }) =>
   const clause =
     'Supplier liability shall be limited to 2x fees paid in the preceding 12 months. The cap shall not apply to confidentiality and data protection breaches.';
 
-  await page.locator('#lolClause').fill(clause);
+  await page.locator('#lolClause').click({ clickCount: 3 });
+  await page.locator('#lolClause').pressSequentially(clause, { delay: 0 });
   await page.getByRole('button', { name: 'Run review' }).click();
 
   await expect(page.getByText('Cap type')).toBeVisible();
@@ -218,7 +224,7 @@ test('Test 8: Mobile viewport smoke test', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Start contract review' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Review a contract free' })).toBeVisible();
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
@@ -321,8 +327,8 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
   await page.getByRole('link', { name: 'Continue' }).click();
 
   await expect(page).toHaveURL(/\/review\/summary/);
-  await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
-  await expect(page.getByText('ACV: £50,000')).toBeVisible();
+  await expect(page.getByText('Should I sign?')).toBeVisible();
+  await expect(page.getByText('Deal value: £50,000')).toBeVisible();
   await expect(page.getByText('Term: 24 months')).toBeVisible();
   await expect(page.getByText('Insurance: £2,000,000')).toBeVisible();
   await expect(page.getByText('Data: personal')).toBeVisible();
@@ -367,8 +373,8 @@ test('Test 11: Termination review detects notice of termination period wording',
 test('Test 12: How-it-works page loads correctly', async ({ page }) => {
   await page.goto('/how-it-works');
   await expect(page.getByRole('heading', { name: 'How it works' })).toBeVisible();
-  await expect(page.getByText('Step 1')).toBeVisible();
-  await expect(page.getByText('Upload contract')).toBeVisible();
+  await expect(page.getByText('01')).toBeVisible();
+  await expect(page.getByText('Upload your contract')).toBeVisible();
 });
 
 test('Test 13: Subprocessors page loads', async ({ page }) => {
@@ -430,8 +436,10 @@ test('Test 18: LoL parser detects fees payable total cap type', async ({ page })
   await seedStore(page, { acv: 60000, termMonths: 12 });
   await page.goto('/review/lol');
 
-  await page.locator('#lolClause').fill(
+  await page.locator('#lolClause').click({ clickCount: 3 });
+  await page.locator('#lolClause').pressSequentially(
     'Supplier liability shall be limited to the total fees payable under this agreement in its entirety.',
+    { delay: 0 },
   );
   await page.getByRole('button', { name: 'Run review' }).click();
 
@@ -443,8 +451,10 @@ test('Test 19: LoL parser handles word-based multiple (two times)', async ({ pag
   await seedStore(page, { acv: 30000, termMonths: 12 });
   await page.goto('/review/lol');
 
-  await page.locator('#lolClause').fill(
+  await page.locator('#lolClause').click({ clickCount: 3 });
+  await page.locator('#lolClause').pressSequentially(
     'Supplier aggregate liability shall be limited to two times the fees paid in the preceding twelve months.',
+    { delay: 0 },
   );
   await page.getByRole('button', { name: 'Run review' }).click();
 
@@ -468,8 +478,10 @@ test('Test 21: LoL parser detects fees-paid window with 6-month lookback', async
   await seedStore(page, { acv: 60000, termMonths: 24 });
   await page.goto('/review/lol');
 
-  await page.locator('#lolClause').fill(
+  await page.locator('#lolClause').click({ clickCount: 3 });
+  await page.locator('#lolClause').pressSequentially(
     'Supplier liability shall be limited to the fees paid in the preceding 6 months under this agreement.',
+    { delay: 0 },
   );
   await page.getByRole('button', { name: 'Run review' }).click();
 
@@ -479,10 +491,11 @@ test('Test 21: LoL parser detects fees-paid window with 6-month lookback', async
 
 test('Test 22: LoL Reset clause button restores canonical clause text', async ({ page }) => {
   const canonicalText = 'Liability is limited to 1x the annual contract value.';
-  const storeData = {
+  const storeState = {
     documentId: 'playwright-reset-test',
     uploadStatus: 'complete',
-    documentMeta: { fileName: 'test.pdf' },
+    activeDocument: { id: 'playwright-reset-test', fileName: 'test.pdf', uploadedAt: '2026-01-01T00:00:00.000Z' },
+    documentMeta: { fileName: 'test.pdf', uploadedAt: '2026-01-01T00:00:00.000Z' },
     extractedParties: {},
     extractedTerms: {},
     clauses: [{ id: 'c1', type: 'Liability Cap', text: canonicalText, riskLevel: 'Medium' }],
@@ -492,16 +505,21 @@ test('Test 22: LoL Reset clause button restores canonical clause text', async ({
     processingSteps: { upload: true, extraction: true, clauseDetection: true, riskAnalysis: true, recommendations: true },
     errors: [],
     commercialContext: { acv: 10000, termMonths: 12 },
+    extractionWarnings: [],
+    manualFlags: [],
+    acceptedRedlines: {},
     diagnostics: { missingFields: [], hydrationWarnings: [] },
   };
+  const storeEnvelope = { version: 2, activeDocumentId: 'playwright-reset-test', state: storeState };
   await page.addInitScript((args: { key: string; value: string }) => {
     window.localStorage.setItem(args.key, args.value);
-  }, { key: STORAGE_KEY, value: JSON.stringify(storeData) });
+  }, { key: STORAGE_KEY, value: JSON.stringify(storeEnvelope) });
 
   await page.goto('/review/lol');
 
-  // Edit the clause
-  await page.locator('#lolClause').fill('Edited clause text that is different.');
+  // Edit the clause — use pressSequentially to reliably trigger React onChange in production builds
+  await page.locator('#lolClause').click({ clickCount: 3 });
+  await page.locator('#lolClause').pressSequentially('Edited clause text that is different.', { delay: 0 });
   await expect(page.locator('#lolClause')).toHaveValue('Edited clause text that is different.');
 
   // Reset
@@ -773,16 +791,16 @@ test('Test 43: Termination Reset button clears results', async ({ page }) => {
 
 // ─── Deal Summary – state and UI ──────────────────────────────────────────────
 
-test('Test 44: Summary shows "Not reviewed" for all sections when no clause reviews run', async ({ page }) => {
+test('Test 44: Summary shows "Review now" for all sections when no clause reviews run', async ({ page }) => {
   await seedStore(page, { acv: 10000, termMonths: 12 });
   await page.goto('/review/summary');
 
-  await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
+  await expect(page.getByText('Should I sign?')).toBeVisible();
   await expect(page.getByText('Overall risk')).toBeVisible();
   await expect(page.getByText('0/5 sections rated')).toBeVisible();
-  // All sections should show "Not reviewed"
-  const notReviewed = page.getByText('Not reviewed');
-  await expect(notReviewed.first()).toBeVisible();
+  // All sections should show "Review now →"
+  const reviewNow = page.getByText('Review now →');
+  await expect(reviewNow.first()).toBeVisible();
 });
 
 test('Test 45: Summary risk score derives from liability cap vs ACV ratio', async ({ page }) => {
@@ -790,8 +808,8 @@ test('Test 45: Summary risk score derives from liability cap vs ACV ratio', asyn
   await seedStore(page, { acv: 20000, termMonths: 12, liabilityCap: 5000 });
   await page.goto('/review/summary');
 
-  await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
-  await expect(page.getByText('ACV: £20,000')).toBeVisible();
+  await expect(page.getByText('Should I sign?')).toBeVisible();
+  await expect(page.getByText('Deal value: £20,000')).toBeVisible();
   await expect(page.getByText('Liability cap: £5,000')).toBeVisible();
 });
 
@@ -884,21 +902,47 @@ test('Test 51: New review link from summary returns to deals intake', async ({ p
 
 // ─── Acknowledgment gating ─────────────────────────────────────────────────────
 
-test('Test 52: Continue button stays disabled until both checkboxes are ticked', async ({ page }) => {
-  await seedStore(page, { acv: 10000, termMonths: 12 });
-  await page.goto('/deals/new');
+test('Test 52: Confirm and analyse button stays disabled until both checkboxes are ticked', async ({ page }) => {
+  // Mock extract so we can get past the upload step without a real API call
+  await page.route('**/api/contracts/extract', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        contractText: 'Sample contract for checkbox gating test.',
+        documentId: 'test-doc-52',
+        documentMeta: { fileName: 'test.pdf', fileType: 'application/pdf', uploadedAt: new Date().toISOString() },
+        detectedValues: {
+          acv: { value: 10000, confidence: 0.9, evidence: null, extractionMethod: 'regex' },
+          termMonths: { value: 12, confidence: 0.9, evidence: null, extractionMethod: 'regex' },
+          insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
+          dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
+        },
+        extractedTerms: {},
+      }),
+    });
+  });
 
-  // Initially disabled
-  await expect(page.getByRole('button', { name: 'View contract analysis' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'View contract analysis' })).not.toBeVisible();
+  await page.goto('/deals/new');
+  await page.setInputFiles('#contractUpload', {
+    name: 'test.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('test'),
+  });
+
+  // Wait for extraction UI to appear
+  await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible({ timeout: 10000 });
+
+  // Initially the "Confirm and analyse" button is disabled (no checkboxes ticked)
+  await expect(page.getByRole('button', { name: 'Confirm and analyse' })).toBeDisabled();
 
   // Tick first checkbox only — still disabled
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
-  await expect(page.getByRole('link', { name: 'View contract analysis' })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Confirm and analyse' })).toBeDisabled();
 
   // Tick second checkbox — now enabled
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
-  await expect(page.getByRole('link', { name: 'View contract analysis' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Confirm and analyse' })).toBeEnabled();
 });
 
 // ─── Commercial context display on review pages ────────────────────────────────
@@ -1018,7 +1062,7 @@ test('Test 57: Tablet viewport smoke test across key pages', async ({ page }) =>
   await page.setViewportSize({ width: 768, height: 1024 });
 
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Start contract review' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Review a contract free' })).toBeVisible();
 
   await page.goto('/deals/new');
   await expect(page.locator('#contractUpload')).toBeVisible();
@@ -1028,7 +1072,7 @@ test('Test 57: Tablet viewport smoke test across key pages', async ({ page }) =>
   await expect(page.getByRole('button', { name: 'Run review' })).toBeVisible();
 
   await page.goto('/review/summary');
-  await expect(page.getByRole('heading', { name: 'Deal Summary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'No contract analysed yet' })).toBeVisible();
 });
 
 // ─── MVP-04: Should I sign? verdict ──────────────────────────────────────────
@@ -1043,33 +1087,33 @@ test('Test 57: Summary shows Insufficient data verdict when no clause flags seed
   await expect(page.getByText('/ 100')).not.toBeVisible();
 });
 
-test('Test 58: Summary shows Review required verdict with two or more High-risk flags', async ({ page }) => {
+test('Test 58: Summary shows Not ready to sign verdict with two or more High-risk flags', async ({ page }) => {
   await seedStore(page, { acv: 50000, termMonths: 12 }, [
     { type: 'Liability Cap', riskLevel: 'High', explanation: 'Cap is 0.1× ACV.' },
     { type: 'Indemnities', riskLevel: 'High', explanation: 'Uncapped vendor indemnity.' },
   ]);
   await page.goto('/review/summary');
 
-  await expect(page.getByText('Review required')).toBeVisible();
+  await expect(page.getByText('Not ready to sign')).toBeVisible();
 });
 
-test('Test 59: Summary shows Proceed with caution verdict with exactly one High flag', async ({ page }) => {
+test('Test 59: Summary shows Sign with conditions verdict with exactly one High flag', async ({ page }) => {
   await seedStore(page, { acv: 50000, termMonths: 12 }, [
     { type: 'Liability Cap', riskLevel: 'High', explanation: 'Cap below ACV.' },
     { type: 'IP Ownership', riskLevel: 'Low', explanation: 'Balanced terms.' },
   ]);
   await page.goto('/review/summary');
 
-  await expect(page.getByText('Proceed with caution')).toBeVisible();
+  await expect(page.getByText('Sign with conditions')).toBeVisible();
 });
 
-test('Test 60: Summary shows Acceptable risk verdict with only Low-risk flags', async ({ page }) => {
+test('Test 60: Summary shows Ready to sign verdict with only Low-risk flags', async ({ page }) => {
   await seedStore(page, { acv: 50000, termMonths: 12 }, [
     { type: 'Governing Law', riskLevel: 'Low', explanation: 'Minor jurisdiction concern.' },
   ]);
   await page.goto('/review/summary');
 
-  await expect(page.getByText('Acceptable risk')).toBeVisible();
+  await expect(page.getByText('Ready to sign')).toBeVisible();
 });
 
 // ─── MVP-04: Risk score (0–100) ───────────────────────────────────────────────
@@ -1147,14 +1191,30 @@ test('Test 65: Processing pipeline shows per-agent sub-list after analysis compl
       contentType: 'application/json',
       body: JSON.stringify({
         contractText: 'This agreement limits liability to fees paid in the preceding twelve months.',
-        documentMeta: { fileName: 'test.txt', uploadedAt: new Date().toISOString() },
+        documentId: 'test-doc-65',
+        documentMeta: { fileName: 'test.txt', fileType: 'text/plain', uploadedAt: new Date().toISOString() },
+        detectedValues: {
+          acv: { value: null, confidence: null, evidence: null, extractionMethod: null },
+          termMonths: { value: null, confidence: null, evidence: null, extractionMethod: null },
+          insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
+          dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
+        },
+        extractedTerms: {},
       }),
     });
   });
 
   await page.goto('/deals/new');
   await page.fill('#manualClauses', 'This agreement limits liability to fees paid in the preceding twelve months.');
-  await page.click('button[type=submit]');
+  await page.getByRole('button', { name: 'Analyse clauses' }).click();
+
+  // Wait for extraction to complete — commercial context section appears
+  await expect(page.getByRole('heading', { name: 'Extracted commercial context' })).toBeVisible({ timeout: 10000 });
+
+  // Tick both acknowledgment checkboxes to enable the analyse button
+  await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
+  await page.getByLabel(/I understand extracted values are parser outputs/i).check();
+  await page.getByRole('button', { name: 'Confirm and analyse' }).click();
 
   // Wait for the analysis to complete (pipeline status badge shows complete)
   await expect(page.getByText('Analysis complete')).toBeVisible({ timeout: 15000 });
@@ -1287,7 +1347,7 @@ async function acceptRedlineViaUI(page: Page) {
   });
 
   // The Liability Cap card is auto-expanded (High risk). Get a suggestion and accept it.
-  await page.getByRole('button', { name: 'Suggest alternative language' }).click();
+  await page.getByRole('button', { name: 'Get suggested wording' }).click();
   await expect(page.getByText('Alternative language')).toBeVisible({ timeout: 10000 });
   await page.getByRole('button', { name: 'Accept redline' }).click();
   await expect(page.getByText('Accepted')).toBeVisible();
