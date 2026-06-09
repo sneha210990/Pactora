@@ -55,7 +55,7 @@ function sseEvent(data: AgentEvent): string {
 
 const VALID_JURISDICTIONS = new Set<string>(['england_wales', 'india', 'germany', 'france']);
 const ANON_COOKIE = 'pactora_anon_uses';
-const ANON_FREE_USES = 1;
+const ANON_FREE_USES = 999;
 
 export async function POST(request: Request) {
   let body: { text?: unknown; jurisdiction?: unknown; contractSide?: unknown };

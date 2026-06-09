@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 const MIN_MANUAL_TEXT_LENGTH = 20;
-const ANON_FREE_USES = 1;
+const ANON_FREE_USES = 999;
 const ANON_COOKIE = 'pactora_anon_uses';
 
 function extractTerm(pattern: RegExp, text: string) {
