@@ -3,31 +3,6 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
-      <div className="ticker-wrapper overflow-hidden border-b border-indigo-700 bg-indigo-600 py-2.5 text-sm text-white">
-        <div className="animate-ticker flex w-max">
-          {[0, 1].map((i) => (
-            <div key={i} className="flex items-center gap-8 px-8">
-              <span>📍</span>
-              <span>
-                Live Demo at&nbsp;
-                <a
-                  href="https://www.legaltech-talk.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-white underline underline-offset-2 hover:text-indigo-200"
-                >
-                  Legal Tech Talk
-                </a>
-                &nbsp;Vibeathon
-              </span>
-              <span className="text-indigo-300">·</span>
-              <span>17 June · 14:00–15:00</span>
-              <span className="text-indigo-300">✦</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <section className="flex flex-col items-center justify-center px-4 py-14 text-center md:py-24">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
           For founders and freelancers

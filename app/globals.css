@@ -1,23 +1,5 @@
 @import "tailwindcss";
 
-@keyframes ticker {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.animate-ticker {
-  animation: ticker 35s linear infinite;
-}
-
-.ticker-wrapper:hover .animate-ticker {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-ticker {
-    animation: none;
-  }
-}
 
 :root {
   --background: #ffffff;
