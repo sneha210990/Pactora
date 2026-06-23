@@ -29,6 +29,8 @@ type ExtractionResponse = {
   extractedTerms?: DocumentAnalysisState['extractedTerms'];
   sourceFileType?: 'docx' | 'pdf';
   docxBuffer?: string;
+  docxStorageKey?: string;
+  paragraphOffsets?: Array<{ start: number; end: number }>;
 };
 
 const processingStages: Array<{ key: keyof DocumentAnalysisState['processingSteps']; label: string }> = [
@@ -290,7 +292,16 @@ export default function NewDealPage() {
     if (payload.sourceFileType) {
       actions.setSourceFileType(payload.sourceFileType);
     }
-    if (payload.docxBuffer) {
+    // Prefer the Supabase Storage key; fall back to the inline base64 buffer
+    // when Storage is not configured or the upload failed.
+    if (payload.docxStorageKey) {
+      actions.setDocxStorageKey(payload.docxStorageKey);
+      try {
+        sessionStorage.setItem('pactora.docxStorageKey', payload.docxStorageKey);
+      } catch {
+        // Non-fatal — the store copy is the primary reference.
+      }
+    } else if (payload.docxBuffer) {
       try {
         sessionStorage.setItem('pactora.docxBuffer', payload.docxBuffer);
       } catch (err) {
@@ -301,6 +312,10 @@ export default function NewDealPage() {
           // Storage completely full — flag also unwritable; download-redline-button will handle missing buffer gracefully
         }
       }
+    }
+
+    if (payload.paragraphOffsets) {
+      actions.setParagraphOffsets(payload.paragraphOffsets);
     }
 
     if (payload.contractText) {

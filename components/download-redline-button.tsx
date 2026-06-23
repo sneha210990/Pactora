@@ -10,6 +10,7 @@ type Props = {
   acceptedRedlines: Record<string, AcceptedRedline>;
   sourceFileType: 'docx' | 'pdf' | null;
   fileName: string;
+  docxStorageKey?: string | null;
 };
 
 async function downloadMarkupSchedule(
@@ -44,13 +45,22 @@ async function downloadMarkupSchedule(
 async function downloadDocxRedline(
   acceptedRedlines: Record<string, AcceptedRedline>,
   fileName: string,
+  docxStorageKey?: string | null,
 ) {
-  const docxBuffer = sessionStorage.getItem('pactora.docxBuffer') ?? undefined;
+  // Prefer the Supabase Storage key (prop or sessionStorage fallback).
+  // Fall back to the inline base64 buffer for backward compatibility.
+  const storageKey =
+    docxStorageKey ?? sessionStorage.getItem('pactora.docxStorageKey') ?? undefined;
+  const docxBuffer = storageKey ? undefined : (sessionStorage.getItem('pactora.docxBuffer') ?? undefined);
 
   const res = await apiFetch('/api/contracts/redline/export', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ acceptedRedlines, docxBuffer, fileName }),
+    body: JSON.stringify({
+      acceptedRedlines,
+      fileName,
+      ...(storageKey ? { docxStorageKey: storageKey } : { docxBuffer }),
+    }),
   });
 
   if (!res.ok) {
@@ -69,7 +79,7 @@ async function downloadDocxRedline(
   URL.revokeObjectURL(url);
 }
 
-export function DownloadRedlineButton({ acceptedRedlines, sourceFileType, fileName }: Props) {
+export function DownloadRedlineButton({ acceptedRedlines, sourceFileType, fileName, docxStorageKey }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -77,10 +87,13 @@ export function DownloadRedlineButton({ acceptedRedlines, sourceFileType, fileNa
     setLoading(true);
     setError('');
     try {
-      const hasDocxBuffer = !!sessionStorage.getItem('pactora.docxBuffer');
-      if (sourceFileType === 'docx' && hasDocxBuffer) {
+      // A DOCX export is available when the upload produced a storage key (server-side)
+      // or left a base64 buffer in sessionStorage (legacy / Storage-not-configured path).
+      const hasStorageKey = !!(docxStorageKey ?? sessionStorage.getItem('pactora.docxStorageKey'));
+      const hasSessionBuffer = !!sessionStorage.getItem('pactora.docxBuffer');
+      if (sourceFileType === 'docx' && (hasStorageKey || hasSessionBuffer)) {
         try {
-          await downloadDocxRedline(acceptedRedlines, fileName);
+          await downloadDocxRedline(acceptedRedlines, fileName, docxStorageKey);
         } catch (docxErr) {
           console.error('[redline] DOCX export failed, falling back to markup schedule:', docxErr);
           setError('DOCX export unavailable. Downloading as PDF instead. Your redlines are preserved.');

@@ -336,10 +336,26 @@ function extractLegacyDocText(buffer: Buffer): string {
     .trim() ?? '';
 }
 
+export type ParagraphOffset = {
+  start: number;
+  end: number;
+};
+
 export type ExtractionResult = {
   text: string;
   visionUsage?: VisionUsage;
+  paragraphOffsets: ParagraphOffset[];
 };
+
+export function buildParagraphOffsets(text: string): ParagraphOffset[] {
+  const offsets: ParagraphOffset[] = [];
+  let pos = 0;
+  for (const line of text.split('\n')) {
+    offsets.push({ start: pos, end: pos + line.length });
+    pos += line.length + 1; // +1 for the '\n' that was split on
+  }
+  return offsets;
+}
 
 export async function extractContractText(
   fileName: string,
@@ -430,5 +446,6 @@ export async function extractContractText(
     );
   }
 
-  return { text, visionUsage };
+  const paragraphOffsets = buildParagraphOffsets(text);
+  return { text, visionUsage, paragraphOffsets };
 }

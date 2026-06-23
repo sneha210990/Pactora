@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { detectContractValues, extractContractText } from '@/lib/contract-extraction';
+import { detectContractValues, extractContractText, buildParagraphOffsets } from '@/lib/contract-extraction';
 import { extractContractValuesWithAI } from '@/lib/ai-extraction';
 import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
 import { getCurrentSessionUser } from '@/lib/auth';
+import { isStorageConfigured, uploadDocx } from '@/lib/supabase-storage';
 
 export const runtime = 'nodejs';
 
@@ -147,7 +148,7 @@ async function extractFromManualText(request: Request) {
     }))
     .catch(console.error);
 
-  return NextResponse.json(payload);
+  return NextResponse.json({ ...payload, paragraphOffsets: buildParagraphOffsets(text) });
 }
 
 async function extractFromUploadedFile(request: Request) {
@@ -170,7 +171,7 @@ async function extractFromUploadedFile(request: Request) {
   console.log('[extract] file.size:', uploaded.size, 'bytes');
 
   const buffer = Buffer.from(await uploaded.arrayBuffer());
-  const { text, visionUsage } = await extractContractText(uploaded.name, buffer, uploaded.type);
+  const { text, visionUsage, paragraphOffsets } = await extractContractText(uploaded.name, buffer, uploaded.type);
 
   if (visionUsage) {
     recordApiUsage({
@@ -195,6 +196,29 @@ async function extractFromUploadedFile(request: Request) {
     uploaded.name.toLowerCase().endsWith('.docx') ||
     uploaded.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+  // Persist the original DOCX to Supabase Storage so the redline export route
+  // can retrieve it server-side rather than relying on the sessionStorage buffer
+  // (which has a ~5-10 MB per-origin quota and is lost when the tab is closed).
+  // Fall back to returning the base64 buffer when Storage isn't configured.
+  let docxStorageKey: string | undefined;
+  let docxBufferBase64: string | undefined;
+  if (isDocx) {
+    const storageKey = `deals/${payload.documentId}/original.docx`;
+    if (isStorageConfigured()) {
+      const uploaded_ok = await uploadDocx(buffer, storageKey);
+      if (uploaded_ok) {
+        docxStorageKey = storageKey;
+      } else {
+        // Storage upload failed — fall back to inline base64 so the client can
+        // still use sessionStorage as it did before.
+        console.warn('[extract] Supabase Storage upload failed; returning base64 buffer as fallback');
+        docxBufferBase64 = buffer.toString('base64');
+      }
+    } else {
+      docxBufferBase64 = buffer.toString('base64');
+    }
+  }
+
   getCurrentSessionUser()
     .then((s) => recordAuditEvent({
       user_id: s?.user.auth_user_id ?? s?.user.id ?? null,
@@ -205,14 +229,17 @@ async function extractFromUploadedFile(request: Request) {
         file_type: uploaded.type,
         source_type: isDocx ? 'docx' : 'pdf',
         vision_used: visionUsage != null,
+        docx_storage: docxStorageKey ? 'supabase' : 'base64_fallback',
       },
     }))
     .catch(console.error);
 
   return NextResponse.json({
     ...payload,
+    paragraphOffsets,
     sourceFileType: isDocx ? 'docx' : 'pdf',
-    ...(isDocx && { docxBuffer: buffer.toString('base64') }),
+    ...(docxStorageKey && { docxStorageKey }),
+    ...(docxBufferBase64 && { docxBuffer: docxBufferBase64 }),
   });
 }
 

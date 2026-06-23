@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
+import { downloadDocx } from '@/lib/supabase-storage';
+import { getCurrentSessionUser } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -28,6 +30,7 @@ const MAX_DOCX_BYTES = 20 * 1024 * 1024; // 20 MB decoded
 type RequestBody = {
   acceptedRedlines: Record<string, AcceptedRedline>;
   docxBuffer?: string;
+  docxStorageKey?: string;
   fileName: string;
 };
 
@@ -39,24 +42,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const { acceptedRedlines, docxBuffer, fileName } = body;
+  const { acceptedRedlines, docxBuffer, docxStorageKey, fileName } = body;
 
   if (!acceptedRedlines || Object.keys(acceptedRedlines).length === 0) {
     return NextResponse.json({ error: 'No accepted redlines provided.' }, { status: 400 });
   }
 
-  if (!docxBuffer) {
+  if (!docxBuffer && !docxStorageKey) {
     return NextResponse.json({ error: 'No DOCX buffer provided.' }, { status: 400 });
   }
 
   // Reject oversized base64 payloads before decoding (base64 overhead is ~4/3).
-  if (docxBuffer.length > MAX_DOCX_BYTES * 1.4) {
+  if (docxBuffer && docxBuffer.length > MAX_DOCX_BYTES * 1.4) {
     return NextResponse.json({ error: 'Document exceeds the 20 MB size limit.' }, { status: 413 });
   }
 
   try {
-    setDefaultAuthor('Pactora');
-    const buffer = Buffer.from(docxBuffer, 'base64');
+    // Use the signed-in user's email as the tracked-change author so reviewers
+    // see a real identity in Word rather than the generic "Pactora" fallback.
+    const session = await getCurrentSessionUser();
+    setDefaultAuthor(session?.user.email ?? 'Pactora');
+
+    // Resolve the DOCX buffer: prefer a Supabase Storage key (set at upload time
+    // when Storage is configured); fall back to the inline base64 string that the
+    // client stores in sessionStorage for backward compatibility.
+    let buffer: Buffer;
+    if (docxStorageKey) {
+      const downloaded = await downloadDocx(docxStorageKey);
+      if (!downloaded) {
+        return NextResponse.json(
+          { error: 'Could not retrieve the original document. Please re-upload and try again.' },
+          { status: 502 },
+        );
+      }
+      buffer = downloaded;
+    } else {
+      buffer = Buffer.from(docxBuffer!, 'base64');
+    }
 
     // Reject after decoding to catch any padding tricks.
     if (buffer.length > MAX_DOCX_BYTES) {
