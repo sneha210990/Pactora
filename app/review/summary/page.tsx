@@ -457,6 +457,7 @@ function SummaryContent() {
 
   const acceptedRedlines = analysis.acceptedRedlines ?? {};
   const sourceFileType = analysis.sourceFileType ?? null;
+  const docxStorageKey = analysis.docxStorageKey ?? null;
   const contractSide = analysis.contractSide ?? null;
 
   const [user, setUser] = useState<{ email: string } | null>(null);
@@ -645,6 +646,7 @@ function SummaryContent() {
               acceptedRedlines={acceptedRedlines}
               sourceFileType={sourceFileType}
               fileName={analysis.documentMeta?.fileName ?? 'contract'}
+              docxStorageKey={docxStorageKey}
             />
             <ExportPdfButton
               contractName={analysis.documentMeta?.fileName ?? ''}

@@ -124,6 +124,8 @@ export type DocumentAnalysisState = {
   manualFlags?: ClauseFlag[];
   crossClauseRisks?: CrossClauseRisk[];
   sourceFileType: 'docx' | 'pdf' | null;
+  docxStorageKey?: string;
+  paragraphOffsets?: Array<{ start: number; end: number }>;
   contractType?: ContractType;
   contractSide?: 'supplier' | 'buyer' | null;
   acceptedRedlines: Record<string, { clauseText: string; proposedText: string; explanation: string }>;
@@ -149,6 +151,8 @@ type Action =
   | { type: 'appendFlag'; flag: ClauseFlag }
   | { type: 'restoreState'; state: DocumentAnalysisState }
   | { type: 'setSourceFileType'; fileType: 'docx' | 'pdf' | null }
+  | { type: 'setDocxStorageKey'; key: string }
+  | { type: 'setParagraphOffsets'; offsets: Array<{ start: number; end: number }> }
   | { type: 'acceptRedline'; clauseType: string; clauseText: string; proposedText: string; explanation: string }
   | { type: 'dismissRedline'; clauseType: string }
   | { type: 'setContractType'; contractType: ContractType }
@@ -524,6 +528,12 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
     case 'setSourceFileType':
       next = { ...state, sourceFileType: action.fileType };
       break;
+    case 'setDocxStorageKey':
+      next = { ...state, docxStorageKey: action.key };
+      break;
+    case 'setParagraphOffsets':
+      next = { ...state, paragraphOffsets: action.offsets };
+      break;
     case 'acceptRedline':
       next = {
         ...state,
@@ -615,6 +625,8 @@ type StoreValue = {
     appendFlag: (flag: ClauseFlag) => void;
     restoreState: (state: DocumentAnalysisState) => void;
     setSourceFileType: (fileType: 'docx' | 'pdf' | null) => void;
+    setDocxStorageKey: (key: string) => void;
+    setParagraphOffsets: (offsets: Array<{ start: number; end: number }>) => void;
     acceptRedline: (clauseType: string, clauseText: string, proposedText: string, explanation: string) => void;
     dismissRedline: (clauseType: string) => void;
     setContractType: (contractType: ContractType) => void;
@@ -651,6 +663,8 @@ export function DocumentAnalysisProvider({ children }: { children: ReactNode }) 
     appendFlag: (flag) => dispatch({ type: 'appendFlag', flag }),
     restoreState: (state) => dispatch({ type: 'restoreState', state }),
     setSourceFileType: (fileType) => dispatch({ type: 'setSourceFileType', fileType }),
+    setDocxStorageKey: (key) => dispatch({ type: 'setDocxStorageKey', key }),
+    setParagraphOffsets: (offsets) => dispatch({ type: 'setParagraphOffsets', offsets }),
     acceptRedline: (clauseType, clauseText, proposedText, explanation) =>
       dispatch({ type: 'acceptRedline', clauseType, clauseText, proposedText, explanation }),
     dismissRedline: (clauseType) => dispatch({ type: 'dismissRedline', clauseType }),
