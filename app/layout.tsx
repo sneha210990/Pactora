@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import './globals.css';
 import { BetaNav } from '@/components/beta-nav';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { APP_VERSION } from '@/lib/version';
@@ -17,7 +18,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      {/* Flash-prevention: reads localStorage before first paint and sets data-theme */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('pactora-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="antialiased">
         <DocumentAnalysisProvider>
         <div className="flex min-h-screen flex-col bg-black text-white">
@@ -53,6 +62,7 @@ export default function RootLayout({
                   Feedback
                 </Link>
 
+                <ThemeToggle />
                 <BetaNav />
               </nav>
             </div>
