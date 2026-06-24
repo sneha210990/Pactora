@@ -4,6 +4,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Semantic dark-mode tokens (current defaults) */
+  --bg-page: #000000;
+  --bg-nav: rgba(0, 0, 0, 0.70);
+  --bg-surface: rgb(9 9 11);
+  --bg-card: rgb(24 24 27);
+  --bg-muted: rgb(39 39 42);
+  --bg-subtle: rgb(63 63 70);
+  --text-primary: #ffffff;
+  --text-secondary: #d4d4d8;
+  --text-dim: #a1a1aa;
+  --text-muted: #71717a;
+  --text-faint: #52525b;
+  --border-default: #3f3f46;
+  --border-strong: #52525b;
 }
 
 @theme inline {
@@ -31,4 +46,163 @@ body {
   outline: 2px solid rgba(161, 161, 170, 0.7);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ─── Light mode token overrides ────────────────────────────────────────────── */
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg-page: #f8f7f4;
+  --bg-nav: rgba(255, 255, 255, 0.85);
+  --bg-surface: #f8f7f4;
+  --bg-card: #ffffff;
+  --bg-muted: #f0ede8;
+  --bg-subtle: #e8e4de;
+  --text-primary: #0a0a0a;
+  --text-secondary: #1a1916;
+  --text-dim: #6b6860;
+  --text-muted: #9b9890;
+  --text-faint: #b0ada5;
+  --border-default: #e0ddd6;
+  --border-strong: #c9c6be;
+}
+
+/* ─── Light mode: override hardcoded Tailwind background utilities ───────────── */
+
+html[data-theme="light"] .bg-black {
+  background-color: var(--bg-page) !important;
+}
+
+html[data-theme="light"] .bg-black\/70 {
+  background-color: var(--bg-nav) !important;
+}
+
+html[data-theme="light"] .bg-black\/30 {
+  background-color: rgba(255, 255, 255, 0.50) !important;
+}
+
+html[data-theme="light"] .bg-zinc-950 {
+  background-color: var(--bg-page) !important;
+}
+
+html[data-theme="light"] .bg-zinc-950\/50 {
+  background-color: rgba(255, 255, 255, 0.70) !important;
+}
+
+html[data-theme="light"] .bg-zinc-950\/60 {
+  background-color: rgba(255, 255, 255, 0.80) !important;
+}
+
+html[data-theme="light"] .bg-zinc-900 {
+  background-color: var(--bg-card) !important;
+}
+
+html[data-theme="light"] .bg-zinc-800 {
+  background-color: var(--bg-muted) !important;
+}
+
+html[data-theme="light"] .bg-zinc-700 {
+  background-color: var(--bg-subtle) !important;
+}
+
+html[data-theme="light"] .bg-zinc-600 {
+  background-color: #dedad3 !important;
+}
+
+/* ─── Light mode: override hardcoded Tailwind text utilities ────────────────── */
+
+html[data-theme="light"] .text-white {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .text-zinc-100 {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .text-zinc-200 {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .text-zinc-300 {
+  color: var(--text-dim) !important;
+}
+
+html[data-theme="light"] .text-zinc-400 {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .text-zinc-500 {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .text-zinc-600 {
+  color: var(--text-faint) !important;
+}
+
+html[data-theme="light"] .text-gray-500 {
+  color: var(--text-muted) !important;
+}
+
+/* ─── Light mode: override hardcoded Tailwind border utilities ──────────────── */
+
+html[data-theme="light"] .border-zinc-800 {
+  border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .border-zinc-700 {
+  border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .border-zinc-600 {
+  border-color: var(--border-strong) !important;
+}
+
+/* ─── Light mode: override hover states ─────────────────────────────────────── */
+
+html[data-theme="light"] .hover\:bg-zinc-900:hover {
+  background-color: var(--bg-muted) !important;
+}
+
+html[data-theme="light"] .hover\:bg-zinc-200:hover {
+  background-color: var(--bg-subtle) !important;
+}
+
+html[data-theme="light"] .hover\:text-white:hover {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .hover\:text-zinc-200:hover {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .hover\:text-zinc-300:hover {
+  color: var(--text-dim) !important;
+}
+
+html[data-theme="light"] .hover\:border-zinc-500:hover {
+  border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .hover\:border-zinc-400:hover {
+  border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .hover\:border-zinc-700:hover {
+  border-color: var(--border-default) !important;
+}
+
+/* ─── Light mode: override gradient scroll-fade in review progress ───────────── */
+
+html[data-theme="light"] .from-black {
+  --tw-gradient-from: var(--bg-page) !important;
+}
+
+/* ─── Light mode: homepage primary CTA (bg-white text-black) inverts cleanly ── */
+/* bg-white stays white in light mode — it reads correctly there.
+   No override needed; white card on #f8f7f4 is visible. */
+
+/* ─── Light mode: divider lines (bg-zinc-700 used as 1px separators) ────────── */
+
+html[data-theme="light"] .bg-zinc-700 {
+  background-color: var(--border-default) !important;
 }
