@@ -52,157 +52,266 @@ body {
 
 html[data-theme="light"] {
   color-scheme: light;
+
   --bg-page: #f8f7f4;
   --bg-nav: rgba(255, 255, 255, 0.85);
   --bg-surface: #f8f7f4;
   --bg-card: #ffffff;
   --bg-muted: #f0ede8;
   --bg-subtle: #e8e4de;
-  --text-primary: #0a0a0a;
-  --text-secondary: #1a1916;
-  --text-dim: #6b6860;
-  --text-muted: #9b9890;
-  --text-faint: #b0ada5;
+
+  /* Text scale — each step passes ≥ 4.5 : 1 on #ffffff except --text-faint
+     which is intentional for decorative / hint-only copy.                   */
+  --text-primary:   #0a0a0a;   /* ≈ 21 : 1  */
+  --text-secondary: #1a1916;   /* ≈ 15 : 1  */
+  --text-dim:       #3d3b38;   /* ≈ 10 : 1  (was #6b6860 — too light) */
+  --text-muted:     #6b6860;   /* ≈  5 : 1  (was #9b9890 — too light) */
+  --text-faint:     #9b9890;   /* ≈  2.4 : 1  decorative/hint only    */
+
   --border-default: #e0ddd6;
-  --border-strong: #c9c6be;
+  --border-strong:  #c9c6be;
 }
 
-/* ─── Light mode: override hardcoded Tailwind background utilities ───────────── */
+/* ─── Light mode: Tailwind background utilities ──────────────────────────── */
 
 html[data-theme="light"] .bg-black {
   background-color: var(--bg-page) !important;
 }
-
 html[data-theme="light"] .bg-black\/70 {
   background-color: var(--bg-nav) !important;
 }
-
+/* Inner inset panels (extracted clause, negotiation point boxes) */
 html[data-theme="light"] .bg-black\/30 {
-  background-color: rgba(255, 255, 255, 0.50) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
 }
-
 html[data-theme="light"] .bg-zinc-950 {
   background-color: var(--bg-page) !important;
 }
-
+/* Card wrappers (clause flag cards, cross-clause cards) */
 html[data-theme="light"] .bg-zinc-950\/50 {
-  background-color: rgba(255, 255, 255, 0.70) !important;
+  background-color: #ffffff !important;
 }
-
 html[data-theme="light"] .bg-zinc-950\/60 {
-  background-color: rgba(255, 255, 255, 0.80) !important;
+  background-color: rgba(255, 255, 255, 0.90) !important;
 }
-
 html[data-theme="light"] .bg-zinc-900 {
   background-color: var(--bg-card) !important;
 }
-
 html[data-theme="light"] .bg-zinc-800 {
   background-color: var(--bg-muted) !important;
 }
-
 html[data-theme="light"] .bg-zinc-700 {
   background-color: var(--bg-subtle) !important;
 }
-
 html[data-theme="light"] .bg-zinc-600 {
   background-color: #dedad3 !important;
 }
 
-/* ─── Light mode: override hardcoded Tailwind text utilities ────────────────── */
+/* ─── Light mode: Tailwind text utilities ────────────────────────────────── */
 
 html[data-theme="light"] .text-white {
   color: var(--text-primary) !important;
 }
-
 html[data-theme="light"] .text-zinc-100 {
   color: var(--text-primary) !important;
 }
-
 html[data-theme="light"] .text-zinc-200 {
   color: var(--text-secondary) !important;
 }
-
 html[data-theme="light"] .text-zinc-300 {
   color: var(--text-dim) !important;
 }
-
 html[data-theme="light"] .text-zinc-400 {
   color: var(--text-muted) !important;
 }
-
 html[data-theme="light"] .text-zinc-500 {
   color: var(--text-muted) !important;
 }
-
 html[data-theme="light"] .text-zinc-600 {
   color: var(--text-faint) !important;
 }
-
 html[data-theme="light"] .text-gray-500 {
   color: var(--text-muted) !important;
 }
 
-/* ─── Light mode: override hardcoded Tailwind border utilities ──────────────── */
+/* ─── Light mode: Tailwind border utilities ──────────────────────────────── */
 
+html[data-theme="light"] .border-zinc-400 {
+  border-color: var(--border-strong) !important;
+}
+html[data-theme="light"] .border-zinc-500 {
+  border-color: var(--border-strong) !important;
+}
+html[data-theme="light"] .border-zinc-600 {
+  border-color: var(--border-strong) !important;
+}
+html[data-theme="light"] .border-zinc-700 {
+  border-color: var(--border-strong) !important;
+}
 html[data-theme="light"] .border-zinc-800 {
   border-color: var(--border-default) !important;
 }
 
-html[data-theme="light"] .border-zinc-700 {
-  border-color: var(--border-strong) !important;
-}
-
-html[data-theme="light"] .border-zinc-600 {
-  border-color: var(--border-strong) !important;
-}
-
-/* ─── Light mode: override hover states ─────────────────────────────────────── */
+/* ─── Light mode: hover states ───────────────────────────────────────────── */
 
 html[data-theme="light"] .hover\:bg-zinc-900:hover {
   background-color: var(--bg-muted) !important;
 }
-
 html[data-theme="light"] .hover\:bg-zinc-200:hover {
   background-color: var(--bg-subtle) !important;
 }
-
 html[data-theme="light"] .hover\:text-white:hover {
   color: var(--text-primary) !important;
 }
-
 html[data-theme="light"] .hover\:text-zinc-200:hover {
   color: var(--text-secondary) !important;
 }
-
 html[data-theme="light"] .hover\:text-zinc-300:hover {
   color: var(--text-dim) !important;
 }
-
-html[data-theme="light"] .hover\:border-zinc-500:hover {
-  border-color: var(--border-strong) !important;
+html[data-theme="light"] .hover\:text-zinc-400:hover {
+  color: var(--text-muted) !important;
 }
-
 html[data-theme="light"] .hover\:border-zinc-400:hover {
   border-color: var(--border-strong) !important;
 }
-
+html[data-theme="light"] .hover\:border-zinc-500:hover {
+  border-color: var(--border-strong) !important;
+}
 html[data-theme="light"] .hover\:border-zinc-700:hover {
   border-color: var(--border-default) !important;
 }
 
-/* ─── Light mode: override gradient scroll-fade in review progress ───────────── */
+/* ─── Light mode: gradient scroll-fade in review progress ────────────────── */
 
 html[data-theme="light"] .from-black {
   --tw-gradient-from: var(--bg-page) !important;
 }
 
-/* ─── Light mode: homepage primary CTA (bg-white text-black) inverts cleanly ── */
-/* bg-white stays white in light mode — it reads correctly there.
-   No override needed; white card on #f8f7f4 is visible. */
+/* ─────────────────────────────────────────────────────────────────────────────
+   RISK / STATUS COLOURS
+   The -100/-200/-300/-400 Tailwind variants are pastel tints designed for dark
+   backgrounds. In light mode they are near-invisible — replace with saturated
+   -700/-800 equivalents that read clearly on white or cream.
+   ─────────────────────────────────────────────────────────────────────────── */
 
-/* ─── Light mode: divider lines (bg-zinc-700 used as 1px separators) ────────── */
+/* Red */
+html[data-theme="light"] .text-red-100,
+html[data-theme="light"] .text-red-200,
+html[data-theme="light"] .text-red-300,
+html[data-theme="light"] .text-red-400 {
+  color: #b91c1c !important;   /* red-700 — CR 5.3 : 1 on white */
+}
+html[data-theme="light"] .hover\:text-red-200:hover {
+  color: #991b1b !important;   /* red-800 */
+}
 
-html[data-theme="light"] .bg-zinc-700 {
-  background-color: var(--border-default) !important;
+/* Amber */
+html[data-theme="light"] .text-amber-100,
+html[data-theme="light"] .text-amber-200,
+html[data-theme="light"] .text-amber-300,
+html[data-theme="light"] .text-amber-400 {
+  color: #92400e !important;   /* amber-800 — CR 7.0 : 1 on white */
+}
+html[data-theme="light"] .hover\:text-amber-200:hover {
+  color: #78350f !important;   /* amber-900 */
+}
+
+/* Emerald */
+html[data-theme="light"] .text-emerald-100,
+html[data-theme="light"] .text-emerald-200,
+html[data-theme="light"] .text-emerald-300,
+html[data-theme="light"] .text-emerald-400 {
+  color: #065f46 !important;   /* emerald-800 — CR 10.2 : 1 on white */
+}
+html[data-theme="light"] .hover\:text-emerald-100:hover,
+html[data-theme="light"] .hover\:text-emerald-200:hover {
+  color: #064e3b !important;   /* emerald-900 */
+}
+
+/* Blue (used for Seller-friendly badge on LoL page) */
+html[data-theme="light"] .text-blue-100,
+html[data-theme="light"] .text-blue-200,
+html[data-theme="light"] .text-blue-300 {
+  color: #1e40af !important;   /* blue-800 — CR 6.6 : 1 on white */
+}
+
+/* ─── Risk badge backgrounds — increase opacity so tints register on cream ── */
+
+/* /5 → 8 % */
+html[data-theme="light"] .bg-red-500\/5    { background-color: rgba(239,  68,  68, 0.08) !important; }
+html[data-theme="light"] .bg-amber-500\/5  { background-color: rgba(245, 158,  11, 0.08) !important; }
+html[data-theme="light"] .bg-emerald-500\/5{ background-color: rgba( 16, 185, 129, 0.08) !important; }
+html[data-theme="light"] .bg-blue-500\/5   { background-color: rgba( 59, 130, 246, 0.08) !important; }
+
+/* /10 → 13 % */
+html[data-theme="light"] .bg-red-500\/10    { background-color: rgba(239,  68,  68, 0.13) !important; }
+html[data-theme="light"] .bg-amber-500\/10  { background-color: rgba(245, 158,  11, 0.13) !important; }
+html[data-theme="light"] .bg-emerald-500\/10{ background-color: rgba( 16, 185, 129, 0.13) !important; }
+html[data-theme="light"] .bg-blue-500\/10   { background-color: rgba( 59, 130, 246, 0.13) !important; }
+
+/* /15 → 18 % */
+html[data-theme="light"] .bg-red-500\/15    { background-color: rgba(239,  68,  68, 0.18) !important; }
+html[data-theme="light"] .bg-amber-500\/15  { background-color: rgba(245, 158,  11, 0.18) !important; }
+html[data-theme="light"] .bg-emerald-500\/15{ background-color: rgba( 16, 185, 129, 0.18) !important; }
+html[data-theme="light"] .bg-blue-500\/15   { background-color: rgba( 59, 130, 246, 0.18) !important; }
+
+/* /20 — already visible, keep */
+
+/* ─── Dark-tinted risk panels (bg-*-950) — swap to pale equivalents ─────── */
+
+/* Error / diff panels (red-950 deep tint) */
+html[data-theme="light"] .bg-red-950\/10 { background-color: rgba(239,  68,  68, 0.08) !important; }
+html[data-theme="light"] .bg-red-950\/20 { background-color: rgba(239,  68,  68, 0.12) !important; }
+
+/* Code / proposed text panels (emerald-950 deep tint) */
+html[data-theme="light"] .bg-emerald-950\/10 { background-color: rgba( 16, 185, 129, 0.08) !important; }
+/* Accept redline action button */
+html[data-theme="light"] .bg-emerald-950\/40 { background-color: rgba( 16, 185, 129, 0.14) !important; }
+
+/* Accept redline button borders and hover */
+html[data-theme="light"] .border-emerald-700\/60 {
+  border-color: rgba(4, 120, 87, 0.50) !important;
+}
+html[data-theme="light"] .hover\:border-emerald-500:hover {
+  border-color: rgba(4, 120, 87, 0.70) !important;
+}
+
+/* Amber-950 (legal / warning notice banner) */
+html[data-theme="light"] .bg-amber-950\/30 { background-color: rgba(245, 158, 11, 0.10) !important; }
+html[data-theme="light"] .border-amber-700\/50 { border-color: rgba(217, 119, 6, 0.40) !important; }
+
+/* ─── Additional black opacity variants ─────────────────────────────────── */
+html[data-theme="light"] .bg-black\/10  { background-color: rgba(0, 0, 0, 0.03) !important; }
+html[data-theme="light"] .bg-black\/20  { background-color: rgba(0, 0, 0, 0.04) !important; }
+html[data-theme="light"] .bg-black\/25  { background-color: rgba(0, 0, 0, 0.04) !important; }
+html[data-theme="light"] .bg-black\/40  { background-color: rgba(0, 0, 0, 0.05) !important; }
+html[data-theme="light"] .bg-black\/60  { background-color: rgba(0, 0, 0, 0.06) !important; }
+
+/* ─── border-zinc-900 (very dark in dark mode — reset to soft border) ────── */
+html[data-theme="light"] .border-zinc-900 {
+  border-color: var(--border-default) !important;
+}
+
+/* ─── Blue border opacity variants ──────────────────────────────────────── */
+html[data-theme="light"] .border-blue-500\/20 { border-color: rgba(59, 130, 246, 0.30) !important; }
+html[data-theme="light"] .border-blue-500\/30 { border-color: rgba(59, 130, 246, 0.40) !important; }
+html[data-theme="light"] .border-blue-500\/40 { border-color: rgba(59, 130, 246, 0.50) !important; }
+
+/* ─── Emerald border (solid, no opacity) ────────────────────────────────── */
+html[data-theme="light"] .border-emerald-700 {
+  border-color: rgba(4, 120, 87, 0.60) !important;
+}
+
+/* ─── Disabled-state overrides ───────────────────────────────────────────── */
+html[data-theme="light"] .disabled\:bg-zinc-700:disabled,
+html[data-theme="light"] .disabled\:bg-zinc-800:disabled {
+  background-color: var(--bg-subtle) !important;
+}
+html[data-theme="light"] .disabled\:text-zinc-300:disabled {
+  color: var(--text-dim) !important;
+}
+html[data-theme="light"] .disabled\:text-zinc-400:disabled,
+html[data-theme="light"] .disabled\:text-zinc-500:disabled {
+  color: var(--text-muted) !important;
 }
