@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import './globals.css';
+import { BetaBanner } from '@/components/beta-banner';
 import { BetaNav } from '@/components/beta-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className="antialiased">
         <DocumentAnalysisProvider>
         <div className="flex min-h-screen flex-col bg-black text-white">
+          <BetaBanner />
           <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/70 backdrop-blur">
             <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
               <Link href="/" className="font-semibold tracking-tight">
