@@ -8,7 +8,7 @@ import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsFie
 import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
-import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysis, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { Tooltip } from '@/components/tooltip';
 
@@ -180,6 +180,8 @@ function synthesizeIPFlag(clauseText: string, result: ReviewResult): ClauseFlag 
 
 function IpOwnershipReviewContent() {
   const commercialContext = useDocumentCommercialContext();
+  const analysis = useDocumentAnalysis();
+  const acceptedRedlines = analysis.acceptedRedlines ?? {};
   const canonicalClause = useClauseByType('IP Ownership');
 
   const dataType = commercialContext.dataType;
@@ -246,6 +248,15 @@ function IpOwnershipReviewContent() {
             )}
           </div>
         </section>
+
+        {!canonicalClause?.text && (
+          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+            <div className="font-semibold">IP ownership clause not detected</div>
+            <p className="mt-1 text-amber-300/80">
+              Pactora did not find an IP ownership clause in your uploaded contract. Missing IP provisions can mean the other party claims ownership of work product or deliverables by default. Paste the relevant wording below if it exists, or use the negotiation guidance to address IP allocation.
+            </p>
+          </div>
+        )}
 
         <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
           <div className="mb-3">
@@ -371,6 +382,11 @@ function IpOwnershipReviewContent() {
               clauseType="IP Ownership"
               acv={commercialContext.acv.value}
               liabilityCap={lolCap}
+              isAccepted={!!acceptedRedlines['IP Ownership']}
+              onAccept={(clauseText, proposedText, explanation) =>
+                actions.acceptRedline('IP Ownership', clauseText, proposedText, explanation)
+              }
+              onDismiss={() => actions.dismissRedline('IP Ownership')}
             />
             <p className="border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </section>

@@ -8,7 +8,7 @@ import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsFie
 import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
-import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysis, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { Tooltip } from '@/components/tooltip';
 
@@ -193,6 +193,8 @@ function synthesizeIndemnitiesFlag(clauseText: string, result: ReviewResult): Cl
 
 function IndemnitiesReviewContent() {
   const commercialContext = useDocumentCommercialContext();
+  const analysis = useDocumentAnalysis();
+  const acceptedRedlines = analysis.acceptedRedlines ?? {};
   const canonicalClause = useClauseByType('Indemnities');
 
   const acv = commercialContext.acv.value === null ? null : String(commercialContext.acv.value);
@@ -257,6 +259,15 @@ function IndemnitiesReviewContent() {
             </span>
           </div>
         </section>
+
+        {!canonicalClause?.text && (
+          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+            <div className="font-semibold">Indemnity clause not detected</div>
+            <p className="mt-1 text-amber-300/80">
+              Pactora did not find an indemnity clause in your uploaded contract. Broad or one-sided indemnities are one of the most common high-value risks in commercial contracts. Paste the relevant wording below if it exists, or use the negotiation guidance to address indemnity exposure.
+            </p>
+          </div>
+        )}
 
         <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
           <div className="mb-3">
@@ -385,6 +396,11 @@ function IndemnitiesReviewContent() {
               clauseType="Indemnities"
               acv={acvAmount}
               liabilityCap={lolCap}
+              isAccepted={!!acceptedRedlines['Indemnities']}
+              onAccept={(clauseText, proposedText, explanation) =>
+                actions.acceptRedline('Indemnities', clauseText, proposedText, explanation)
+              }
+              onDismiss={() => actions.dismissRedline('Indemnities')}
             />
             <p className="border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </section>

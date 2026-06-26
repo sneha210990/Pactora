@@ -9,7 +9,7 @@ import { NewReviewButton } from '../components/new-review-button';
 import { RedlineSuggestion } from '../components/redline-suggestion';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
-import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysis, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 import { Tooltip } from '@/components/tooltip';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 
@@ -354,6 +354,8 @@ function synthesizeLolFlag(
 function LolReviewContent() {
   const commercialContext = useDocumentCommercialContext();
   const actions = useDocumentAnalysisActions();
+  const analysis = useDocumentAnalysis();
+  const acceptedRedlines = analysis.acceptedRedlines ?? {};
   const canonicalClause = useClauseByType('Liability Cap');
 
   useEffect(() => {
@@ -439,6 +441,15 @@ function LolReviewContent() {
             <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">Data: {formatOptionalTextField(dataType)}</span>
           </div>
         </div>
+
+        {!canonicalClause?.text && (
+          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+            <div className="font-semibold">Liability cap clause not detected</div>
+            <p className="mt-1 text-amber-300/80">
+              Pactora did not find a liability cap clause in your uploaded contract. This is a high-risk gap — without a cap, your liability to the other party may be unlimited. Paste the relevant clause below if it exists, or use the negotiation guidance to request one.
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
           <label htmlFor="lolClause" className="text-base font-semibold">
@@ -583,6 +594,11 @@ function LolReviewContent() {
             clauseType="Liability Cap"
             acv={acv}
             liabilityCap={derived.impliedCapAmountGBP}
+            isAccepted={!!acceptedRedlines['Liability Cap']}
+            onAccept={(clauseText, proposedText, explanation) =>
+              actions.acceptRedline('Liability Cap', clauseText, proposedText, explanation)
+            }
+            onDismiss={() => actions.dismissRedline('Liability Cap')}
           />
           <p className="mt-4 border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </>

@@ -8,7 +8,7 @@ import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsFie
 import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
-import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysis, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { Tooltip } from '@/components/tooltip';
 
@@ -318,6 +318,8 @@ function synthesizeTerminationFlag(clauseText: string, result: ReviewResult): Cl
 
 function TerminationReviewContent() {
   const commercialContext = useDocumentCommercialContext();
+  const analysis = useDocumentAnalysis();
+  const acceptedRedlines = analysis.acceptedRedlines ?? {};
   const canonicalClause = useClauseByType('Termination');
 
   const dataType = commercialContext.dataType;
@@ -379,6 +381,15 @@ function TerminationReviewContent() {
             )}
           </div>
         </section>
+
+        {!canonicalClause?.text && (
+          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+            <div className="font-semibold">Termination clause not detected</div>
+            <p className="mt-1 text-amber-300/80">
+              Pactora did not find a termination clause in your uploaded contract. Without explicit termination provisions, the other party may rely on common law rights to terminate with little or no notice. Paste the relevant wording below if it exists, or use the negotiation guidance to request appropriate termination terms.
+            </p>
+          </div>
+        )}
 
         <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
           <div className="mb-3">
@@ -504,6 +515,11 @@ function TerminationReviewContent() {
               clauseType="Termination"
               acv={commercialContext.acv.value}
               liabilityCap={lolCap}
+              isAccepted={!!acceptedRedlines['Termination']}
+              onAccept={(clauseText, proposedText, explanation) =>
+                actions.acceptRedline('Termination', clauseText, proposedText, explanation)
+              }
+              onDismiss={() => actions.dismissRedline('Termination')}
             />
             <p className="border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </section>
