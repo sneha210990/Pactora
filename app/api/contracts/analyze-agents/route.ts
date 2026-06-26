@@ -136,6 +136,7 @@ export async function POST(request: Request) {
       if (chunks.length === 1) {
         // Single-chunk path: preserve existing streaming behaviour — emit events as each agent resolves.
         const collectedFlags: ClauseFlag[] = [];
+        let agentErrorCount = 0;
         const agentPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
           emit({ type: 'agent_start', clauseType });
           const result = await runClauseAgent(clauseType, contractText, chunks[0], contractType, jurisdiction, contractSide);
@@ -144,10 +145,17 @@ export async function POST(request: Request) {
             if (result.flag) collectedFlags.push(result.flag);
             allUsages.push(result.usage);
           } else {
+            agentErrorCount++;
             emit({ type: 'agent_error', clauseType, message: result.error });
           }
         });
         await Promise.allSettled(agentPromises);
+
+        if (activeAgents.length > 0 && agentErrorCount === activeAgents.length) {
+          emit({ type: 'service_error', message: "We're having trouble reaching our analysis service right now. Your contract hasn't been lost - please try again in a few minutes." });
+          controller.close();
+          return;
+        }
 
         finalFlags = collectedFlags;
         const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
@@ -156,12 +164,18 @@ export async function POST(request: Request) {
         // Multi-chunk path: analyse each chunk sequentially (agents within a chunk run in parallel),
         // then merge and deduplicate before emitting results.
         const rawResults: Array<{ chunkIndex: number; clauseType: PactoraClauseType; flag: ClauseFlag | null }> = [];
+        let multiChunkErrorCount = 0;
+        const totalExpected = activeAgents.length * chunks.length;
 
         for (const chunk of chunks) {
           console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
           const chunkPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
             const result = await runClauseAgent(clauseType, contractText, chunk, undefined, jurisdiction, contractSide);
-            if (result.ok) allUsages.push(result.usage);
+            if (result.ok) {
+              allUsages.push(result.usage);
+            } else {
+              multiChunkErrorCount++;
+            }
             return {
               chunkIndex: chunk.chunkIndex,
               clauseType,
@@ -173,6 +187,12 @@ export async function POST(request: Request) {
             if (r.status === 'fulfilled') rawResults.push(r.value);
             else console.error(`[ERROR] Agent failed on chunk ${chunk.chunkIndex}:`, r.reason);
           }
+        }
+
+        if (totalExpected > 0 && multiChunkErrorCount === totalExpected) {
+          emit({ type: 'service_error', message: "We're having trouble reaching our analysis service right now. Your contract hasn't been lost - please try again in a few minutes." });
+          controller.close();
+          return;
         }
 
         const mergedFlags = mergeChunkResults(rawResults);
