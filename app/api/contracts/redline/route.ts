@@ -87,9 +87,9 @@ export async function POST(request: Request) {
     const client = getAnthropicClient();
     const response = await client.messages.create({
       model: useThinking ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001',
-      max_tokens: useThinking ? 8000 : 600,
+      max_tokens: useThinking ? 4000 : 600,
       ...(useThinking
-        ? { thinking: { type: 'enabled' as const, budget_tokens: 4000 } }
+        ? { thinking: { type: 'enabled' as const, budget_tokens: 1500 } }
         : { temperature: 0 }),
       system: [
         {

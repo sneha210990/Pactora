@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { calculateCostUsd } from '@/lib/agents/api-cost';
 
-const SONNET_MODEL = 'claude-sonnet-4-6';
+// Transcription is a structured lookup task — Haiku handles it at 20× lower cost than Sonnet.
+const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
 
 // Anthropic document block supports PDFs up to 32 MB and 100 pages.
 // We stay conservative at 20 MB to match the upload limit in the extract route.
@@ -29,7 +30,7 @@ export async function extractTextViaVision(
   const base64 = buffer.toString('base64');
 
   const response = await client.messages.create({
-    model: SONNET_MODEL,
+    model: HAIKU_MODEL,
     max_tokens: 4096,
     messages: [
       {
@@ -68,7 +69,7 @@ export async function extractTextViaVision(
     outputTokens: u.output_tokens,
     cacheCreationTokens: cacheCreation,
     cacheReadTokens: cacheRead,
-    costUsd: calculateCostUsd(SONNET_MODEL, {
+    costUsd: calculateCostUsd(HAIKU_MODEL, {
       input_tokens: u.input_tokens,
       output_tokens: u.output_tokens,
       cache_creation_input_tokens: cacheCreation,

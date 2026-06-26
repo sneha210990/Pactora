@@ -53,7 +53,7 @@ function sseEvent(data: AgentEvent): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
-const VALID_JURISDICTIONS = new Set<string>(['england_wales', 'india', 'germany', 'france']);
+const VALID_JURISDICTIONS = new Set<string>(['england_wales', 'scotland', 'india', 'germany', 'france']);
 const ANON_COOKIE = 'pactora_anon_uses';
 const ANON_FREE_USES = 999;
 

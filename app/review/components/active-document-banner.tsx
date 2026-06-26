@@ -1,6 +1,6 @@
 'use client';
 
-import { extractedValue, useDocumentAnalysisStore, CONTRACT_TYPES } from '@/lib/document-analysis-store';
+import { extractedValue, useDocumentAnalysisStore, CONTRACT_TYPES, JURISDICTION_LABELS } from '@/lib/document-analysis-store';
 import type { ContractType } from '@/lib/document-analysis-store';
 import type { ExtractedField } from '@/lib/contract-extraction';
 
@@ -35,10 +35,11 @@ export function formatOptionalTextField<T extends string>(field: ExtractedField<
 export function ActiveDocumentBanner() {
   const { state, actions } = useDocumentAnalysisStore();
   const { activeDocument, contractType } = state;
+  const jurisdiction = state.commercialContext.jurisdiction ?? null;
 
   return (
     <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-300">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <span className="font-semibold text-zinc-100">Active document: </span>
           {activeDocument ? (
@@ -55,23 +56,35 @@ export function ActiveDocumentBanner() {
             <span>None selected</span>
           )}
         </div>
-        {contractType && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <label htmlFor="contract-type-select" className="whitespace-nowrap text-[11px] text-zinc-500">
-              Contract type
-            </label>
-            <select
-              id="contract-type-select"
-              value={contractType}
-              onChange={(e) => actions.setContractType(e.target.value as ContractType)}
-              className="cursor-pointer rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-300 hover:border-zinc-500"
-            >
-              {CONTRACT_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
+          {jurisdiction ? (
+            <div className="flex items-center gap-1.5">
+              <span className="whitespace-nowrap text-[11px] text-zinc-500">Jurisdiction</span>
+              <span className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-300">
+                {JURISDICTION_LABELS[jurisdiction]}
+              </span>
+            </div>
+          ) : (
+            <span className="text-[11px] text-zinc-600">No jurisdiction set</span>
+          )}
+          {contractType && (
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="contract-type-select" className="whitespace-nowrap text-[11px] text-zinc-500">
+                Contract type
+              </label>
+              <select
+                id="contract-type-select"
+                value={contractType}
+                onChange={(e) => actions.setContractType(e.target.value as ContractType)}
+                className="cursor-pointer rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-300 hover:border-zinc-500"
+              >
+                {CONTRACT_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
