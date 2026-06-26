@@ -52,22 +52,27 @@ body {
 
 html[data-theme="light"] {
   color-scheme: light;
-  --bg-page: #f8f7f4;
-  --bg-nav: rgba(255, 255, 255, 0.85);
-  --bg-surface: #f8f7f4;
+  --bg-page: #f8fafc;                    /* slate-50 — just off-white so cards pop */
+  --bg-nav: rgba(248, 250, 252, 0.92);   /* frosted slate-50 */
+  --bg-surface: #f1f5f9;                 /* slate-100 */
   --bg-card: #ffffff;
-  --bg-muted: #f0ede8;
-  --bg-subtle: #e8e4de;
-  --text-primary: #0a0a0a;
-  --text-secondary: #1a1916;
-  --text-dim: #6b6860;
-  --text-muted: #9b9890;
-  --text-faint: #b0ada5;
-  --border-default: #e0ddd6;
-  --border-strong: #c9c6be;
+  --bg-muted: #f1f5f9;                   /* slate-100 */
+  --bg-subtle: #e2e8f0;                  /* slate-200 */
+  --text-primary: #0f172a;               /* slate-900 */
+  --text-secondary: #1e293b;             /* slate-800 */
+  --text-dim: #475569;                   /* slate-600 */
+  --text-muted: #64748b;                 /* slate-500 */
+  --text-faint: #94a3b8;                 /* slate-400 */
+  --border-default: #e2e8f0;             /* slate-200 */
+  --border-strong: #cbd5e1;              /* slate-300 */
 }
 
-/* ─── Light mode: override hardcoded Tailwind background utilities ───────────── */
+/* Focus ring adapts to light mode */
+html[data-theme="light"] :focus-visible {
+  outline-color: rgba(71, 85, 105, 0.7); /* slate-600 */
+}
+
+/* ─── Light mode: background utilities ──────────────────────────────────────── */
 
 html[data-theme="light"] .bg-black {
   background-color: var(--bg-page) !important;
@@ -77,8 +82,16 @@ html[data-theme="light"] .bg-black\/70 {
   background-color: var(--bg-nav) !important;
 }
 
+html[data-theme="light"] .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.70) !important;
+}
+
 html[data-theme="light"] .bg-black\/30 {
-  background-color: rgba(255, 255, 255, 0.50) !important;
+  background-color: rgba(255, 255, 255, 0.60) !important;
+}
+
+html[data-theme="light"] .bg-black\/25 {
+  background-color: rgba(241, 245, 249, 0.60) !important;
 }
 
 html[data-theme="light"] .bg-zinc-950 {
@@ -86,30 +99,35 @@ html[data-theme="light"] .bg-zinc-950 {
 }
 
 html[data-theme="light"] .bg-zinc-950\/50 {
-  background-color: rgba(255, 255, 255, 0.70) !important;
-}
-
-html[data-theme="light"] .bg-zinc-950\/60 {
   background-color: rgba(255, 255, 255, 0.80) !important;
 }
 
+html[data-theme="light"] .bg-zinc-950\/60 {
+  background-color: rgba(255, 255, 255, 0.90) !important;
+}
+
 html[data-theme="light"] .bg-zinc-900 {
-  background-color: var(--bg-card) !important;
+  background-color: var(--bg-surface) !important;
+}
+
+html[data-theme="light"] .bg-zinc-900\/60 {
+  background-color: rgba(241, 245, 249, 0.60) !important;
+}
+
+html[data-theme="light"] .bg-zinc-900\/70 {
+  background-color: rgba(241, 245, 249, 0.70) !important;
 }
 
 html[data-theme="light"] .bg-zinc-800 {
   background-color: var(--bg-muted) !important;
 }
 
-html[data-theme="light"] .bg-zinc-700 {
+html[data-theme="light"] .bg-zinc-700,
+html[data-theme="light"] .bg-zinc-600 {
   background-color: var(--bg-subtle) !important;
 }
 
-html[data-theme="light"] .bg-zinc-600 {
-  background-color: #dedad3 !important;
-}
-
-/* ─── Light mode: override hardcoded Tailwind text utilities ────────────────── */
+/* ─── Light mode: text utilities ────────────────────────────────────────────── */
 
 html[data-theme="light"] .text-white {
   color: var(--text-primary) !important;
@@ -143,7 +161,21 @@ html[data-theme="light"] .text-gray-500 {
   color: var(--text-muted) !important;
 }
 
-/* ─── Light mode: override hardcoded Tailwind border utilities ──────────────── */
+/* Risk/status label text — dark-mode variants are too faint on white backgrounds */
+html[data-theme="light"] .text-red-200    { color: #b91c1c !important; } /* red-700    */
+html[data-theme="light"] .text-red-300    { color: #dc2626 !important; } /* red-600    */
+html[data-theme="light"] .text-red-400    { color: #ef4444 !important; } /* red-500    */
+html[data-theme="light"] .text-amber-200  { color: #92400e !important; } /* amber-800  */
+html[data-theme="light"] .text-amber-300  { color: #b45309 !important; } /* amber-700  */
+html[data-theme="light"] .text-amber-400  { color: #d97706 !important; } /* amber-600  */
+html[data-theme="light"] .text-emerald-200 { color: #065f46 !important; } /* emerald-800 */
+html[data-theme="light"] .text-emerald-300 { color: #047857 !important; } /* emerald-700 */
+html[data-theme="light"] .text-emerald-400 { color: #059669 !important; } /* emerald-600 */
+html[data-theme="light"] .text-blue-100   { color: #1e40af !important; } /* blue-800   */
+html[data-theme="light"] .text-blue-200   { color: #1d4ed8 !important; } /* blue-700   */
+html[data-theme="light"] .text-orange-300 { color: #c2410c !important; } /* orange-700 */
+
+/* ─── Light mode: border utilities ──────────────────────────────────────────── */
 
 html[data-theme="light"] .border-zinc-800 {
   border-color: var(--border-default) !important;
@@ -157,9 +189,13 @@ html[data-theme="light"] .border-zinc-600 {
   border-color: var(--border-strong) !important;
 }
 
-/* ─── Light mode: override hover states ─────────────────────────────────────── */
+/* ─── Light mode: hover states ───────────────────────────────────────────────── */
 
 html[data-theme="light"] .hover\:bg-zinc-900:hover {
+  background-color: var(--bg-surface) !important;
+}
+
+html[data-theme="light"] .hover\:bg-zinc-800:hover {
   background-color: var(--bg-muted) !important;
 }
 
@@ -179,10 +215,7 @@ html[data-theme="light"] .hover\:text-zinc-300:hover {
   color: var(--text-dim) !important;
 }
 
-html[data-theme="light"] .hover\:border-zinc-500:hover {
-  border-color: var(--border-strong) !important;
-}
-
+html[data-theme="light"] .hover\:border-zinc-500:hover,
 html[data-theme="light"] .hover\:border-zinc-400:hover {
   border-color: var(--border-strong) !important;
 }
@@ -191,18 +224,34 @@ html[data-theme="light"] .hover\:border-zinc-700:hover {
   border-color: var(--border-default) !important;
 }
 
-/* ─── Light mode: override gradient scroll-fade in review progress ───────────── */
+/* ─── Light mode: primary CTA inversion ─────────────────────────────────────── */
+/*
+ * In dark mode the primary action is white-bg / black-text (inverted).
+ * In light mode a white button on a white page is invisible, so we invert it:
+ * slate-900 background with white text.  The two-class selector has higher
+ * specificity than the single-class hover override above, so it wins even with
+ * !important on both sides.
+ */
+html[data-theme="light"] .bg-white.text-black {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .bg-white.text-black:hover {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+/* ─── Light mode: gradient backgrounds (review pages) ───────────────────────── */
 
 html[data-theme="light"] .from-black {
   --tw-gradient-from: var(--bg-page) !important;
 }
 
-/* ─── Light mode: homepage primary CTA (bg-white text-black) inverts cleanly ── */
-/* bg-white stays white in light mode — it reads correctly there.
-   No override needed; white card on #f8f7f4 is visible. */
+html[data-theme="light"] .via-zinc-950 {
+  --tw-gradient-via: var(--bg-page) !important;
+}
 
-/* ─── Light mode: divider lines (bg-zinc-700 used as 1px separators) ────────── */
-
-html[data-theme="light"] .bg-zinc-700 {
-  background-color: var(--border-default) !important;
+html[data-theme="light"] .to-black {
+  --tw-gradient-to: var(--bg-page) !important;
 }
