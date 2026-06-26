@@ -52,6 +52,12 @@ export default function RootLayout({
                   How it works
                 </Link>
                 <Link
+                  href="/docs"
+                  className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
+                >
+                  Docs
+                </Link>
+                <Link
                   href="/security"
                   className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
                 >
@@ -85,6 +91,12 @@ export default function RootLayout({
                 <p className="mt-3 max-w-md text-xs text-gray-500">{LEGAL_DISCLAIMER}</p>
               </div>
               <div className="flex flex-wrap items-center gap-4 md:justify-end">
+                <Link href="/docs" className="hover:text-white">
+                  Docs
+                </Link>
+                <Link href="/updates" className="hover:text-white">
+                  Updates
+                </Link>
                 <Link href="/terms" className="hover:text-white">
                   Terms
                 </Link>
