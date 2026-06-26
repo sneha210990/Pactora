@@ -44,6 +44,47 @@ const CONTRACT_TYPE_CONTEXT: Record<ContractType, string> = {
 // 2k thinking budget handles the legal chains these two agents must trace.
 // 4k was unused headroom billed at $15/MTok output rate.
 const THINKING_BUDGET_TOKENS = 2_000;
+
+const AGENT_TIMEOUT_MS = 30_000;
+
+// Calls `primary`, races it against a 30 s timeout.
+// On any failure retries once with `fallback` (always Haiku, no extended thinking).
+// If the fallback also fails, throws so the caller can surface a structured error.
+// Every failure is logged with timestamp, model, agent name, and error type.
+async function withFallback<T>(
+  primary: () => Promise<T>,
+  fallback: () => Promise<T>,
+  label: string,
+  primaryModel: string,
+): Promise<{ result: T; usedFallback: boolean }> {
+  const ts = () => new Date().toISOString();
+  try {
+    const result = await Promise.race([
+      primary(),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`timeout after ${AGENT_TIMEOUT_MS / 1000}s`)),
+          AGENT_TIMEOUT_MS,
+        ),
+      ),
+    ]);
+    return { result, usedFallback: false };
+  } catch (primaryErr) {
+    const primaryMsg = primaryErr instanceof Error ? primaryErr.message : String(primaryErr);
+    const errType = primaryMsg.includes('timeout') ? 'TIMEOUT' : 'ERROR';
+    console.error(`[AGENT ${errType}] ${ts()} agent="${label}" model=${primaryModel} error="${primaryMsg}"`);
+    try {
+      const result = await fallback();
+      console.warn(`[AGENT FALLBACK OK] ${ts()} agent="${label}" used=haiku-fallback`);
+      return { result, usedFallback: true };
+    } catch (fallbackErr) {
+      const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+      console.error(`[AGENT FALLBACK FAILED] ${ts()} agent="${label}" model=haiku error="${fallbackMsg}"`);
+      throw new Error(`Analysis service unavailable for ${label}`);
+    }
+  }
+}
+
 // Must be strictly greater than THINKING_BUDGET_TOKENS.
 const MAX_TOKENS_THINKING = 4_000;
 // Haiku agents: 2000 is enough for the 3-position negotiation ladder (~400 output tokens).
@@ -92,45 +133,58 @@ export async function runClauseAgent(
   const withThinking = EXTENDED_THINKING_CLAUSE_TYPES.has(clauseType);
   const model = withThinking ? SONNET : HAIKU;
 
-  try {
-    const response = await client.messages.create({
-      model,
-      max_tokens: withThinking ? MAX_TOKENS_THINKING : MAX_TOKENS_STANDARD,
-      // Extended thinking requires temperature=1 (API enforces it). Non-thinking
-      // agents use temperature=0 for consistent, reproducible clause detection.
-      ...(!withThinking ? { temperature: 0 } : {}),
-      ...(withThinking ? { thinking: { type: 'enabled' as const, budget_tokens: THINKING_BUDGET_TOKENS } } : {}),
-      tools: CLAUSE_AGENT_TOOLS,
-      // Extended thinking forbids tool_choice forcing tool use ('any' / 'tool').
-      // Thinking agents must use 'auto'; the model decides whether to call a tool.
-      tool_choice: withThinking ? { type: 'auto' } : { type: 'any' },
-      system: [
-        {
-          // Contract text first so it can be cached across all parallel agent calls.
-          // All eight agents share this block identically — cache hit on calls 2-8.
-          type: 'text',
-          text: `The following is the full text of a SaaS contract under review:\n\n${textToAnalyze}`,
-          cache_control: { type: 'ephemeral' },
-        },
-        {
-          // Clause-specific instructions — unique per agent, not worth caching.
-          type: 'text',
-          text: getClauseSystemPrompt(clauseType, contractSide),
-        },
-      ],
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Analyse the contract above for ${clauseType} risks and call the appropriate tool.${contractType ? `\n\nContract type context: ${CONTRACT_TYPE_CONTEXT[contractType]}` : ''}${jurisdiction ? `\n\n${JURISDICTION_CONTEXT[jurisdiction]}` : ''}${contractSide === 'supplier' ? '\n\nReviewing party: Supplier / Service provider. Flag risks that expose the supplier to uncapped liability, unfair IP assignment, onerous payment obligations, or asymmetric termination rights.' : contractSide === 'buyer' ? '\n\nReviewing party: Client / Buyer. Flag risks that limit the buyer\'s recourse, impose unfair liability on the buyer, restrict termination rights, or provide inadequate IP or data protection.' : ''}`,
-            },
-          ],
-        },
-      ],
-    });
+  // Shared prompt blocks — identical for primary and fallback so prompt-cache
+  // hits survive a model switch. Contract text is cached; clause instructions are not.
+  const systemBlocks = [
+    {
+      type: 'text' as const,
+      text: `The following is the full text of a SaaS contract under review:\n\n${textToAnalyze}`,
+      cache_control: { type: 'ephemeral' as const },
+    },
+    {
+      type: 'text' as const,
+      text: getClauseSystemPrompt(clauseType, contractSide),
+    },
+  ];
 
+  const userText = `Analyse the contract above for ${clauseType} risks and call the appropriate tool.${contractType ? `\n\nContract type context: ${CONTRACT_TYPE_CONTEXT[contractType]}` : ''}${jurisdiction ? `\n\n${JURISDICTION_CONTEXT[jurisdiction]}` : ''}${contractSide === 'supplier' ? '\n\nReviewing party: Supplier / Service provider. Flag risks that expose the supplier to uncapped liability, unfair IP assignment, onerous payment obligations, or asymmetric termination rights.' : contractSide === 'buyer' ? '\n\nReviewing party: Client / Buyer. Flag risks that limit the buyer\'s recourse, impose unfair liability on the buyer, restrict termination rights, or provide inadequate IP or data protection.' : ''}`;
+
+  const userMessages = [
+    { role: 'user' as const, content: [{ type: 'text' as const, text: userText }] },
+  ];
+
+  try {
+    const { result: response, usedFallback } = await withFallback(
+      () => client.messages.create({
+        model,
+        max_tokens: withThinking ? MAX_TOKENS_THINKING : MAX_TOKENS_STANDARD,
+        // Extended thinking requires temperature=1 (API enforces it). Non-thinking
+        // agents use temperature=0 for consistent, reproducible clause detection.
+        ...(!withThinking ? { temperature: 0 } : {}),
+        ...(withThinking ? { thinking: { type: 'enabled' as const, budget_tokens: THINKING_BUDGET_TOKENS } } : {}),
+        tools: CLAUSE_AGENT_TOOLS,
+        // Extended thinking forbids tool_choice forcing tool use ('any' / 'tool').
+        // Thinking agents must use 'auto'; the model decides whether to call a tool.
+        tool_choice: withThinking ? { type: 'auto' } : { type: 'any' },
+        system: systemBlocks,
+        messages: userMessages,
+      }),
+      // Fallback: always Haiku without extended thinking — thinking config is
+      // incompatible with Haiku, so strip it and force tool_choice: 'any'.
+      () => client.messages.create({
+        model: HAIKU,
+        max_tokens: MAX_TOKENS_STANDARD,
+        temperature: 0,
+        tools: CLAUSE_AGENT_TOOLS,
+        tool_choice: { type: 'any' },
+        system: systemBlocks,
+        messages: userMessages,
+      }),
+      clauseType,
+      model,
+    );
+
+    const actualModel = usedFallback ? HAIKU : model;
     const u = response.usage;
     const cacheCreation = u.cache_creation_input_tokens ?? 0;
     const cacheRead = u.cache_read_input_tokens ?? 0;
@@ -139,7 +193,7 @@ export async function runClauseAgent(
       outputTokens: u.output_tokens,
       cacheCreationTokens: cacheCreation,
       cacheReadTokens: cacheRead,
-      costUsd: calculateCostUsd(model, {
+      costUsd: calculateCostUsd(actualModel, {
         input_tokens: u.input_tokens,
         output_tokens: u.output_tokens,
         cache_creation_input_tokens: cacheCreation,

@@ -29,4 +29,5 @@ export type AgentEvent =
   | { type: 'agent_result'; clauseType: PactoraClauseType; flag: ClauseFlag | null }
   | { type: 'agent_error'; clauseType: PactoraClauseType; message: string }
   | { type: 'analysis_complete'; flags: ClauseFlag[]; crossClauseRisks: CrossClauseRisk[]; analyzedAt: string; totalCostUsd?: number }
-  | { type: 'contract_type_detected'; contractType: ContractType };
+  | { type: 'contract_type_detected'; contractType: ContractType }
+  | { type: 'service_error'; message: string };
