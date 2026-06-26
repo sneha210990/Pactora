@@ -7,7 +7,7 @@ export interface ContractChunk {
   endChar: number;
 }
 
-const CHUNK_SIZE = 100_000;
+const CHUNK_SIZE = 120_000;
 const OVERLAP_SIZE = 5_000;
 
 /**
