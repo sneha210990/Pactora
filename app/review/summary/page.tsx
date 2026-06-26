@@ -363,19 +363,6 @@ function ClauseFlagCard({
             </div>
           )}
 
-          {flag.highlightRange != null && flag.pageNumber != null && (
-            <button
-              type="button"
-              className="mt-3 text-xs text-zinc-500 underline hover:text-zinc-300"
-              onClick={() => {
-                console.log(
-                  `Highlight in PDF: page ${flag.pageNumber}, chars ${flag.highlightRange!.start}-${flag.highlightRange!.end}`,
-                );
-              }}
-            >
-              Open in PDF (page {flag.pageNumber})
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -648,15 +635,6 @@ function SummaryContent() {
               fileName={analysis.documentMeta?.fileName ?? 'contract'}
               docxStorageKey={docxStorageKey}
             />
-            <ExportPdfButton
-              contractName={analysis.documentMeta?.fileName ?? ''}
-              commercialContext={commercialContext}
-              overallRisk={overallRisk}
-              verdict={verdict.text}
-              riskScore={riskScore100}
-              flags={effectiveFlags}
-              crossClauseRisks={crossClauseRisks}
-            />
             <NewReviewButton className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900" />
           </div>
         </div>
@@ -685,6 +663,7 @@ function SummaryContent() {
             </div>
             {clauseFlags.length > 0 && (
               <div className="shrink-0 text-right">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Risk score</p>
                 <Tooltip content="Weighted risk score across all flagged clauses — 0 = no risk, 100 = maximum risk." position="bottom">
                   <span className={`text-7xl font-bold tabular-nums leading-none ${scoreColorClass(riskScore100)}`}>{riskScore100}</span>
                 </Tooltip>
@@ -744,54 +723,6 @@ function SummaryContent() {
             </div>
           </nav>
         </div>
-
-        <section className="mt-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
-          {emailContent ? (
-            <>
-              <div className="mb-3 flex items-center justify-between gap-4">
-                <h2 className="text-sm font-semibold text-blue-200">Negotiation email</h2>
-                <div className="flex gap-2">
-                  <button onClick={copyEmail} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800">
-                    {emailCopied ? 'Copied!' : 'Copy to clipboard'}
-                  </button>
-                  <button
-                    onClick={generateEmail}
-                    disabled={emailGenerating}
-                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 disabled:opacity-50"
-                  >
-                    {emailGenerating ? 'Generating…' : 'Regenerate'}
-                  </button>
-                </div>
-              </div>
-              <textarea
-                readOnly
-                value={emailContent}
-                rows={8}
-                className="w-full rounded-lg border border-zinc-700 bg-black/40 px-3 py-2 text-xs leading-relaxed text-zinc-200"
-              />
-            </>
-          ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-blue-200">Prepare for negotiation</h2>
-                <p className="mt-1 text-sm text-zinc-300">Generate a ready-to-send email covering all flagged issues, prioritised by risk.</p>
-              </div>
-              <div className="shrink-0">
-                <button
-                  onClick={generateEmail}
-                  disabled={emailGenerating || effectiveFlags.length === 0}
-                  className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300"
-                >
-                  {emailGenerating ? 'Generating…' : effectiveFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
-                </button>
-                {emailError ? <p className="mt-1 text-xs text-red-300">{emailError}</p> : null}
-                {!emailGenerating && effectiveFlags.length === 0 && (
-                  <p className="mt-1 text-xs text-zinc-500">Run the review sections above to generate clause flags first.</p>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
 
         <section className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-5">
@@ -924,6 +855,54 @@ function SummaryContent() {
             <p className="mt-2 text-sm text-zinc-500">No flags detected — upload a new contract to run AI analysis.</p>
           </section>
         )}
+
+        <section className="mt-8 rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
+          {emailContent ? (
+            <>
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <h2 className="text-sm font-semibold text-blue-200">Negotiation email</h2>
+                <div className="flex gap-2">
+                  <button onClick={copyEmail} className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800">
+                    {emailCopied ? 'Copied!' : 'Copy to clipboard'}
+                  </button>
+                  <button
+                    onClick={generateEmail}
+                    disabled={emailGenerating}
+                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {emailGenerating ? 'Generating…' : 'Regenerate'}
+                  </button>
+                </div>
+              </div>
+              <textarea
+                readOnly
+                value={emailContent}
+                rows={8}
+                className="w-full rounded-lg border border-zinc-700 bg-black/40 px-3 py-2 text-xs leading-relaxed text-zinc-200"
+              />
+            </>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-blue-200">Prepare for negotiation</h2>
+                <p className="mt-1 text-sm text-zinc-300">Generate a ready-to-send email covering all flagged issues, prioritised by risk.</p>
+              </div>
+              <div className="shrink-0">
+                <button
+                  onClick={generateEmail}
+                  disabled={emailGenerating || effectiveFlags.length === 0}
+                  className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:bg-zinc-700 disabled:text-zinc-300"
+                >
+                  {emailGenerating ? 'Generating…' : effectiveFlags.length === 0 ? 'No flags to include' : 'Generate negotiation email'}
+                </button>
+                {emailError ? <p className="mt-1 text-xs text-red-300">{emailError}</p> : null}
+                {!emailGenerating && effectiveFlags.length === 0 && (
+                  <p className="mt-1 text-xs text-zinc-500">Run the review sections above to generate clause flags first.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
 
         {user === null && clauseFlags.length > 0 && (
           <EmailCaptureBanner

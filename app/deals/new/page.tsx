@@ -511,7 +511,8 @@ export default function NewDealPage() {
         )}
 
         <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-          <h2 className="text-lg font-medium text-white">Which side of this contract are you on?</h2>
+          <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1 of 4</p>
+          <h2 className="mt-1 text-lg font-medium text-white">Which side of this contract are you on?</h2>
           <p className="mt-1 text-sm text-zinc-400">
             Founders, freelancers and small companies can be on either side — this calibrates what risks to flag.
           </p>
@@ -546,7 +547,7 @@ export default function NewDealPage() {
         </section>
 
         <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-          <p className="text-xs uppercase tracking-wide text-zinc-500">Step 1 of 3</p>
+          <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 4</p>
           <h2 className="mt-1 text-lg font-medium text-white">Add contract content</h2>
           <p className="mt-2 text-sm text-zinc-400">
             Upload your contract (PDF, DOCX, or legacy DOC) or paste the clauses you want Pactora to review. Pactora will only display extracted data it can support.
@@ -667,7 +668,7 @@ export default function NewDealPage() {
             ) : null}
 
             <section ref={step2Ref} className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 2 of 3</p>
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 3 of 4</p>
               <h2 className="mt-1 text-lg font-medium text-white">Extracted commercial context</h2>
               <p className="mt-2 text-sm text-zinc-400">
                 Empty fields mean the parser did not identify that value. Pactora will not substitute fake defaults.
@@ -703,7 +704,7 @@ export default function NewDealPage() {
             </section>
 
             <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-950 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 3 of 3</p>
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Step 4 of 4</p>
               <h2 className="mt-1 text-lg font-medium text-white">Acknowledgment</h2>
 
               <div className="mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm">
