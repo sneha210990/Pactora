@@ -12,6 +12,9 @@ type Props = {
   acv?: number | null;
   liabilityCap?: number | null;
   className?: string;
+  onAccept?: (clauseText: string, proposedText: string, explanation: string) => void;
+  isAccepted?: boolean;
+  onDismiss?: () => void;
 };
 
 function parseAlternative(raw: string): { clause: string; explanation: string } {
@@ -60,7 +63,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, className }: Props) {
+export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, className, onAccept, isAccepted, onDismiss }: Props) {
   const [status, setStatus] = useState<Status>('idle');
   const [alternative, setAlternative] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -92,6 +95,33 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
 
   const disabled = !clauseText.trim() || status === 'loading';
   const parsed = status === 'done' && alternative ? parseAlternative(alternative) : null;
+
+  if (isAccepted) {
+    return (
+      <div className={`rounded-xl border border-emerald-700/40 bg-emerald-950/20 p-4 ${className ?? ''}`.trim()}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            <div>
+              <h3 className="text-base font-semibold text-emerald-300">Redline accepted</h3>
+              <p className="text-xs text-emerald-600">Saved to your session. View accepted redlines on the Summary page.</p>
+            </div>
+          </div>
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
+            >
+              Undo
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`rounded-xl border border-zinc-800 bg-black/30 p-4 ${className ?? ''}`.trim()}>
@@ -137,7 +167,21 @@ export function RedlineSuggestion({ clauseText, clauseType, acv, liabilityCap, c
             proposed={parsed.clause}
             explanation={parsed.explanation}
           />
-          <p className="mt-3 text-xs text-zinc-500">Use this as your opening position — adjust the specific figures and carve-outs to match your deal before sending.</p>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-zinc-500">Use this as your opening position — adjust the specific figures and carve-outs to match your deal before sending.</p>
+            {onAccept && (
+              <button
+                type="button"
+                onClick={() => onAccept(clauseText, parsed.clause, parsed.explanation)}
+                className="flex shrink-0 items-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-950/40 px-3 py-1.5 text-xs font-medium text-emerald-300 transition hover:bg-emerald-900/40 hover:text-emerald-200"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Accept redline
+              </button>
+            )}
+          </div>
         </>
       )}
 

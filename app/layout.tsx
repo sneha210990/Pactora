@@ -43,7 +43,7 @@ export default function RootLayout({
                   href="/deals"
                   className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
                 >
-                  Deals
+                  History
                 </Link>
                 <Link
                   href="/how-it-works"

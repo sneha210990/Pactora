@@ -8,7 +8,7 @@ import { ActiveDocumentBanner, formatOptionalMoneyField, formatOptionalMonthsFie
 import { NewReviewButton } from '../components/new-review-button';
 import { ReviewProgress } from '../components/review-progress';
 import type { ClauseFlag } from '@/lib/document-analysis-store';
-import { useClauseByType, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
+import { useClauseByType, useDocumentAnalysis, useDocumentAnalysisActions, useDocumentCommercialContext } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { Tooltip } from '@/components/tooltip';
 
@@ -231,6 +231,8 @@ function synthesizeDataFlag(clauseText: string, result: ReviewResult): ClauseFla
 
 function DataProtectionReviewContent() {
   const commercialContext = useDocumentCommercialContext();
+  const analysis = useDocumentAnalysis();
+  const acceptedRedlines = analysis.acceptedRedlines ?? {};
   const canonicalClause = useClauseByType('Data Protection');
 
   const dataType = commercialContext.dataType;
@@ -297,6 +299,15 @@ function DataProtectionReviewContent() {
             )}
           </div>
         </section>
+
+        {!canonicalClause?.text && (
+          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+            <div className="font-semibold">Data protection clause not detected</div>
+            <p className="mt-1 text-amber-300/80">
+              Pactora did not find a data protection or DPA clause in your uploaded contract. If the contract involves any personal data processing, the absence of GDPR provisions creates regulatory and liability risk. Paste the relevant wording below if it exists, or use the negotiation guidance to request appropriate data protection terms.
+            </p>
+          </div>
+        )}
 
         <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-5">
           <div className="mb-3">
@@ -427,6 +438,11 @@ function DataProtectionReviewContent() {
               clauseType="Data Protection"
               acv={commercialContext.acv.value}
               liabilityCap={lolCap}
+              isAccepted={!!acceptedRedlines['Data Protection']}
+              onAccept={(clauseText, proposedText, explanation) =>
+                actions.acceptRedline('Data Protection', clauseText, proposedText, explanation)
+              }
+              onDismiss={() => actions.dismissRedline('Data Protection')}
             />
             <p className="border-t border-zinc-800 pt-4 text-xs text-zinc-500">{LEGAL_DISCLAIMER}</p>
           </section>
