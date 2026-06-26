@@ -23,9 +23,9 @@ export function BetaBanner() {
 
   return (
     <div className="relative z-50 bg-violet-600 px-4 py-2 text-center text-sm text-white">
-      <span className="font-medium">Pactora is in beta</span>
-      {' — '}
-      <span className="text-violet-200">expect rough edges. </span>
+      <span className="font-medium">Pactora is currently in beta.</span>
+      {' '}
+      <span className="text-violet-200">Analysis is for informational purposes only and does not constitute legal advice. Always consult qualified legal counsel before signing. </span>
       <Link href="/feedback" className="underline underline-offset-2 hover:text-violet-100">
         Share your feedback
       </Link>

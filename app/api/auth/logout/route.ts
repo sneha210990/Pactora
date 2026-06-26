@@ -5,7 +5,15 @@ import { getCurrentSessionUser } from '@/lib/auth';
 import { authCookieOptions, SESSION_COOKIE_NAME } from '@/lib/supabase-auth';
 
 export async function POST(request: Request) {
-  const sessionData = await getCurrentSessionUser();
+  // Read session before clearing so we can log the event, but never let a
+  // session-parse failure (e.g. missing SESSION_SECRET) block the logout.
+  let sessionData: Awaited<ReturnType<typeof getCurrentSessionUser>> = null;
+  try {
+    sessionData = await getCurrentSessionUser();
+  } catch {
+    // best-effort — proceed to clear cookie and redirect regardless
+  }
+
   const cookieStore = await cookies();
   // Clear with full flags (Secure/HttpOnly/SameSite) so the replacement
   // Set-Cookie carries the same attributes as the original — `cookies().delete`
@@ -13,12 +21,16 @@ export async function POST(request: Request) {
   // attribute mismatch.
   cookieStore.set(SESSION_COOKIE_NAME, '', authCookieOptions(0));
 
-  await createEvent({
-    event_type: 'logout',
-    user_id: sessionData?.user.id ?? null,
-    email: sessionData?.user.email ?? null,
-    page_context: '/logout',
-  });
+  try {
+    await createEvent({
+      event_type: 'logout',
+      user_id: sessionData?.user.id ?? null,
+      email: sessionData?.user.email ?? null,
+      page_context: '/logout',
+    });
+  } catch {
+    // telemetry failure — cookie already cleared, continue
+  }
 
   // Always redirect to the same origin the request arrived on — never trust
   // process.env.APP_URL to be set, and never default to http://localhost.

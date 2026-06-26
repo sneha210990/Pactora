@@ -25,9 +25,7 @@ export async function BetaNav() {
         {session.user.email.charAt(0).toUpperCase()}
       </span>
       <span className="h-4 w-px bg-zinc-700" aria-hidden="true" />
-      <form action="/api/auth/logout" method="POST">
-        <LogoutSubmitButton />
-      </form>
+      <LogoutSubmitButton />
     </div>
   );
 }
