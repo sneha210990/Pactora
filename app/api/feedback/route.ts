@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       resend.emails.send({
         from,
         to: email,
-        subject: 'Thanks for your Pactora feedback',
+        subject: 'Thanks for your feedback on Pactora',
         html: buildFeedbackThankyouEmail(email),
       }),
     ]);
