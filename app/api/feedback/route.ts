@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
+import { Resend } from 'resend';
 import { getCurrentSessionUser } from '@/lib/auth';
 import { createEvent, createFeedback, FeedbackCategory } from '@/lib/beta-store';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { buildFeedbackOwnerEmail, buildFeedbackThankyouEmail } from '@/lib/email/feedback-emails';
+
+const OWNER_EMAIL = process.env.PACTORA_OWNER_EMAIL ?? 'snehasindhu90@gmail.com';
 
 const categories = new Set<FeedbackCategory>(['bug', 'confusing', 'missing_feature', 'general_feedback']);
 
@@ -68,6 +72,35 @@ export async function POST(request: Request) {
     email,
     page_context,
   });
+
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    const resend = new Resend(resendApiKey);
+    const from = process.env.RESEND_FROM_EMAIL ?? 'Pactora <onboarding@resend.dev>';
+
+    await Promise.allSettled([
+      resend.emails.send({
+        from,
+        to: OWNER_EMAIL,
+        subject: `New feedback: ${category} from ${email}`,
+        html: buildFeedbackOwnerEmail({
+          email,
+          category: category as FeedbackCategory,
+          rating,
+          message,
+          page_context,
+          request_call,
+          can_contact,
+        }),
+      }),
+      resend.emails.send({
+        from,
+        to: email,
+        subject: 'Thanks for your Pactora feedback',
+        html: buildFeedbackThankyouEmail(email),
+      }),
+    ]);
+  }
 
   return NextResponse.json({ ok: true });
 }
