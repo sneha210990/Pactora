@@ -52,8 +52,11 @@ export const FLAG_CLAUSE_TOOL: Anthropic.Tool = {
       plainEnglish: {
         type: 'string',
         description:
-          '1-2 sentences explaining the risk in plain English for a non-lawyer buyer. ' +
-          'State what the clause means in practice — not what it says.',
+          '2–3 sentences explaining what this clause means in practice for a non-lawyer founder or freelancer. ' +
+          'Write in plain, conversational English — no legal jargon. Use "you" and "they". ' +
+          'Say what could actually happen to you if this clause stays as-is, not what the legal mechanism is. ' +
+          'Example of BAD output: "The indemnity obligations are uncapped notwithstanding the limitation of liability clause." ' +
+          'Example of GOOD output: "If a customer sues them over your product and wins, you have to cover their legal costs and damages — with no upper limit on what you might owe."',
       },
       negotiationPositions: {
         type: 'object',
@@ -70,7 +73,9 @@ export const FLAG_CLAUSE_TOOL: Anthropic.Tool = {
               },
               script: {
                 type: 'string',
-                description: 'Verbatim thing the buyer should say, 1–2 sentences.',
+                description:
+                  'Exactly what the buyer should say or write in an email — 1–2 plain, conversational sentences. ' +
+                  'No legal jargon. Write as if speaking directly to the other side in a meeting.',
               },
             },
             required: ['title', 'script'],
@@ -81,7 +86,12 @@ export const FLAG_CLAUSE_TOOL: Anthropic.Tool = {
               'Secondary position — move here if the Ask is rejected. Signals flexibility without revealing the floor.',
             properties: {
               title: { type: 'string', description: 'Short label, 3–6 words.' },
-              script: { type: 'string', description: 'Verbatim thing the buyer should say, 1–2 sentences.' },
+              script: {
+                type: 'string',
+                description:
+                  'Exactly what the buyer should say or write in an email — 1–2 plain, conversational sentences. ' +
+                  'No legal jargon. Write as if speaking directly to the other side in a meeting.',
+              },
             },
             required: ['title', 'script'],
           },
@@ -91,7 +101,12 @@ export const FLAG_CLAUSE_TOOL: Anthropic.Tool = {
               'A scope restriction rather than a number move — carve out the worst-case scenario instead of moving the headline figure.',
             properties: {
               title: { type: 'string', description: 'Short label, 3–6 words.' },
-              script: { type: 'string', description: 'Verbatim thing the buyer should say, 1–2 sentences.' },
+              script: {
+                type: 'string',
+                description:
+                  'Exactly what the buyer should say or write in an email — 1–2 plain, conversational sentences. ' +
+                  'No legal jargon. Write as if speaking directly to the other side in a meeting.',
+              },
             },
             required: ['title', 'script'],
           },
