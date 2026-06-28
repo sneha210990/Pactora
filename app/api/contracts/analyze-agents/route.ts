@@ -44,6 +44,7 @@ import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
 import { getCurrentSessionUser } from '@/lib/auth';
 import { isSupabaseDbConfigured, dbInsertClausePattern } from '@/lib/supabase-db';
 import { anonymiseClauseText } from '@/lib/anonymise-clause';
+import { enrichFlagsWithMarketPosition } from '@/lib/market-comparison';
 
 export const runtime = 'nodejs';
 // 5 parallel agents each with up to 60 s → 120 s ceiling gives headroom
@@ -157,9 +158,10 @@ export async function POST(request: Request) {
           return;
         }
 
-        finalFlags = collectedFlags;
-        const crossClauseRisks = detectCrossClauseRisks(collectedFlags);
-        emit({ type: 'analysis_complete', flags: collectedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
+        const enrichedFlags = await enrichFlagsWithMarketPosition(collectedFlags, contractType, contractSide);
+        finalFlags = enrichedFlags;
+        const crossClauseRisks = detectCrossClauseRisks(enrichedFlags);
+        emit({ type: 'analysis_complete', flags: enrichedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
       } else {
         // Multi-chunk path: analyse each chunk sequentially (agents within a chunk run in parallel),
         // then merge and deduplicate before emitting results.
@@ -196,17 +198,19 @@ export async function POST(request: Request) {
         }
 
         const mergedFlags = mergeChunkResults(rawResults);
-        finalFlags = mergedFlags;
         console.log(`[ANALYSIS] Found ${mergedFlags.length} unique flag(s) across ${chunks.length} chunk(s)`);
+
+        const enrichedMergedFlags = await enrichFlagsWithMarketPosition(mergedFlags, contractType, contractSide);
+        finalFlags = enrichedMergedFlags;
 
         // Emit one agent_result per active clause type so clients receive the standard event shape.
         for (const clauseType of activeAgents) {
-          const flag = mergedFlags.find((f) => f.clauseType === clauseType) ?? null;
+          const flag = enrichedMergedFlags.find((f) => f.clauseType === clauseType) ?? null;
           emit({ type: 'agent_result', clauseType, flag });
         }
 
-        const crossClauseRisks = detectCrossClauseRisks(mergedFlags);
-        emit({ type: 'analysis_complete', flags: mergedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
+        const crossClauseRisks = detectCrossClauseRisks(enrichedMergedFlags);
+        emit({ type: 'analysis_complete', flags: enrichedMergedFlags, crossClauseRisks, analyzedAt: new Date().toISOString() });
       }
 
       if (allUsages.length > 0) {

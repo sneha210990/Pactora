@@ -235,6 +235,27 @@ function ClauseFlagCard({
           <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${clauseFlagRiskClass(flag.riskLevel)}`}>
             {flag.riskLevel}
           </span>
+          {flag.marketComparison?.position === 'flag' && (
+            <Tooltip content="This clause is unusually unfavourable compared to market standard for England & Wales." position="bottom">
+              <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                Unfavourable
+              </span>
+            </Tooltip>
+          )}
+          {flag.marketComparison?.position === 'win' && (
+            <Tooltip content="This clause is unusually favourable compared to market standard for England & Wales." position="bottom">
+              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                Favourable
+              </span>
+            </Tooltip>
+          )}
+          {flag.marketComparison?.position === 'standard' && (
+            <Tooltip content="This clause is broadly in line with market standard for England & Wales." position="bottom">
+              <span className="rounded-full border border-zinc-600 bg-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-zinc-400">
+                Market standard
+              </span>
+            </Tooltip>
+          )}
           {flag.confidence === 'Uncertain' && (
             <Tooltip content="AI confidence in this flag is low — verify manually before relying on it." position="bottom">
               <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
