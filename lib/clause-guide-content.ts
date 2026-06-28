@@ -1,6 +1,11 @@
-// Clause guide content for /clauses/[slug] educational pages.
-// Each entry is a self-contained reference guide for one clause type.
-// Content is placeholder until the final copy is pasted in.
+// Clause guide content for /clauses/[slug] educational reference pages.
+// All legal sources written by Sneha Ganapavarapu. See AUTHOR_ATTRIBUTION.
+// URLs provided as-is from source material; YouTube links need final verification.
+
+export type ResourceLink = {
+  text: string;
+  url?: string;
+};
 
 export type ClauseGuideContent = {
   slug: string;
@@ -11,192 +16,378 @@ export type ClauseGuideContent = {
   redFlags: string[];
   marketStandard: string[];
   askYourLawyer: string[];
+  legalSources: ResourceLink[];
+  furtherReading: ResourceLink[];
+  watch: ResourceLink[];
+  listen: ResourceLink[];
   relatedTemplateName: string;
 };
+
+export const AUTHOR_ATTRIBUTION =
+  'This guide was written by Sneha Ganapavarapu, a qualified lawyer with experience in commercial contracts across technology, IP, and energy sectors. All legal sources are linked. This is general legal information, not legal advice. Always consult a qualified solicitor before signing any contract that matters to your business.';
 
 export const CLAUSE_GUIDES: ClauseGuideContent[] = [
   {
     slug: 'limitation-of-liability',
     clauseName: 'Limitation of Liability',
-    heroSummary: 'The clause that puts a ceiling on how much money either side can claim if something goes wrong.',
+    heroSummary:
+      'A limitation of liability clause caps how much one party can owe the other if something goes wrong.',
     whatItIs: [
-      'A limitation of liability clause (sometimes called a liability cap) sets the maximum financial exposure either party can face if a contract goes wrong.',
-      'Without one, a mistake that costs your client millions could fall on you — even if the work was worth a fraction of that.',
-      'These clauses are standard in commercial contracts, but the cap amount and what it excludes matter enormously.',
+      'A limitation of liability clause caps how much one party can owe the other if something goes wrong. It sets a ceiling on damages so neither side faces unlimited financial exposure from a single contract.',
     ],
     whatReasonableLooksLike: [
-      'For a UK freelancer or small business, a fair liability cap is typically set at the value of fees paid under the contract — or a small multiple of them (one to two times).',
-      'The cap should apply equally to both parties, not just protect the client.',
-      'It should carve out only genuine outliers: fraud, death or personal injury, and data protection breaches — not every possible scenario the other side adds to protect themselves.',
+      'For a UK freelancer or small business the cap is typically set at the total value of the contract or the fees paid in the preceding 12 months.',
+      'Both parties are subject to the same cap.',
+      'Personal injury and death are always excluded from the cap.',
+      'Fraud is always excluded.',
     ],
     redFlags: [
-      'Cap set at a nominal amount (e.g. £1,000) when your fees are significantly higher — means any claim wipes out your entire contract value.',
-      'Asymmetric cap: the client\'s liability is unlimited or higher than yours, but yours is tightly capped.',
-      'Long list of carve-outs that effectively remove the cap in practice (e.g. "any breach of clause 4" where clause 4 covers everything).',
-      'No cap at all — leaving you exposed to unlimited consequential losses.',
-      'Cap calculated on "fees paid in the previous month" when the contract has long payment cycles.',
-      'Exclusion of indirect loss is missing — without this, you can be liable for your client\'s lost profits.',
+      'One-sided cap that only limits the other party\'s liability but not yours.',
+      'Cap set at a nominal amount like £100 or £1,000 on a £50,000 contract.',
+      'No cap at all — unlimited liability on either side.',
+      'Exclusions that carve out too much from your own protection.',
     ],
     marketStandard: [
-      'UK market standard for B2B professional services caps liability at 100–200% of annual contract value.',
-      'Both parties\' liability is typically capped at the same level.',
-      'Exclusions for indirect, consequential, and loss-of-profit claims are standard and appear in most commercial contracts.',
-      'Carve-outs for fraud, death or personal injury, and wilful misconduct are universal — everything else is negotiable.',
+      'Mutual cap at contract value.',
+      'Standard exclusions for death, personal injury, fraud, and wilful misconduct.',
+      'Consequential loss excluded on both sides.',
     ],
     askYourLawyer: [
-      'Is this cap proportionate to the realistic risk I am taking on under this contract?',
-      'Does this cap apply symmetrically, or does the other side have greater exposure than I do?',
-      'What counts as "indirect loss" under this clause — and am I protected from consequential damage claims?',
-      'Are any of the carve-outs broad enough to swallow the cap entirely?',
-      'Should I seek professional indemnity insurance to cover the gap between the cap and my true exposure?',
+      'The cap is lower than the contract value.',
+      'The cap is one-sided.',
+      'There is no cap at all.',
+    ],
+    legalSources: [
+      {
+        text: 'Unfair Contract Terms Act 1977 — governs reasonableness of limitation clauses in B2B contracts. Section 11 sets the reasonableness test.',
+        url: 'https://www.legislation.gov.uk/ukpga/1977/50',
+      },
+      {
+        text: 'Consumer Rights Act 2015 — applies where one party is a consumer. Certain exclusions are void.',
+        url: 'https://www.legislation.gov.uk/ukpga/2015/15',
+      },
+      {
+        text: 'Watford Electronics Ltd v Sanderson CFL Ltd [2001] EWCA Civ 317 — leading Court of Appeal case on reasonableness of limitation clauses between commercial parties.',
+      },
+      {
+        text: 'Photo Production Ltd v Securicor Transport Ltd [1980] AC 827 — House of Lords authority on exclusion clauses surviving fundamental breach.',
+      },
+    ],
+    furtherReading: [
+      {
+        text: 'Law Society — Limitation of liability in commercial contracts practice note.',
+        url: 'https://www.lawsociety.org.uk',
+      },
+      {
+        text: 'Practical Law — Limitation and exclusion of liability clauses. Available free with registration.',
+        url: 'https://uk.practicallaw.thomsonreuters.com',
+      },
+      {
+        text: 'GOV.UK — Business contracts and unfair terms guidance.',
+        url: 'https://www.gov.uk/business-legal-structures',
+      },
+    ],
+    watch: [
+      {
+        text: 'Law Insider — Limitation of Liability Clauses Explained.',
+        url: 'https://www.youtube.com/lawinsider',
+      },
+    ],
+    listen: [
+      {
+        text: 'The Lawtomated Podcast — Episode on contract risk allocation for small businesses.',
+        url: 'https://www.lawtomated.com',
+      },
     ],
     relatedTemplateName: 'Limitation of Liability Clause Template',
   },
   {
     slug: 'indemnities',
     clauseName: 'Indemnities',
-    heroSummary: 'A promise to pay someone else\'s losses — often broader and more expensive than a simple breach of contract claim.',
+    heroSummary:
+      'An indemnity is a promise by one party to compensate the other for specific losses, costs, or claims — even if those losses weren\'t caused by a breach of contract.',
     whatItIs: [
-      'An indemnity is a contractual promise by one party to cover losses, costs, or damages suffered by the other — even in situations that fall outside a standard breach of contract claim.',
-      'Unlike a damages claim, which requires the claimant to prove loss, an indemnity can be triggered automatically when a specified event occurs.',
-      'They are common in IP licences, data processing agreements, and service contracts — but the scope and trigger events vary widely.',
+      'An indemnity is a promise by one party to compensate the other for specific losses, costs, or claims — even if those losses weren\'t caused by a breach of contract. Indemnities sit outside the limitation of liability clause and can override it.',
     ],
     whatReasonableLooksLike: [
-      'A fair indemnity is narrow and specific: it covers defined scenarios (e.g. third-party IP infringement claims arising from your work) rather than catch-all language.',
-      'Mutual indemnities — where both sides bear the same obligations — are fairer than one-sided arrangements.',
-      'Any indemnity you give should align with insurance you actually hold, such as professional indemnity cover.',
+      'Mutual indemnities for specific, defined scenarios — typically IP infringement and data protection breaches.',
+      'Narrow and specific in scope.',
+      'Subject to a cap or connected to the limitation of liability clause.',
     ],
     redFlags: [
-      'Broad indemnity language covering "any claim, loss, damage, cost, or expense" with no limitation on scope.',
-      'Indemnity triggered by "any breach" — meaning a minor administrative failure could trigger it.',
-      'One-sided indemnity where only you indemnify the client, with nothing in return.',
-      'Indemnity for consequential losses or loss of profit — these can be enormous and uninsurable.',
-      'No obligation on the indemnified party to take reasonable steps to mitigate their losses.',
-      'Indemnity extends to third-party claims you have no control over (e.g. claims by your client\'s own customers).',
+      'Broad indemnity covering any claim arising from your work.',
+      'One-sided indemnity running only in favour of the other party.',
+      'Indemnity that is uncapped and survives termination indefinitely.',
+      'Indemnity that includes consequential loss.',
     ],
     marketStandard: [
-      'UK market standard limits indemnities to specific, defined scenarios such as IP infringement or data breaches caused by your negligence.',
-      'Indemnities in UK commercial contracts are typically subject to the same liability cap as direct damages claims.',
-      'Mutual indemnity structures (each side indemnifies the other on the same terms) are increasingly common in balanced contracts.',
-      'Professional services contracts often cap indemnity liability at the value of professional indemnity insurance held.',
+      'Mutual, specific, capped indemnities.',
+      'IP indemnity is common and reasonable.',
+      'Broad general indemnities are not market standard for freelancer or SMB contracts.',
     ],
     askYourLawyer: [
-      'What is the realistic maximum exposure if this indemnity is triggered — and is it covered by my insurance?',
-      'Does this indemnity sit inside or outside the general liability cap?',
-      'Can I negotiate this indemnity down to specific, named scenarios rather than broad "any claim" language?',
-      'Is this indemnity mutual, or am I the only party bearing this obligation?',
-      'Do I need to notify my insurer before accepting this indemnity?',
+      'The indemnity is broad rather than specific.',
+      'The indemnity is uncapped.',
+      'The indemnity is one-sided.',
+      'You are being asked to indemnify a large corporate for any claim arising from your services.',
+    ],
+    legalSources: [
+      {
+        text: 'Farstad Supply AS v Enviroco Ltd [2011] UKSC 16 — Supreme Court authority on construction of indemnity clauses and knock-for-knock provisions.',
+      },
+      {
+        text: 'Caledonia North Sea Ltd v British Telecommunications plc [2002] UKHL 4 — House of Lords on indemnity clause construction and scope.',
+      },
+      {
+        text: 'Unfair Contract Terms Act 1977 s.4 — indemnity clauses in consumer and non-negotiated contracts subject to reasonableness test.',
+        url: 'https://www.legislation.gov.uk/ukpga/1977/50',
+      },
+    ],
+    furtherReading: [
+      {
+        text: 'Law Society — Indemnities in commercial contracts.',
+        url: 'https://www.lawsociety.org.uk',
+      },
+      {
+        text: 'Practical Law — Indemnities: what are they and how do they work.',
+        url: 'https://uk.practicallaw.thomsonreuters.com',
+      },
+      {
+        text: 'The Gazette — Official journal of the courts covering indemnity case law updates.',
+        url: 'https://www.thegazette.co.uk',
+      },
+    ],
+    watch: [
+      {
+        text: 'Contract Nerds — Indemnification clauses explained.',
+        url: 'https://www.youtube.com/contractnerds',
+      },
+    ],
+    listen: [
+      {
+        text: 'The Lawtomated Podcast — Indemnities for non-lawyers.',
+        url: 'https://www.lawtomated.com',
+      },
     ],
     relatedTemplateName: 'Mutual Indemnity Clause Template',
   },
   {
     slug: 'ip-ownership',
     clauseName: 'IP Ownership',
-    heroSummary: 'The clause that determines who owns the creative, technical, or proprietary work produced under this contract.',
+    heroSummary:
+      'The intellectual property ownership clause determines who owns the work product created under the contract.',
     whatItIs: [
-      'Intellectual property (IP) ownership clauses set out who legally owns the work, inventions, code, designs, or other output created during the engagement.',
-      'Without clear ownership provisions, UK copyright law defaults to the creator owning the work — but many contracts override this by assigning all IP to the client.',
-      'The distinction between assignment (permanent transfer of ownership) and licence (permission to use) has significant long-term commercial consequences.',
+      'The intellectual property ownership clause determines who owns the work product created under the contract. In UK law the default position varies depending on whether you are an employee or a contractor — employees\' work belongs to their employer, contractors retain ownership unless they agree otherwise.',
     ],
     whatReasonableLooksLike: [
-      'A fair IP clause distinguishes between background IP (what you bring into the contract) and foreground IP (what you create during it).',
-      'You should retain ownership of your background IP and any pre-existing tools, methodologies, or libraries — the client receives a broad licence to use your deliverables.',
-      'If a full assignment is required, the scope should be limited to the specific deliverables listed in the contract, not all output you produce.',
+      'For a freelancer — you retain ownership of your work until payment is received in full, at which point ownership transfers to the client.',
+      'Your background IP stays with you always.',
+      'Client gets a licence to use your background IP for the purposes of the contract only.',
     ],
     redFlags: [
-      'Broad assignment covering "all works, inventions, and improvements" created during the engagement — this can capture work unrelated to the contract.',
-      'No carve-out for background IP or pre-existing materials you own.',
-      'Assignment that extends to moral rights (UK moral rights cannot be assigned, only waived — a clause purporting to assign them is misleading).',
-      'Licence-back to you for your own background IP is absent — you could be locked out of tools you built.',
-      '"Work made for hire" language copied from US contracts — not applicable under UK law but creates ambiguity.',
-      'Assignment takes effect immediately on creation, before payment is received.',
+      'Blanket IP assignment clause assigning all IP including background IP and tools.',
+      'Assignment effective immediately on creation rather than on payment.',
+      'No carve-out for pre-existing materials.',
+      'Clause covering future work not yet created.',
     ],
     marketStandard: [
-      'UK market standard for freelance and professional services is a licence to the client, not a full assignment, unless the engagement is explicitly a work-for-hire arrangement.',
-      'Background IP retention clauses are standard in tech and creative services contracts.',
-      'Where assignment is agreed, it is common to condition transfer on receipt of full payment.',
-      'Moral rights waiver (not assignment) is standard where the client requires the ability to modify and republish work without attribution.',
+      'Foreground IP transfers to client on full payment.',
+      'Background IP stays with creator with a licence granted to client.',
+      'Future IP assignment is unusual and should be resisted.',
     ],
     askYourLawyer: [
-      'Does this clause assign my background IP, or only the deliverables I create for this client?',
-      'If I am assigning IP, does the assignment take effect on creation or on payment?',
-      'Have I retained adequate rights to use my own tools and methodologies on future projects?',
-      'Is a moral rights waiver necessary here, and what does it permit the client to do with my work?',
-      'Does this IP clause interact with any open-source licences in my codebase or third-party materials?',
+      'The clause assigns background IP.',
+      'The clause assigns IP before payment.',
+      'The clause covers work beyond the scope of this specific contract.',
+    ],
+    legalSources: [
+      {
+        text: 'Copyright Designs and Patents Act 1988 — sections 11 (first ownership), 90 (assignment), 92 (licences).',
+        url: 'https://www.legislation.gov.uk/ukpga/1988/48',
+      },
+      {
+        text: 'Patents Act 1977 — section 39 on employee inventions.',
+        url: 'https://www.legislation.gov.uk/ukpga/1977/37',
+      },
+      {
+        text: 'Ultraframe (UK) Ltd v Fielding [2005] EWHC 1638 — on beneficial ownership of IP and contractor relationships.',
+      },
+    ],
+    furtherReading: [
+      {
+        text: 'IPO — Intellectual property and employment.',
+        url: 'https://www.gov.uk/government/organisations/intellectual-property-office',
+      },
+      {
+        text: 'Law Society — IP in commercial contracts practice note.',
+        url: 'https://www.lawsociety.org.uk',
+      },
+      {
+        text: 'GOV.UK — Intellectual property for business.',
+        url: 'https://www.gov.uk/topic/intellectual-property',
+      },
+    ],
+    watch: [
+      {
+        text: 'Intellectual Property Office UK — IP Basics playlist.',
+        url: 'https://www.youtube.com/@IPO_UK',
+      },
+    ],
+    listen: [
+      {
+        text: 'The IPO Podcast — Intellectual property for small businesses.',
+        url: 'https://www.ipo.gov.uk/p-ipopodcast',
+      },
     ],
     relatedTemplateName: 'IP Ownership & Licence Clause Template',
   },
   {
     slug: 'data-protection',
     clauseName: 'Data Protection',
-    heroSummary: 'The clause governing how personal data is handled, shared, and protected — with real legal consequences if it goes wrong.',
+    heroSummary:
+      'The data protection clause sets out how personal data is handled under the contract, who is the data controller, who is the data processor, and what obligations each party owes under UK GDPR and the Data Protection Act 2018.',
     whatItIs: [
-      'A data protection clause sets out the obligations of each party when personal data (any information relating to an identifiable individual) is processed under the contract.',
-      'Under UK GDPR and the Data Protection Act 2018, certain contracts require a Data Processing Agreement (DPA) — particularly where one party processes data on behalf of the other.',
-      'Getting this wrong is not just a contractual breach; it can trigger regulatory action from the ICO, with fines up to £17.5 million or 4% of global turnover.',
+      'The data protection clause sets out how personal data is handled under the contract, who is the data controller, who is the data processor, and what obligations each party owes under UK GDPR and the Data Protection Act 2018.',
     ],
     whatReasonableLooksLike: [
-      'A fair clause identifies whether you are a data controller or data processor, and sets obligations appropriate to that role.',
-      'It lists permitted purposes for processing personal data and prohibits use outside those purposes.',
-      'Security obligations should be proportionate and reference recognised standards (e.g. ISO 27001 or Cyber Essentials) rather than vague "appropriate measures" language.',
+      'Clear identification of who is controller and who is processor.',
+      'Processor obligations set out — process only on documented instructions, implement appropriate security measures, assist with subject access requests, notify of breaches within 72 hours, delete or return data on termination.',
     ],
     redFlags: [
-      'No distinction between controller and processor — means your obligations and liability are unclear.',
-      'Broad permission for the other party to use personal data "for any purpose" rather than specified purposes.',
-      'Sub-processor restrictions that prevent you from using standard cloud tools (e.g. AWS, Google Workspace) without prior written consent for each.',
-      'Indemnity for data breaches that is uncapped or sits outside the general liability cap.',
-      'Requirement to notify the other party of breaches within 24 hours — shorter than the ICO\'s 72-hour regulatory window and operationally unworkable.',
-      'No data deletion or return obligation at contract end, leaving personal data in limbo.',
+      'No data protection clause at all in a contract involving personal data.',
+      'Clause that makes you responsible as controller when you are clearly acting as processor.',
+      'No breach notification obligation.',
+      'No deletion or return of data on termination.',
     ],
     marketStandard: [
-      'UK market standard is to include a DPA where one party processes personal data on behalf of the other.',
-      'Sub-processor lists and prior written consent requirements are standard, but reasonable DPAs pre-approve common cloud tools.',
-      'Data breach notification timelines of 48–72 hours are typical in UK commercial contracts.',
-      'Data protection indemnities are increasingly subject to the general contract liability cap in balanced agreements.',
+      'UK GDPR compliant processor terms.',
+      'Clear controller/processor distinction.',
+      '72-hour breach notification.',
+      'Data deletion or return on termination.',
     ],
     askYourLawyer: [
-      'Am I acting as a data controller or data processor under this contract, and does the clause reflect that correctly?',
-      'Does the contract require a formal Data Processing Agreement, and if so, does this clause satisfy the UK GDPR Article 28 requirements?',
-      'Is the sub-processor approval process workable for my existing tooling?',
-      'Does the data protection indemnity sit inside or outside the general liability cap?',
-      'What is my notification obligation if I discover a data breach — and is the timeline in this contract achievable?',
+      'The contract involves personal data and has no data protection clause.',
+      'You are being made controller when you are acting as processor.',
+    ],
+    legalSources: [
+      {
+        text: 'UK GDPR — Articles 4 (definitions), 28 (processor obligations), 29 (processing under authority), 32 (security), 33 (breach notification).',
+        url: 'https://www.legislation.gov.uk/eur/2016/679',
+      },
+      {
+        text: 'Data Protection Act 2018.',
+        url: 'https://www.legislation.gov.uk/ukpga/2018/12',
+      },
+      {
+        text: 'ICO — Controller and processor guidance.',
+        url: 'https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/controllers-and-processors',
+      },
+      {
+        text: 'ICO — Data processing contracts guidance.',
+        url: 'https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/contracts',
+      },
+    ],
+    furtherReading: [
+      {
+        text: 'ICO — Template data processing agreement.',
+        url: 'https://ico.org.uk',
+      },
+      {
+        text: 'Law Society — Data protection in commercial contracts.',
+        url: 'https://www.lawsociety.org.uk',
+      },
+      {
+        text: 'DCMS — UK data protection reform guidance.',
+        url: 'https://www.gov.uk/government/collections/uk-data-protection',
+      },
+    ],
+    watch: [
+      {
+        text: 'ICO — Data protection for small businesses YouTube series.',
+        url: 'https://www.youtube.com/@ICOnews',
+      },
+    ],
+    listen: [
+      {
+        text: 'Privacy Pros Podcast — UK GDPR for small businesses and freelancers.',
+        url: 'https://www.privacypros.io/podcast',
+      },
     ],
     relatedTemplateName: 'Data Processing Agreement Template',
   },
   {
     slug: 'termination',
     clauseName: 'Termination',
-    heroSummary: 'The rules for ending the contract — who can do it, when, for what reasons, and what happens to money and work already done.',
+    heroSummary:
+      'The termination clause sets out the conditions under which either party can end the contract, how much notice is required, and what happens when the contract ends.',
     whatItIs: [
-      'A termination clause sets out the conditions under which either party can bring the contract to an end before its natural expiry.',
-      'There are two main types: termination for cause (ending the contract because the other party has done something wrong) and termination for convenience (ending it for any or no reason, typically with a notice period).',
-      'What happens after termination — to fees owed, work in progress, and ongoing obligations — is often as important as the right to terminate itself.',
+      'The termination clause sets out the conditions under which either party can end the contract, how much notice is required, and what happens when the contract ends — including payment for work done, return of materials, and which obligations survive.',
     ],
     whatReasonableLooksLike: [
-      'A fair termination clause gives both parties equivalent rights — either both have termination for convenience, or neither does.',
-      'Cure periods of 14–30 days are standard: if one party breaches, the other must give them a chance to fix it before terminating.',
-      'On termination, you should be paid for work completed up to the termination date, with any unpaid invoices falling due immediately.',
+      'Mutual right to terminate for cause with 30 days written notice to remedy.',
+      'Mutual right to terminate for convenience with 30 to 90 days notice.',
+      'Clear payment for work done to termination date.',
+      'Reasonable survival clause covering confidentiality, IP, and liability.',
     ],
     redFlags: [
-      'Termination for convenience available only to the client — meaning they can end the contract at any time but you cannot.',
-      'Short notice periods (e.g. seven days) that leave you with no time to find replacement work.',
-      'No cure period before termination for breach — any minor failure triggers an immediate right to terminate.',
-      'Consequences that allow the client to withhold payment for work already delivered on termination.',
-      'Broad "material breach" definition that captures ordinary commercial disagreements as grounds for immediate termination.',
-      'Post-termination non-compete or non-solicitation obligations that are disproportionately long or broad.',
+      'Termination for convenience with no notice or immediate termination.',
+      'One-sided termination rights.',
+      'No payment on termination for convenience.',
+      'Very long survival clauses keeping obligations alive indefinitely.',
+      'Vague termination triggers entirely at client discretion.',
     ],
     marketStandard: [
-      'UK market standard for service contracts is 30–90 days\' notice for termination for convenience, applying equally to both parties.',
-      'Cure periods of 14–30 days for remediable breaches are standard in balanced B2B contracts.',
-      'Payment for work completed is universally expected on termination, regardless of which party terminates.',
-      'Termination for insolvency events (administration, liquidation, cessation of trading) is standard and does not require a cure period.',
+      'Mutual termination for cause with 30-day cure period.',
+      'Termination for convenience with 30 to 90 days notice.',
+      'Payment for work done to termination date.',
+      'Reasonable survival of confidentiality and IP clauses.',
     ],
     askYourLawyer: [
-      'Does the client have termination rights that I do not, and if so, is that commercially acceptable for this engagement?',
-      'Is the notice period long enough for me to manage cash flow and find replacement work?',
-      'What happens to milestone payments or retainers already paid if the contract is terminated early?',
-      'Is the cure period for breach realistic — and does it apply to both parties equally?',
-      'Do any post-termination restrictions (non-compete, non-solicitation) apply to me, and are they enforceable under English law?',
+      'The termination clause is one-sided.',
+      'The clause provides for immediate termination without payment.',
+      'The clause contains vague triggers giving the other party wide discretion.',
+    ],
+    legalSources: [
+      {
+        text: 'Stocznia Gdanska SA v Latvian Shipping Co [1998] 1 WLR 574 — on repudiation and termination for breach.',
+      },
+      {
+        text: 'Renard Constructions v Minister for Public Works (1992) — on good faith obligations in termination.',
+      },
+      {
+        text: 'Late Payment of Commercial Debts (Interest) Act 1998 — relevant to payment obligations on termination.',
+        url: 'https://www.legislation.gov.uk/ukpga/1998/20',
+      },
+      {
+        text: 'Contracts (Rights of Third Parties) Act 1999 — relevant to survival of obligations.',
+        url: 'https://www.legislation.gov.uk/ukpga/1999/31',
+      },
+    ],
+    furtherReading: [
+      {
+        text: 'Law Society — Termination of commercial contracts.',
+        url: 'https://www.lawsociety.org.uk',
+      },
+      {
+        text: 'Practical Law — Termination clauses in commercial contracts.',
+        url: 'https://uk.practicallaw.thomsonreuters.com',
+      },
+      {
+        text: 'GOV.UK — Resolving business disputes and ending contracts.',
+        url: 'https://www.gov.uk/resolve-business-dispute',
+      },
+    ],
+    watch: [
+      {
+        text: 'Law Insider — Contract Termination Clauses Explained.',
+        url: 'https://www.youtube.com/lawinsider',
+      },
+    ],
+    listen: [
+      {
+        text: 'The Lawtomated Podcast — How to exit a bad contract.',
+        url: 'https://www.lawtomated.com',
+      },
     ],
     relatedTemplateName: 'Termination Clause Template',
   },
