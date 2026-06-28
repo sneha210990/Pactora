@@ -32,6 +32,12 @@ export type ClauseFlag = {
   // From PROMPT 2 (source location)
   pageNumber?: number;
   highlightRange?: { start: number; end: number };
+
+  // Market comparison against England & Wales reference positions
+  marketComparison?: {
+    position: 'standard' | 'flag' | 'win' | 'unknown';
+    reason: string;
+  };
 };
 
 export type ClauseAnalysis = {

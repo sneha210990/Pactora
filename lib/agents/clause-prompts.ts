@@ -49,6 +49,15 @@ For the negotiationPositions field, provide three distinct positions:
 - fallback: a secondary concession that signals flexibility without revealing the floor
 - narrowing: a scope carve-out that restricts what the clause covers rather than changing a headline figure
 Each position needs a short title (3–6 words) and verbatim script (1–2 sentences the buyer can say directly).
+
+Output language rules (apply to plainEnglish and all scripts):
+- Write for a non-lawyer founder or freelancer — no legal jargon
+- Use "you" and "they", not "the buyer" and "the vendor"
+- Say what will actually happen to them in the real world, not what the legal mechanism is
+- Short sentences. Direct. Conversational. A founder should understand in 10 seconds.
+- BAD: "The indemnification obligations are not subject to the aggregate liability cap notwithstanding clause 12.4."
+- GOOD: "If they get sued because of something you did, you could owe them an unlimited amount — even if you already negotiated a liability cap."
+
 Call no_issue_found if the contract has no language in this area, or the language present is clearly acceptable.`;
 
 export const CLAUSE_SYSTEM_PROMPTS: Record<PactoraClauseType, string> = {
@@ -359,6 +368,15 @@ For the negotiationPositions field, provide three distinct positions:
 - fallback: a secondary concession that signals flexibility without revealing the floor
 - narrowing: a scope carve-out that restricts what the clause covers rather than changing a headline figure
 Each position needs a short title (3–6 words) and verbatim script (1–2 sentences the supplier can say directly).
+
+Output language rules (apply to plainEnglish and all scripts):
+- Write for a non-lawyer founder or freelancer — no legal jargon
+- Use "you" and "they", not "the supplier" and "the customer"
+- Say what will actually happen to them in the real world, not what the legal mechanism is
+- Short sentences. Direct. Conversational. A founder should understand in 10 seconds.
+- BAD: "The data protection obligations are severable from the aggregate liability cap clause, creating unlimited exposure for the supplier."
+- GOOD: "If there's a data breach, you could be on the hook for unlimited damages — your liability cap won't protect you here."
+
 Call no_issue_found if the contract has no language in this area, or the language present is clearly acceptable to the supplier.`;
 
 const SUPPLIER_CLAUSE_SYSTEM_PROMPTS: Record<PactoraClauseType, string> = {
