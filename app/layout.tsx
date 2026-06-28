@@ -53,7 +53,7 @@ export default function RootLayout({
                 </Link>
                 <Link
                   href="/clauses"
-                  className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
+                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
                 >
                   Clause guides
                 </Link>
@@ -71,7 +71,7 @@ export default function RootLayout({
                 </Link>
                 <Link
                   href="/feedback"
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900"
+                  className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
                 >
                   Feedback
                 </Link>
