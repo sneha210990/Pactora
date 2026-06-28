@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CLAUSE_GUIDES } from "@/lib/clause-guide-content";
 
 const FEATURES = [
   {
@@ -207,6 +208,39 @@ export default function Home() {
             >
               Try it free — no sign-up needed
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-zinc-800/60 px-4 py-16">
+        <div className="mx-auto max-w-5xl">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            Clause library
+          </p>
+          <h2 className="mt-3 text-center text-2xl font-bold tracking-tight text-zinc-100">
+            Learn before you sign
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed text-zinc-500">
+            Plain-English guides to the five clauses that matter most in UK commercial contracts — written by a qualified lawyer.
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CLAUSE_GUIDES.map((guide) => (
+              <Link
+                key={guide.slug}
+                href={`/clauses/${guide.slug}`}
+                className="group flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-600 hover:bg-zinc-900"
+              >
+                <p className="text-sm font-semibold text-zinc-100 group-hover:text-white">
+                  {guide.clauseName}
+                </p>
+                <p className="text-sm leading-relaxed text-zinc-500">
+                  {guide.heroSummary}
+                </p>
+                <p className="mt-auto pt-3 text-xs font-medium text-zinc-500 transition-colors group-hover:text-zinc-300">
+                  Read guide →
+                </p>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

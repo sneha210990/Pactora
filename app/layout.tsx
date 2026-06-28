@@ -52,6 +52,12 @@ export default function RootLayout({
                   How it works
                 </Link>
                 <Link
+                  href="/clauses"
+                  className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
+                >
+                  Clause guides
+                </Link>
+                <Link
                   href="/docs"
                   className="hidden rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900 sm:inline-flex"
                 >
