@@ -68,7 +68,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
       <section className="flex flex-col items-center justify-center px-4 py-14 text-center md:py-24">
-        <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-zinc-500">
           For founders and freelancers
         </p>
         <h1 className="mb-6 max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
@@ -93,7 +93,7 @@ export default function Home() {
           See how it works →
         </Link>
 
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-10">
+        <div className="mt-16 grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-4">
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
               Featured in
@@ -178,7 +178,7 @@ export default function Home() {
               <img
                 src="/ganda-pr-logo.svg"
                 alt="G&A PR Ltd"
-                className="h-7 w-7 rounded-full opacity-50"
+                className="h-7 w-7 rounded-full opacity-40"
               />
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function Home() {
 
       <section className="border-t border-zinc-800/60 px-4 py-16">
         <div className="mx-auto max-w-5xl">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-zinc-500">
             What you get
           </p>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -201,20 +201,21 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <div className="mt-10 text-center">
+          <div className="mt-10 flex flex-col items-center gap-2 text-center">
             <Link
               href="/deals/new"
               className="inline-block rounded-lg bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
             >
-              Try it free — no sign-up needed
+              Analyse my contract free
             </Link>
+            <p className="text-xs text-zinc-600">No account needed &middot; Results in ~30 seconds</p>
           </div>
         </div>
       </section>
 
       <section className="border-t border-zinc-800/60 px-4 py-16">
         <div className="mx-auto max-w-5xl">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-zinc-500">
             Clause library
           </p>
           <h2 className="mt-3 text-center text-2xl font-bold tracking-tight text-zinc-100">
@@ -241,6 +242,14 @@ export default function Home() {
                 </p>
               </Link>
             ))}
+          </div>
+          <div className="mt-6 text-center">
+            <Link
+              href="/clauses"
+              className="text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+            >
+              Browse all clause guides →
+            </Link>
           </div>
         </div>
       </section>

@@ -395,21 +395,13 @@ export default async function ClauseGuidePage({
         <p className="mb-5 text-sm text-zinc-400">
           Upload your contract to Pactora and we will flag {guide.clauseName.toLowerCase()} issues instantly — alongside all other key clauses.
         </p>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/deals/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white"
-          >
-            Upload a contract to Pactora
-            <ArrowRightIcon />
-          </Link>
-          <Link
-            href="/templates"
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-zinc-400 hover:text-zinc-100"
-          >
-            Download our free {guide.relatedTemplateName}
-          </Link>
-        </div>
+        <Link
+          href="/deals/new"
+          className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white"
+        >
+          Upload a contract to Pactora
+          <ArrowRightIcon />
+        </Link>
       </section>
 
       {/* ── Related clauses ── */}
