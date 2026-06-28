@@ -18,6 +18,7 @@ import { ExportPdfButton } from '@/components/export-pdf-button';
 import { ClauseDiff } from '../components/clause-diff';
 import { DownloadRedlineButton } from '@/components/download-redline-button';
 import { Tooltip } from '@/components/tooltip';
+import { CLAUSE_TYPE_TO_GUIDE_SLUG } from '@/lib/clause-guide-content';
 import { ChatPanel } from '../components/chat-panel';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
@@ -381,6 +382,20 @@ function ClauseFlagCard({
                   {altError && <p className="mt-1 text-xs text-red-400">{altError}</p>}
                 </div>
               )}
+            </div>
+          )}
+
+          {(flag.riskLevel === 'High' || flag.riskLevel === 'Medium') && CLAUSE_TYPE_TO_GUIDE_SLUG[flag.clauseType] && (
+            <div className="mt-4 pt-3 border-t border-zinc-800">
+              <Link
+                href={`/clauses/${CLAUSE_TYPE_TO_GUIDE_SLUG[flag.clauseType]}`}
+                className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z" fill="currentColor" />
+                </svg>
+                Learn more about {flag.clauseType}
+              </Link>
             </div>
           )}
 
