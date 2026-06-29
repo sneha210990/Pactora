@@ -19,7 +19,6 @@ import { ClauseDiff } from '../components/clause-diff';
 import { DownloadRedlineButton } from '@/components/download-redline-button';
 import { Tooltip } from '@/components/tooltip';
 import { CLAUSE_TYPE_TO_GUIDE_SLUG } from '@/lib/clause-guide-content';
-import { ChatPanel } from '../components/chat-panel';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -488,7 +487,6 @@ function SummaryContent() {
   const [emailGenerating, setEmailGenerating] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [emailCopied, setEmailCopied] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [batchError, setBatchError] = useState('');
 
@@ -981,31 +979,6 @@ function SummaryContent() {
         <FeedbackToggle user={user} />
       </div>
 
-      {/* Floating chat panel */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {chatOpen && (
-          <div className="w-[420px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/60">
-            <ChatPanel contractText={analysis.rawText ?? ''} onClose={() => setChatOpen(false)} />
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => setChatOpen((o) => !o)}
-          aria-label={chatOpen ? 'Close chat' : 'Ask about this contract'}
-          className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-800 px-4 py-2.5 shadow-lg shadow-black/40 transition-colors hover:bg-zinc-700"
-        >
-          {chatOpen ? (
-            <svg className="h-4 w-4 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg className="h-4 w-4 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-          )}
-          <span className="text-sm font-medium text-zinc-200">{chatOpen ? 'Close' : 'Ask a question'}</span>
-        </button>
-      </div>
     </main>
   );
 }
