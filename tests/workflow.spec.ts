@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import JSZip from 'jszip';
 
 const dummyContractPath = path.join(__dirname, 'fixtures/dummy-contract.pdf');
 const dummyDocxPath = path.join(__dirname, 'fixtures/dummy-contract.docx');
@@ -109,6 +110,16 @@ test.beforeEach(async ({ page }) => {
   attachIssueTracking(page);
 });
 
+// Deal-history save (POST /api/deals) requires a signed-in session and 401s
+// for anonymous callers by design (it's a non-fatal, fire-and-forget call in
+// the app). Mock it wherever a test drives analysis through to "complete" so
+// that expected, non-fatal 401 doesn't trip assertNoImportantAppIssues.
+async function mockDealsRoute(page: Page) {
+  await page.route('**/api/deals', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ deal: { id: 'test-deal-id' } }) });
+  });
+}
+
 test.afterEach(async ({ page }) => {
   assertNoImportantAppIssues(page);
 });
@@ -153,6 +164,7 @@ test('Test 3: New Deal page loads and upload UI works', async ({ page }) => {
 });
 
 test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
+  await mockDealsRoute(page);
   await page.route('**/api/contracts/extract', async (route) => {
     await route.fulfill({
       status: 200,
@@ -166,7 +178,7 @@ test('Test 4: Auto-populated fields appear after upload', async ({ page }) => {
           insuranceCover: { value: 1000000, confidence: 0.7, evidence: '£1,000,000', extractionMethod: 'regex' },
           dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
         },
-        extractedTerms: {},
+        extractedTerms: { governingLaw: 'England and Wales' },
         contractText: 'Sample contract text for test 4.',
         sourceFileType: 'pdf',
       }),
@@ -351,6 +363,7 @@ test('Test 9: End-to-end review workflow reaches deal summary', async ({ page })
 });
 
 test('Test 10: DOCX upload parses correctly and populates deal context fields', async ({ page }) => {
+  await mockDealsRoute(page);
   await page.route('**/api/contracts/extract', async (route) => {
     await route.fulfill({
       status: 200,
@@ -368,7 +381,7 @@ test('Test 10: DOCX upload parses correctly and populates deal context fields', 
           insuranceCover: { value: 2000000, confidence: 0.7, evidence: '£2,000,000', extractionMethod: 'regex' },
           dataType: { value: 'personal', confidence: 0.8, evidence: 'personal data', extractionMethod: 'regex' },
         },
-        extractedTerms: {},
+        extractedTerms: { governingLaw: 'England and Wales' },
         contractText: 'Sample contract text for test 10.',
         sourceFileType: 'docx',
       }),
@@ -987,6 +1000,7 @@ test('Test 55: LoL negotiation ladder shows ACV-based scripts', async ({ page })
 
 
 test('Test 56: Uploading a second document clears stale extracted ACV and changes active document', async ({ page }) => {
+  await mockDealsRoute(page);
   let extractionCount = 0;
   await page.route('**/api/contracts/analyze-agents', async (route) => {
     await route.fulfill({
@@ -1019,7 +1033,7 @@ test('Test 56: Uploading a second document clears stale extracted ACV and change
           insuranceCover: { value: null, confidence: null, evidence: null, extractionMethod: null },
           dataType: { value: null, confidence: null, evidence: null, extractionMethod: null },
         },
-        extractedTerms: {},
+        extractedTerms: { governingLaw: 'England and Wales' },
         contractText: isSecondDocument
           ? 'Contract B has a 12 months term but no annual contract value.'
           : 'Contract A annual contract value: £100,000. Term: 12 months.',
@@ -1177,6 +1191,7 @@ test('Test 64: Summary negotiation email button is enabled when clause flags are
 // ─── AI-01: Progressive agent progress UI ────────────────────────────────────
 
 test('Test 65: Processing pipeline shows per-agent sub-list after analysis completes', async ({ page }) => {
+  await mockDealsRoute(page);
   // Mock the SSE analyze-agents route to emit agent_start for Liability Cap then complete
   await page.route('/api/contracts/analyze-agents', async (route) => {
     const events = [
@@ -1198,6 +1213,7 @@ test('Test 65: Processing pipeline shows per-agent sub-list after analysis compl
       body: JSON.stringify({
         contractText: 'This agreement limits liability to fees paid in the preceding twelve months.',
         documentMeta: { fileName: 'test.txt', uploadedAt: new Date().toISOString() },
+        extractedTerms: { governingLaw: 'England and Wales' },
       }),
     });
   });
@@ -1493,6 +1509,7 @@ test('Test 71: Selected jurisdiction is sent in the analyse request', async ({ p
 });
 
 test('Test 72: Jurisdiction selector is disabled once analysis is complete', async ({ page }) => {
+  await mockDealsRoute(page);
   await page.route('**/api/contracts/extract', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(JURISDICTION_EXTRACT_MOCK) });
   });
@@ -1508,6 +1525,9 @@ test('Test 72: Jurisdiction selector is disabled once analysis is complete', asy
 
   const select = page.locator('#jurisdiction-select');
   await expect(select).toBeEnabled();
+  // JURISDICTION_EXTRACT_MOCK has no governingLaw to auto-detect from, so a
+  // jurisdiction must be selected manually before analysis can proceed.
+  await select.selectOption('england_wales');
 
   await page.getByLabel(/I confirm that I am authorised to upload or paste this material/i).check();
   await page.getByLabel(/I understand extracted values are parser outputs/i).check();
@@ -1573,4 +1593,145 @@ test('Test 76: Email capture banner form submission shows success state', async 
 
   await expect(page.getByText('Report sent')).toBeVisible({ timeout: 5000 });
   await expect(page.getByText('Check your inbox — your full analysis is on its way.')).toBeVisible();
+});
+
+// ─── BUGFIX: /api/contracts/redline/export must not corrupt the DOCX ─────────
+//
+// Test 69 above mocks this route entirely, so it never exercises the real
+// DOCX-manipulation logic — it would not have caught the corruption bug where
+// applyRedlineToOxml() was called with the whole word/document.xml instead of
+// a single paragraph, collapsing every paragraph in the document into one and
+// losing unrelated content. These tests hit the real route (no mocking) with
+// a small synthetic DOCX and assert on the structure of the returned bytes.
+
+const NS_W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+async function buildSyntheticDocx(paragraphs: string[]): Promise<Buffer> {
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+  const body = paragraphs.map((text) => `<w:p><w:r><w:t>${text}</w:t></w:r></w:p>`).join('\n');
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="${NS_W}">
+<w:body>
+${body}
+<w:sectPr><w:pgSz w:w="11906" w:h="16838"/></w:sectPr>
+</w:body>
+</w:document>`;
+
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', contentTypes);
+  zip.file('_rels/.rels', rootRels);
+  zip.file('word/document.xml', documentXml);
+  return zip.generateAsync({ type: 'nodebuffer' });
+}
+
+const UNTOUCHED_PARAGRAPHS = [
+  'Introduction paragraph, not part of any redline.',
+  'Some middle paragraph with unrelated content that should stay untouched.',
+  'Final paragraph, also not part of any redline.',
+];
+const INDEMNITY_ORIGINAL =
+  'The Supplier shall indemnify the Customer against all third party claims arising from any breach of this Agreement, without limitation.';
+const INDEMNITY_PROPOSED =
+  "The Supplier shall indemnify the Customer against direct, proven losses arising from the Supplier's breach of this Agreement, subject to the liability cap.";
+const LIABILITY_ORIGINAL =
+  'The liability of either party under this Agreement shall not exceed the total fees paid in the preceding six months.';
+const LIABILITY_PROPOSED =
+  'The liability of either party under this Agreement shall not exceed the total fees paid in the preceding twelve months, applied mutually.';
+
+test('Test 77: Redlined DOCX export preserves all paragraphs and applies tracked changes only to targeted clauses', async ({ request }) => {
+  const docxBuffer = await buildSyntheticDocx([
+    UNTOUCHED_PARAGRAPHS[0],
+    INDEMNITY_ORIGINAL,
+    UNTOUCHED_PARAGRAPHS[1],
+    LIABILITY_ORIGINAL,
+    UNTOUCHED_PARAGRAPHS[2],
+  ]);
+
+  const response = await request.post('/api/contracts/redline/export', {
+    // Middleware requires this header on state-changing /api/* requests as a
+    // CSRF tripwire (see middleware.ts) — apiFetch() adds it for real browser
+    // traffic; the request fixture needs it set explicitly.
+    headers: { 'X-Pactora-Client': 'web' },
+    data: {
+      fileName: 'test-contract.docx',
+      docxBuffer: docxBuffer.toString('base64'),
+      acceptedRedlines: {
+        Indemnities: { clauseText: INDEMNITY_ORIGINAL, proposedText: INDEMNITY_PROPOSED, explanation: '' },
+        'Liability Cap': { clauseText: LIABILITY_ORIGINAL, proposedText: LIABILITY_PROPOSED, explanation: '' },
+      },
+    },
+  });
+
+  expect(response.ok(), await response.text().catch(() => '')).toBeTruthy();
+  expect(response.headers()['content-type']).toContain('wordprocessingml.document');
+
+  const outBuffer = Buffer.from(await response.body());
+  const outZip = await JSZip.loadAsync(outBuffer);
+  const documentXml = await outZip.file('word/document.xml')!.async('string');
+
+  // The document must remain well-formed XML.
+  expect(documentXml).not.toContain('parsererror');
+  expect(documentXml.startsWith('<?xml') || documentXml.trimStart().startsWith('<w:document')).toBeTruthy();
+
+  // All 5 original paragraphs must survive as separate <w:p> elements — the
+  // corruption bug collapsed the entire document into a single paragraph.
+  const paragraphCount = (documentXml.match(/<w:p[ >]/g) ?? []).length;
+  expect(paragraphCount).toBe(5);
+
+  // Untouched paragraphs must be present verbatim and unmarked by revisions.
+  for (const text of UNTOUCHED_PARAGRAPHS) {
+    expect(documentXml).toContain(text);
+  }
+
+  // Both targeted clauses must carry tracked-change markup.
+  expect(documentXml).toContain('<w:ins');
+  expect(documentXml).toContain('<w:del');
+  expect(documentXml).toContain('twelve months');
+
+  // w:sectPr must remain the last child of w:body (OOXML requirement) rather
+  // than being hoisted to the top, as the old code produced.
+  const sectPrIsLast = /<w:sectPr[^>]*\/>\s*<\/w:body>|<w:sectPr[^>]*>[\s\S]*?<\/w:sectPr>\s*<\/w:body>/.test(documentXml);
+  expect(sectPrIsLast).toBeTruthy();
+});
+
+test('Test 78: Redlined DOCX export works with a single accepted redline', async ({ request }) => {
+  const docxBuffer = await buildSyntheticDocx([UNTOUCHED_PARAGRAPHS[0], INDEMNITY_ORIGINAL, UNTOUCHED_PARAGRAPHS[2]]);
+
+  const response = await request.post('/api/contracts/redline/export', {
+    // Middleware requires this header on state-changing /api/* requests as a
+    // CSRF tripwire (see middleware.ts) — apiFetch() adds it for real browser
+    // traffic; the request fixture needs it set explicitly.
+    headers: { 'X-Pactora-Client': 'web' },
+    data: {
+      fileName: 'test-contract.docx',
+      docxBuffer: docxBuffer.toString('base64'),
+      acceptedRedlines: {
+        Indemnities: { clauseText: INDEMNITY_ORIGINAL, proposedText: INDEMNITY_PROPOSED, explanation: '' },
+      },
+    },
+  });
+
+  expect(response.ok(), await response.text().catch(() => '')).toBeTruthy();
+
+  const outBuffer = Buffer.from(await response.body());
+  const outZip = await JSZip.loadAsync(outBuffer);
+  const documentXml = await outZip.file('word/document.xml')!.async('string');
+
+  const paragraphCount = (documentXml.match(/<w:p[ >]/g) ?? []).length;
+  expect(paragraphCount).toBe(3);
+  expect(documentXml).toContain(UNTOUCHED_PARAGRAPHS[0]);
+  expect(documentXml).toContain(UNTOUCHED_PARAGRAPHS[2]);
+  expect(documentXml).toContain('<w:ins');
+  expect(documentXml).toContain('<w:del');
 });

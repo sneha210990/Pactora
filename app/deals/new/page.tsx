@@ -197,7 +197,9 @@ export default function NewDealPage() {
       saveDeal(analysis);
       // Server save for signed-in users. Stores the returned deal ID in
       // sessionStorage so the email capture banner can link back to it.
-      fetch('/api/deals', {
+      // Must use apiFetch — plain fetch() is rejected by the CSRF middleware
+      // tripwire on state-changing /api/* requests (see middleware.ts).
+      apiFetch('/api/deals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ snapshot: analysis }),
