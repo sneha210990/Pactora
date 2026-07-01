@@ -8,10 +8,25 @@ export const maxDuration = 30;
 
 // No type declarations available — loaded at runtime via serverExternalPackages
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { applyRedlineToOxml, setDefaultAuthor, configureXmlProvider } = require('@ansonlai/docx-redline-js') as {
-  applyRedlineToOxml: (xml: string, original: string, proposed: string, options?: Record<string, unknown>) => Promise<{ oxml?: string } | string>;
+const { setDefaultAuthor, configureXmlProvider } = require('@ansonlai/docx-redline-js') as {
   setDefaultAuthor: (author: string) => void;
   configureXmlProvider: (providers: { DOMParser: unknown; XMLSerializer: unknown }) => void;
+};
+
+// applyRedlineToOxml (top-level export) expects paragraph/range/table-scope OOXML and
+// its result.oxml shape is not safe to write directly into word/document.xml (per the
+// library's own "Output Shape Matrix" — it may return a <pkg:package> payload). We are
+// operating on the FULL word/document.xml, so we need the document-level helper instead,
+// which locates the target paragraph internally and returns a write-safe <w:document>.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { applyOperationToDocumentXml } = require('@ansonlai/docx-redline-js/services/standalone-operation-runner.js') as {
+  applyOperationToDocumentXml: (
+    documentXml: string,
+    op: { type: 'redline'; target: string; modified: string },
+    author: string,
+    runtimeContext?: unknown,
+    options?: { generateRedlines?: boolean },
+  ) => Promise<{ documentXml: string; hasChanges: boolean }>;
 };
 
 // docx-redline-js needs a DOM implementation in Node.js — @xmldom/xmldom provides it.
@@ -61,7 +76,8 @@ export async function POST(request: Request) {
     // Use the signed-in user's email as the tracked-change author so reviewers
     // see a real identity in Word rather than the generic "Pactora" fallback.
     const session = await getCurrentSessionUser();
-    setDefaultAuthor(session?.user.email ?? 'Pactora');
+    const author = session?.user.email ?? 'Pactora';
+    setDefaultAuthor(author);
 
     // Resolve the DOCX buffer: prefer a Supabase Storage key (set at upload time
     // when Storage is configured); fall back to the inline base64 string that the
@@ -117,14 +133,17 @@ export async function POST(request: Request) {
         continue;
       }
       seenClauseTexts.add(redline.clauseText);
-      const result = await applyRedlineToOxml(xml, redline.clauseText, redline.proposedText, {
-        generateRedlines: true,
-      });
-      if (result && typeof result === 'object' && typeof result.oxml === 'string') {
-        xml = result.oxml;
-      } else if (typeof result === 'string') {
-        xml = result;
+      const result = await applyOperationToDocumentXml(
+        xml,
+        { type: 'redline', target: redline.clauseText, modified: redline.proposedText },
+        author,
+        null,
+        { generateRedlines: true },
+      );
+      if (!result.hasChanges) {
+        console.warn(`[redline/export] Could not locate clause text for "${clauseType}" in the document; that redline was skipped.`);
       }
+      xml = result.documentXml;
     }
 
     // Validate output XML before writing — @xmldom/xmldom embeds parse errors as
