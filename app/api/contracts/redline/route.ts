@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getAnthropicClient } from '@/lib/agents/client';
-import { recordAuditEvent } from '@/lib/beta-store';
+import { calculateCostUsd } from '@/lib/agents/api-cost';
+import { recordApiUsage, recordAuditEvent } from '@/lib/beta-store';
 import { getCurrentSessionUser } from '@/lib/auth';
 
 export const runtime = 'nodejs';
@@ -15,6 +17,16 @@ type RequestBody = {
 };
 
 const THINKING_CLAUSE_TYPES = new Set(['IP Ownership', 'Indemnities']);
+
+// Same anonymous-use gate as /api/contracts/analyze-agents — this endpoint can
+// also invoke Sonnet + extended thinking and was previously reachable with no
+// cap at all.
+const ANON_COOKIE = 'pactora_anon_uses';
+const ANON_FREE_USES = 999;
+
+// A single extracted clause is never legitimately this long — caps prompt
+// size (and cost) regardless of what a caller sends as clauseText.
+const MAX_CLAUSE_TEXT_LENGTH = 20_000;
 
 const BUYER_SYSTEM_PROMPT = `You are a commercial contracts lawyer advising a SaaS buyer. You will be given a contract clause that has been flagged as risky, the clause type, and optionally the annual contract value (ACV) and current liability cap.
 
@@ -70,23 +82,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'clauseText or clauseType is required.' }, { status: 400 });
   }
 
+  // Usage gate: unauthenticated callers get ANON_FREE_USES free redline suggestions,
+  // same mechanism as /api/contracts/analyze-agents.
+  const session = await getCurrentSessionUser();
+  let anonSetCookieHeader: string | null = null;
+
+  if (!session) {
+    const cookieStore = await cookies();
+    const used = parseInt(cookieStore.get(ANON_COOKIE)?.value ?? '0', 10);
+    if (used >= ANON_FREE_USES) {
+      return NextResponse.json({ error: 'free_limit_reached' }, { status: 402 });
+    }
+    const maxAge = 30 * 24 * 60 * 60;
+    anonSetCookieHeader = `${ANON_COOKIE}=${used + 1}; Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=Lax`;
+  }
+
   const contractSide: 'supplier' | 'buyer' | null =
     body.contractSide === 'supplier' || body.contractSide === 'buyer' ? body.contractSide : null;
+
+  const clauseText = body.clauseText?.slice(0, MAX_CLAUSE_TEXT_LENGTH);
 
   const parts: string[] = [];
   if (body.clauseType) parts.push(`Clause type: ${body.clauseType}`);
   if (body.acv != null) parts.push(`ACV: £${body.acv.toLocaleString('en-GB')}`);
   if (body.liabilityCap != null) parts.push(`Current liability cap: £${body.liabilityCap.toLocaleString('en-GB')}`);
-  if (body.clauseText) parts.push(`\nOriginal clause text:\n${body.clauseText}`);
+  if (clauseText) parts.push(`\nOriginal clause text:\n${clauseText}`);
 
   const userMessage = parts.join('\n') + '\n\nPlease suggest alternative language.';
 
   const useThinking = THINKING_CLAUSE_TYPES.has(body.clauseType ?? '');
+  const model = useThinking ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
 
   try {
     const client = getAnthropicClient();
     const response = await client.messages.create({
-      model: useThinking ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001',
+      model,
       max_tokens: useThinking ? 4000 : 600,
       ...(useThinking
         ? { thinking: { type: 'enabled' as const, budget_tokens: 1500 } }
@@ -106,16 +136,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No response from Claude.' }, { status: 500 });
     }
 
-    getCurrentSessionUser()
-      .then((s) => recordAuditEvent({
-        user_id: s?.user.auth_user_id ?? s?.user.id ?? null,
-        action: 'redline_generated',
-        document_id: null,
-        metadata: { clause_type: body.clauseType ?? null },
-      }))
-      .catch(console.error);
+    recordAuditEvent({
+      user_id: session?.user.auth_user_id ?? session?.user.id ?? null,
+      action: 'redline_generated',
+      document_id: null,
+      metadata: { clause_type: body.clauseType ?? null },
+    }).catch(console.error);
 
-    return NextResponse.json({ alternative: textBlock.text.trim() });
+    const u = response.usage;
+    recordApiUsage({
+      operation: 'redline_suggestion',
+      model,
+      input_tokens: u.input_tokens,
+      output_tokens: u.output_tokens,
+      cache_creation_tokens: u.cache_creation_input_tokens ?? 0,
+      cache_read_tokens: u.cache_read_input_tokens ?? 0,
+      cost_usd: calculateCostUsd(model, {
+        input_tokens: u.input_tokens,
+        output_tokens: u.output_tokens,
+        cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+        cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
+      }),
+    }).catch(console.error);
+
+    const res = NextResponse.json({ alternative: textBlock.text.trim() });
+    if (anonSetCookieHeader) res.headers.set('Set-Cookie', anonSetCookieHeader);
+    return res;
   } catch (err) {
     console.error('[redline] error:', err);
     return NextResponse.json({ error: 'Unable to generate redline suggestion.' }, { status: 500 });

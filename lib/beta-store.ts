@@ -66,7 +66,7 @@ export type BetaEvent = {
 export type ApiUsageRecord = {
   id: string;
   created_at: string;
-  operation: 'extraction' | 'clause_analysis';
+  operation: 'extraction' | 'clause_analysis' | 'redline_suggestion';
   model: string;
   input_tokens: number;
   output_tokens: number;
