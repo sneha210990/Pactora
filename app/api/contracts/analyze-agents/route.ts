@@ -172,7 +172,7 @@ export async function POST(request: Request) {
         for (const chunk of chunks) {
           console.log(`[CHUNKING] Processing chunk ${chunk.chunkIndex + 1}/${chunks.length} (chars ${chunk.startChar}–${chunk.endChar})`);
           const chunkPromises = activeAgents.map(async (clauseType: PactoraClauseType) => {
-            const result = await runClauseAgent(clauseType, contractText, chunk, undefined, jurisdiction, contractSide);
+            const result = await runClauseAgent(clauseType, contractText, chunk, contractType, jurisdiction, contractSide);
             if (result.ok) {
               allUsages.push(result.usage);
             } else {
