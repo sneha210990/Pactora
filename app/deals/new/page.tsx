@@ -214,7 +214,7 @@ export default function NewDealPage() {
 
   const commercialContext = analysis.commercialContext;
   const selectedFileName = analysis.documentMeta.fileName ?? '';
-  const canContinue = pendingText !== null && !analysisRunning && hasAcceptedLegalNotice && hasConfirmedDataCaution;
+  const canContinue = pendingText !== null && !analysisRunning && hasAcceptedLegalNotice && hasConfirmedDataCaution && commercialContext.jurisdiction !== null;
   const runClauseAnalysis = async (text: string) => {
     setAgentProgress({});
     actions.analysisStarted();
@@ -690,6 +690,7 @@ export default function NewDealPage() {
                 <p className="mt-1 text-xs text-zinc-500">Which country&apos;s law applies to you as the reviewing party? This calibrates which legal rules the analysis applies.</p>
                 <select
                   id="jurisdiction-select"
+                  required
                   value={commercialContext.jurisdiction ?? ''}
                   onChange={(e) => actions.setJurisdiction((e.target.value as Jurisdiction) || null)}
                   className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus:border-blue-500 focus:outline-none"
@@ -700,6 +701,11 @@ export default function NewDealPage() {
                     <option key={j} value={j}>{JURISDICTION_LABELS[j]}</option>
                   ))}
                 </select>
+                {!commercialContext.jurisdiction && (
+                  <p className="mt-1.5 text-xs text-amber-400">
+                    We could not confidently match the governing law to a jurisdiction Pactora covers — please confirm before continuing.
+                  </p>
+                )}
               </div>
             </section>
 
@@ -740,6 +746,9 @@ export default function NewDealPage() {
               <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">
                 <p className="font-medium text-zinc-100">Before you can continue:</p>
                 <ul className="mt-2 space-y-1">
+                  <li className={commercialContext.jurisdiction ? 'text-emerald-400' : 'text-zinc-400'}>
+                    {commercialContext.jurisdiction ? '✓' : '○'} Confirm your jurisdiction
+                  </li>
                   <li className={hasAcceptedLegalNotice ? 'text-emerald-400' : 'text-zinc-400'}>
                     {hasAcceptedLegalNotice ? '✓' : '○'} Confirm authorisation and accuracy notice
                   </li>
