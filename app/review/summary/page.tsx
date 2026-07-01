@@ -290,6 +290,7 @@ function ClauseFlagCard({
 
           {flag.problematicLanguage && (
             <blockquote className="mb-3 border-l-2 border-zinc-600 pl-3">
+              <p className="mb-1 text-[10px] font-semibold text-zinc-500">Flagged language</p>
               <p className="text-xs italic text-zinc-400">&ldquo;{flag.problematicLanguage}&rdquo;</p>
             </blockquote>
           )}

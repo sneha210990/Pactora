@@ -29,6 +29,15 @@ export type ClauseFlag = {
   verificationNote?: string;
   position?: { start: number; end: number };
 
+  // Verification of the short excerpt shown as "Flagged language" on the
+  // card — extends PROMPT 1, does not replace it. Deliberately separate
+  // from verified/verificationNote/position above, which remain scoped to
+  // clauseText (position specifically feeds enrichFlagWithPageNumber's PDF
+  // page-number lookup and must not be repointed at a different string).
+  problematicLanguageVerified?: boolean;
+  problematicLanguageVerificationNote?: string;
+  problematicLanguagePosition?: { start: number; end: number };
+
   // From PROMPT 2 (source location)
   pageNumber?: number;
   highlightRange?: { start: number; end: number };

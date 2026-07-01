@@ -117,12 +117,23 @@ export function verifyClauseText(
 export function flagWithVerification(
   flag: ClauseFlag,
   contractText: string,
-): ClauseFlag & { verified: boolean; verificationNote?: string; position?: { start: number; end: number } } {
+): ClauseFlag & {
+  verified: boolean;
+  verificationNote?: string;
+  position?: { start: number; end: number };
+  problematicLanguageVerified: boolean;
+  problematicLanguageVerificationNote?: string;
+  problematicLanguagePosition?: { start: number; end: number };
+} {
   const check = verifyClauseText(flag.clauseText ?? '', contractText);
+  const problematicLanguageCheck = verifyClauseText(flag.problematicLanguage ?? '', contractText);
   return {
     ...flag,
     verified: check.verified,
     verificationNote: check.note,
     position: check.position,
+    problematicLanguageVerified: problematicLanguageCheck.verified,
+    problematicLanguageVerificationNote: problematicLanguageCheck.note,
+    problematicLanguagePosition: problematicLanguageCheck.position,
   };
 }
