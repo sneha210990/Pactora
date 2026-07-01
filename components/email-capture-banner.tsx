@@ -16,9 +16,15 @@ type AnalysisPayload = {
 
 const DISMISSED_KEY = 'email_capture_dismissed';
 
-export function EmailCaptureBanner({ analysisPayload }: { analysisPayload?: AnalysisPayload }) {
+export function EmailCaptureBanner({
+  analysisPayload,
+  initialEmail,
+}: {
+  analysisPayload?: AnalysisPayload;
+  initialEmail?: string | null;
+}) {
   const [visible, setVisible] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -30,6 +36,10 @@ export function EmailCaptureBanner({ analysisPayload }: { analysisPayload?: Anal
     }
     setDealId(sessionStorage.getItem('pactora.last_server_deal_id'));
   }, []);
+
+  useEffect(() => {
+    if (initialEmail) setEmail(initialEmail);
+  }, [initialEmail]);
 
   function dismiss() {
     sessionStorage.setItem(DISMISSED_KEY, '1');
@@ -81,7 +91,7 @@ export function EmailCaptureBanner({ analysisPayload }: { analysisPayload?: Anal
         <div>
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-blue-200">Save your analysis</p>
+              <p className="text-sm font-semibold text-blue-200">{initialEmail ? 'Email this report' : 'Save your analysis'}</p>
               <p className="mt-1 text-sm text-zinc-400">
                 Get this analysis in your inbox, plus negotiation tips for each flagged clause.
               </p>
