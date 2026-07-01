@@ -13,6 +13,7 @@ export type { ClauseFlag };
 import type { CrossClauseRisk } from '@/lib/agents/cross-clause-engine';
 export type { CrossClauseRisk };
 import type { ExtractedContractValues, ExtractedField } from '@/lib/contract-extraction';
+import { detectJurisdictionFromGoverningLaw } from '@/lib/jurisdiction-detection';
 import type { ContractType } from '@/lib/agents/classify-contract-type';
 export type { ContractType };
 export { CONTRACT_TYPES } from '@/lib/agents/classify-contract-type';
@@ -418,7 +419,17 @@ function reducer(state: DocumentAnalysisState, action: Action): DocumentAnalysis
       const documentId = action.payload.documentId ?? state.documentId ?? stableDocumentId(action.payload.documentMeta?.fileName);
       const fileName = action.payload.documentMeta?.fileName ?? state.documentMeta.fileName ?? 'Unknown document';
       const uploadedAt = action.payload.documentMeta?.uploadedAt ?? state.documentMeta.uploadedAt ?? new Date().toISOString();
-      const commercialContext = normalizeCommercialContext(action.payload.detectedValues);
+      const rawCommercialContext = normalizeCommercialContext(action.payload.detectedValues);
+      // Anchor jurisdiction to the contract's own governing-law clause rather than
+      // leaving it as a disconnected manual field the reviewer might skip (#245).
+      // Falls back to null (unmapped or unstated governing law) so the reviewer is
+      // asked to confirm rather than analysis silently running uncalibrated.
+      const commercialContext: CommercialContext = {
+        ...rawCommercialContext,
+        jurisdiction:
+          rawCommercialContext.jurisdiction ??
+          detectJurisdictionFromGoverningLaw(action.payload.extractedTerms?.governingLaw),
+      };
       // Null is safer than fake defaults: review UI can say "Not detected" instead of inventing £0, 0 months, or standard data.
       next = {
         ...reviewStateReset(state),
