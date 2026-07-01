@@ -1,6 +1,6 @@
 // Clause guide content for /clauses/[slug] educational reference pages.
 // All legal sources written by Sneha Ganapavarapu. See AUTHOR_ATTRIBUTION.
-// URLs provided as-is from source material; YouTube links need final verification.
+// watch/listen URLs verified 2026-07-01; re-check periodically as channels/episodes can move.
 
 export type ResourceLink = {
   text: string;
@@ -90,13 +90,13 @@ export const CLAUSE_GUIDES: ClauseGuideContent[] = [
     watch: [
       {
         text: 'Law Insider — Limitation of Liability Clauses Explained.',
-        url: 'https://www.youtube.com/lawinsider',
+        url: 'https://www.youtube.com/channel/UC82DhYYmoq1rTXLkRYjpnOA',
       },
     ],
     listen: [
       {
-        text: 'The Lawtomated Podcast — Episode on contract risk allocation for small businesses.',
-        url: 'https://www.lawtomated.com',
+        text: 'Journey Through a Contract (Shoosmiths) — Episode 19: Liability.',
+        url: 'https://www.podbean.com/ep/pb-d5ww4-137a3e3',
       },
     ],
     relatedTemplateName: 'Limitation of Liability Clause Template',
@@ -160,13 +160,13 @@ export const CLAUSE_GUIDES: ClauseGuideContent[] = [
     watch: [
       {
         text: 'Contract Nerds — Indemnification clauses explained.',
-        url: 'https://www.youtube.com/contractnerds',
+        url: 'https://www.youtube.com/@contractnerds',
       },
     ],
     listen: [
       {
-        text: 'The Lawtomated Podcast — Indemnities for non-lawyers.',
-        url: 'https://www.lawtomated.com',
+        text: 'Journey Through a Contract (Shoosmiths) — Episode 14: Indemnities.',
+        url: 'https://shoosmiths.podbean.com/e/journey-through-a-contract-indemnities/',
       },
     ],
     relatedTemplateName: 'Mutual Indemnity Clause Template',
@@ -230,13 +230,13 @@ export const CLAUSE_GUIDES: ClauseGuideContent[] = [
     watch: [
       {
         text: 'Intellectual Property Office UK — IP Basics playlist.',
-        url: 'https://www.youtube.com/@IPO_UK',
+        url: 'https://www.youtube.com/ipogovuk',
       },
     ],
     listen: [
       {
         text: 'The IPO Podcast — Intellectual property for small businesses.',
-        url: 'https://www.ipo.gov.uk/p-ipopodcast',
+        url: 'https://podcasts.apple.com/gb/podcast/ipo/id1468457160',
       },
     ],
     relatedTemplateName: 'IP Ownership & Licence Clause Template',
@@ -304,13 +304,13 @@ export const CLAUSE_GUIDES: ClauseGuideContent[] = [
     watch: [
       {
         text: 'ICO — Data protection for small businesses YouTube series.',
-        url: 'https://www.youtube.com/@ICOnews',
+        url: 'https://www.youtube.com/user/icocomms',
       },
     ],
     listen: [
       {
         text: 'Privacy Pros Podcast — UK GDPR for small businesses and freelancers.',
-        url: 'https://www.privacypros.io/podcast',
+        url: 'https://podcasts.apple.com/gb/podcast/privacy-pros-podcast/id1552101169',
       },
     ],
     relatedTemplateName: 'Data Processing Agreement Template',
@@ -380,13 +380,13 @@ export const CLAUSE_GUIDES: ClauseGuideContent[] = [
     watch: [
       {
         text: 'Law Insider — Contract Termination Clauses Explained.',
-        url: 'https://www.youtube.com/lawinsider',
+        url: 'https://www.youtube.com/channel/UC82DhYYmoq1rTXLkRYjpnOA',
       },
     ],
     listen: [
       {
-        text: 'The Lawtomated Podcast — How to exit a bad contract.',
-        url: 'https://www.lawtomated.com',
+        text: 'Journey Through a Contract (Shoosmiths) — Episode 12: Termination and Consequences of Termination.',
+        url: 'https://shoosmiths.podbean.com/e/journey-through-a-contract-termination-and-consequences-of-termination/',
       },
     ],
     relatedTemplateName: 'Termination Clause Template',
