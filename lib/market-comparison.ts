@@ -8,6 +8,32 @@ import type { ContractType } from '@/lib/agents/classify-contract-type';
 
 type MarketPosition = 'standard' | 'flag' | 'win' | 'unknown';
 
+// Tool-forced classification — matches the pattern used by every other model
+// call in the agent pipeline (see lib/agents/tools.ts). Avoids free-text JSON
+// parsing, which can silently misclassify on markdown-fence or formatting drift.
+const CLASSIFY_MARKET_POSITION_TOOL: Anthropic.Tool = {
+  name: 'classify_market_position',
+  description: 'Classify an extracted contract clause against a market-standard reference.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      classification: {
+        type: 'string',
+        enum: ['standard', 'flag', 'win'],
+        description:
+          'standard: matches the reference market position. ' +
+          'flag: less favourable to the reviewing party than the reference. ' +
+          'win: more favourable to the reviewing party than the reference.',
+      },
+      reason: {
+        type: 'string',
+        description: 'One sentence explaining the classification.',
+      },
+    },
+    required: ['classification', 'reason'],
+  },
+};
+
 async function compareToMarket(
   extractedText: string,
   reference: { standard: string; flag: string; win: string },
@@ -22,16 +48,15 @@ Win (favourable to you): ${reference.win}
 Extracted clause:
 ${extractedText}
 
-Classify this clause as "standard", "flag", or "win" relative to the reference above.
-Return JSON only, no other text:
-{"classification":"standard","reason":"one sentence explanation"}`;
+Classify this clause as "standard", "flag", or "win" relative to the reference above and call classify_market_position.`;
 
-  let text = '';
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,
       temperature: 0,
+      tools: [CLASSIFY_MARKET_POSITION_TOOL],
+      tool_choice: { type: 'any' },
       messages: [
         {
           role: 'user',
@@ -39,24 +64,21 @@ Return JSON only, no other text:
         },
       ],
       system:
-        'You are a commercial contracts analyst for England & Wales. You classify extracted contract clauses against a market standard reference. Respond only in JSON with no markdown fencing.',
+        'You are a commercial contracts analyst for England & Wales. You classify extracted contract clauses against a market standard reference.',
     });
 
-    const block = response.content.find((b) => b.type === 'text');
-    text = block && 'text' in block ? block.text.trim() : '';
+    const toolCall = response.content.find((b) => b.type === 'tool_use');
+    if (toolCall?.type === 'tool_use' && toolCall.name === 'classify_market_position') {
+      const input = toolCall.input as { classification?: string; reason?: string };
+      const classification = input.classification ?? '';
+      const reason = typeof input.reason === 'string' ? input.reason : '';
 
-    // Strip markdown code fences if present
-    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-
-    const parsed = JSON.parse(text) as { classification?: string; reason?: string };
-    const classification = parsed.classification ?? '';
-    const reason = typeof parsed.reason === 'string' ? parsed.reason : '';
-
-    if (classification === 'standard' || classification === 'flag' || classification === 'win') {
-      return { position: classification, reason };
+      if (classification === 'standard' || classification === 'flag' || classification === 'win') {
+        return { position: classification, reason };
+      }
     }
   } catch {
-    // Parsing or API failure — fall through to unknown
+    // API failure — fall through to unknown
   }
 
   return { position: 'unknown', reason: '' };

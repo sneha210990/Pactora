@@ -62,7 +62,10 @@ export function verifyClauseText(
   }
 
   // Sliding window fuzzy match against the first sentence (for paraphrases).
-  // Capped at 500 positions to avoid timeout on large contracts.
+  // Bounded to ~500 comparisons to avoid timeout on large contracts, but the
+  // stride spans the FULL document rather than stopping after the first 500
+  // characters — otherwise clauses quoted from later in a large contract can
+  // never be fuzzy-matched and are wrongly marked unverified.
   const sentences = clauseText.split(/[.!?]+/).filter((s) => s.trim());
   let bestMatch = 0;
   let bestPosition = -1;
@@ -72,9 +75,10 @@ export function verifyClauseText(
     if (firstSentence.length > 0) {
       const WINDOW_SIZE = Math.ceil(firstSentence.length * 1.2);
       const MAX_POSITIONS = 500;
-      const searchLength = Math.min(contractText.length - WINDOW_SIZE, MAX_POSITIONS);
+      const searchSpan = Math.max(0, contractText.length - WINDOW_SIZE);
+      const stride = Math.max(1, Math.ceil(searchSpan / MAX_POSITIONS));
 
-      for (let i = 0; i <= searchLength; i++) {
+      for (let i = 0; i <= searchSpan; i += stride) {
         const window = contractText.slice(i, i + WINDOW_SIZE);
         const dist = levenshteinDistance(firstSentence, window);
         const similarity = 1 - dist / Math.max(firstSentence.length, window.length);

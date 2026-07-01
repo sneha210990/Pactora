@@ -85,18 +85,29 @@ export function detectCrossClauseRisks(flags: ClauseFlag[]): CrossClauseRisk[] {
   if (ip && indemnities) {
     const ipText = clauseText(ip);
 
+    // Multi-word phrases only — bare common words like "improvements" or
+    // "feedback" can appear in unrelated sentences within the same extracted
+    // clause blob and would otherwise trigger this check without genuine
+    // broad-IP-grab language.
     const broadIPSignals = [
       'all intellectual property',
       'assigns to vendor',
       'vendor shall own',
       'work made for hire',
-      'irrevocable',
-      'perpetual',
-      'royalty-free',
-      'feedback',
-      'improvements',
+      'irrevocable licence',
+      'irrevocable license',
+      'perpetual licence',
+      'perpetual license',
+      'royalty-free licence',
+      'royalty-free license',
+      'feedback becomes',
+      'feedback without compensation',
+      'feedback, suggestions',
+      'improvements are',
+      'improvements developed',
       'derivative works',
-      'anonymised',
+      'anonymised data',
+      'anonymized data',
       'aggregated data',
       'training data',
     ];
