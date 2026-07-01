@@ -257,6 +257,13 @@ export async function runClauseAgent(
           note: verifiedFlag.verificationNote,
         });
       }
+      if (!verifiedFlag.problematicLanguageVerified) {
+        console.warn('[AUDIT] Problematic language could not be verified in source:', {
+          clauseType,
+          text: baseFlag.problematicLanguage?.slice(0, 50),
+          note: verifiedFlag.problematicLanguageVerificationNote,
+        });
+      }
 
       // PROMPT 2: enrich with page number + highlight range from char offset.
       const pdfMetadata = extractPDFMetadata(contractText);
