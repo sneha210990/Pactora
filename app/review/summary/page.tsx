@@ -941,8 +941,9 @@ function SummaryContent() {
           )}
         </section>
 
-        {user === null && clauseFlags.length > 0 && (
+        {clauseFlags.length > 0 && (
           <EmailCaptureBanner
+            initialEmail={user?.email ?? null}
             analysisPayload={{
               riskScore: riskScore100,
               verdict: verdict.text,
