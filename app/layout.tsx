@@ -7,6 +7,8 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { DocumentAnalysisProvider } from '@/lib/document-analysis-store';
 import { LEGAL_DISCLAIMER } from '@/lib/constants';
 import { APP_VERSION } from '@/lib/version';
+import { Analytics } from '@vercel/analytics/next';
+import { PostHogProvider } from '@/components/posthog-provider';
 
 export const metadata: Metadata = {
   title: 'Pactora',
@@ -29,6 +31,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <PostHogProvider>
         <DocumentAnalysisProvider>
         <div className="flex min-h-screen flex-col bg-black text-white">
           <BetaBanner />
@@ -123,6 +126,8 @@ export default function RootLayout({
           </footer>
         </div>
         </DocumentAnalysisProvider>
+        </PostHogProvider>
+        <Analytics />
       </body>
     </html>
   );
